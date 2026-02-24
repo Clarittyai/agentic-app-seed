@@ -1,0 +1,13 @@
+# Clarity SDK Dependencies
+
+# Core dependencies
+pydantic>=2.6.0          # Data validation and serialization
+croniter>=2.0.1          # Cron expression parsing
+pytz>=2024.1             # Timezone support
+
+# Development dependencies (install with: pip install -e ".[dev]")
+# pytest>=8.0.0
+# pytest-asyncio>=0.23.0
+# pytest-cov>=4.1.0
+# black>=24.1.0
+# mypy>=1.8.0

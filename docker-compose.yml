@@ -1,0 +1,89 @@
+# Clarity Agentic App - Docker Compose Configuration
+# Orchestrates all services: PostgreSQL, Backend, Frontend
+#
+# Port Configuration:
+# - Set POSTGRES_PORT, BACKEND_PORT, FRONTEND_PORT in .env file
+# - Defaults: PostgreSQL=5432, Backend=8000, Frontend=3200
+# - Required for Clarity Platform deployment (dynamic port allocation)
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ${CONTAINER_PREFIX:-clarity-agentic}-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-clarity_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clarity_password}
+      POSTGRES_DB: ${POSTGRES_DB:-clarity_agentic_app}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clarity_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clarity-network
+
+  # Backend (FastAPI + AI Agents)
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ${CONTAINER_PREFIX:-clarity-agentic}-backend
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-clarity_user}:${POSTGRES_PASSWORD:-clarity_password}@postgres:5432/${POSTGRES_DB:-clarity_agentic_app}
+
+      # Server
+      PORT: ${BACKEND_INTERNAL_PORT:-8000}
+      HOST: 0.0.0.0
+      DEBUG: "${DEBUG:-false}"
+
+      # CORS
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3200}
+
+      # AI (Required)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${BACKEND_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./clarity_sdk:/app/clarity_sdk
+    networks:
+      - clarity-network
+    restart: unless-stopped
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_PREFIX:-clarity-agentic}-frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-3200}:3000"
+    depends_on:
+      - backend
+    networks:
+      - clarity-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  clarity-network:
+    driver: bridge

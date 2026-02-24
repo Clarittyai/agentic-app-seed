@@ -1,0 +1,30 @@
+# Clarity Backend Requirements
+
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.9
+
+# Clarity SDK (local development)
+# In production: clarity-sdk>=1.0.0
+-e ../clarity_sdk
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# AI & LangChain
+langchain==0.1.6
+anthropic==0.18.1
+langchain-anthropic==0.1.4
+
+# Scheduling
+apscheduler==3.10.4
+pytz==2024.1
+
+# HTTP Client
+httpx==0.26.0
+
+# Utilities
+python-dotenv==1.0.1
