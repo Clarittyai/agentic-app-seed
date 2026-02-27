@@ -66,18 +66,51 @@ Every agentic app has:
 
 ---
 
-## 👥 How Users Experience These Apps
+## 🎨 The Widget-First Revolution
 
-### Discovery & Installation
-1. **Browse the Clarity Marketplace** - Discover apps built by developers
-2. **View app widgets** - See live previews with real functionality
-3. **Install with one click** - App appears on their dashboard instantly
+**⚠️ CRITICAL CONCEPT FOR DEVELOPERS**: Agentic apps on Clarity are **NOT** traditional web applications. They are **widget-first** applications.
 
-### Daily Interaction
+### Why This Changes Everything
 
-Users interact primarily through **widgets** on their Clarity dashboard:
+**Traditional Apps**:
+- User opens app in browser or mobile
+- Performs tasks manually
+- Closes app when done
+- Must remember to check back later
 
-#### Small Widget (Quick Glance)
+**Agentic Apps on Clarity**:
+- **Widgets are ALWAYS visible** on user's dashboard
+- Agents work automatically in the background
+- Widgets show results and require user attention
+- **Users interact primarily through widgets, not full pages**
+
+### The Widget-First Model Explained
+
+Think of it this way:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 User's Dashboard                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
+│  │  Email   │  │  Tasks   │  │  CRM     │          │
+│  │Assistant │  │ Manager  │  │Assistant │          │
+│  │          │  │          │  │          │          │
+│  │ 3 urgent │  │ 5 due    │  │ 2 hot    │  ← Always visible
+│  │ 95% done │  │ today    │  │ leads    │  ← Real-time updates
+│  └──────────┘  └──────────┘  └──────────┘  ← Primary interface
+│                                                       │
+│  [Click widget → Opens full app for details]         │
+└─────────────────────────────────────────────────────┘
+```
+
+### Two Widget Sizes - Your App's Storefront
+
+#### Small Widget (300×150px) - The "At a Glance" View
+
+**Purpose**: Quick status check, always-on monitoring
+**What to show**: Essential metrics only
+**User behavior**: Scans their grid of 10-20 widgets in seconds
+
 ```
 ┌─────────────────────┐
 │  Email Assistant    │
@@ -87,42 +120,113 @@ Users interact primarily through **widgets** on their Clarity dashboard:
 │  ✅ 95% handled      │
 └─────────────────────┘
 ```
-Shows key metrics at a glance
 
-#### Large Widget (Detailed View)
+**Design principle**: Answer "Is everything okay?" in 2 seconds
+
+#### Large Widget (600×400px) - The "Interactive Dashboard"
+
+**Purpose**: Detailed monitoring and immediate action
+**What to show**: Recent activity, trends, quick actions
+**User behavior**: Actively manages and interacts with the app
+
 ```
-┌──────────────────────────────────────┐
-│  Email Assistant                      │
-│  ────────────────────────────────────  │
-│  📊 Last 24 Hours:                    │
-│    • 47 emails processed              │
-│    • 3 marked important               │
-│    • 1 requires immediate attention   │
-│                                        │
-│  🔥 Urgent:                            │
-│  "RE: Q1 Budget Review" - CFO         │
-│  → Suggested response ready           │
-│                                        │
-│  [View All]  [Settings]               │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│  Email Assistant                                  │
+│  ──────────────────────────────────────────────── │
+│                                                   │
+│  📊 Last 24 Hours:                                │
+│    • 47 emails processed                          │
+│    • 3 marked important (↓ 2 from yesterday)      │
+│    • 1 requires immediate attention               │
+│                                                   │
+│  🔥 Urgent - Requires Your Attention:             │
+│  ┌────────────────────────────────────────────┐  │
+│  │ "RE: Q1 Budget Review" - CFO (2m ago)      │  │
+│  │ → AI Draft Ready: "Thank you for..."       │  │
+│  │ [✓ Send]  [✎ Edit]  [⊗ Dismiss]           │  │
+│  └────────────────────────────────────────────┘  │
+│                                                   │
+│  📈 This Week: 327 emails, 98% handled            │
+│                                                   │
+│  [View All Emails]  [Adjust Settings]             │
+└──────────────────────────────────────────────────┘
 ```
-Enough detail to act without opening the full app
 
-### Configuration
+**Design principle**: Enable action without opening full app
 
-Users control when and how apps work:
-- **Set triggers**: "Check my email every 2 hours"
-- **Choose times**: 9 AM in New York or 6 PM in San Francisco
-- **Configure behavior**: How aggressive should prioritization be?
-- **Connect services**: Gmail, Slack, Calendar, etc.
+### When Users Access the Full App
+
+Full app pages exist for:
+- **Initial setup**: Connecting integrations, configuring triggers
+- **Deep dives**: Viewing complete history, advanced analytics
+- **Complex tasks**: Detailed configuration, bulk operations
+
+**But 90% of daily interaction happens through widgets.**
+
+### Why This Matters for You as a Developer
+
+**Traditional mindset** ❌:
+- Design full web app first
+- Add widgets as an afterthought
+- Widgets just show basic stats
+
+**Agentic app mindset** ✅:
+- Design widgets FIRST
+- Widgets are the primary interface
+- Full app is for advanced/setup tasks only
+
+**Your success metric**: Can users accomplish their daily tasks without ever opening your full app?
+
+---
+
+## 👥 How Users Experience These Apps
+
+### Discovery & Installation
+1. **Browse the Clarity Marketplace** - Discover apps built by developers
+2. **View live widget previews** - See real functionality before installing
+3. **Install with one click** - Widget appears on their dashboard instantly
+
+### Daily Workflow
+
+**Morning - 8:00 AM**:
+Sarah glances at her dashboard while drinking coffee. She sees:
+- Email widget: 3 important, 1 urgent (red indicator)
+- Task widget: 5 tasks due today, all prioritized
+- CRM widget: 2 hot leads need follow-up
+
+**Takes action without opening anything**:
+- Clicks "Send" on AI-drafted urgent email directly from widget
+- Checks task priorities in task widget
+- All done in 30 seconds
+
+**Only opens full app when**:
+- Needs to adjust email filtering rules (setup)
+- Wants to see complete email history (deep dive)
+- Configures new trigger schedule (advanced)
+
+### Configuration & Triggers
+
+Users control WHEN and HOW apps work:
+
+**Setting up triggers through widget**:
+1. Click "⚙️ Settings" button on widget
+2. Choose "Add Trigger"
+3. Select template: "Check my email every 2 hours"
+4. Configure: Time range (8 AM - 6 PM), timezone (PST)
+5. Done! Widget shows "Active: 1 trigger"
+
+**The magic**: Everything configurable from widget interface
 
 ### The Result
 
 **One unified dashboard** where users:
-- See all their automations at a glance
-- Control when everything runs
-- Get notified of important items
-- Take action without context switching
+- ✅ See all their automations at a glance (widgets grid)
+- ✅ Monitor real-time status without clicking
+- ✅ Take immediate action on urgent items
+- ✅ Never context switch between 10 different tools
+- ✅ Control when everything runs (trigger configuration)
+
+**Users love it because**: They never have to remember to check anything. The widgets are always there, always updated.
 
 ---
 
@@ -291,31 +395,234 @@ curl -X POST http://localhost:8000/api/agents/task-analyzer/execute \
 
 ## 🎨 Building for the Widget-First Model
 
-Apps on Clarity are accessed primarily through widgets, not standalone pages.
+### The Golden Rule for Developers
 
-### Why Widgets?
+**❌ WRONG**: Build a full web app, then add widgets as an afterthought
+**✅ RIGHT**: Design widgets FIRST, build full app for edge cases only
 
-**Traditional apps**: Users must remember to open them
-**Widget apps**: Always visible on dashboard, impossible to forget
+### Implementation Requirements
 
-### Two Widget Sizes
+#### 1. Widget Component (Frontend)
 
-**Small (300×150px)** - Quick status check
+**Location**: `frontend/src/components/Widget.tsx`
+
 ```typescript
-// Shows essential metrics
-<div>Active: {triggers}</div>
-<div>Success: {rate}%</div>
+interface WidgetProps {
+  size?: 'small' | 'large';  // Only 2 sizes, no 'medium'
+  userId: string;
+}
+
+export default function Widget({ size = 'large', userId }: WidgetProps) {
+  const { data } = useQuery(['widget', size, userId], () =>
+    api.getWidgetData(size)
+  );
+
+  if (size === 'small') {
+    return (
+      <div className="widget-small">
+        <h3>{data.appName}</h3>
+        <div className="metrics">
+          <span>Active: {data.activeTriggers}</span>
+          <span>Success: {data.successRate}%</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Large widget with interactive elements
+  return (
+    <div className="widget-large">
+      <h3>{data.appName}</h3>
+
+      {/* Recent activity */}
+      <div className="recent-activity">
+        {data.recentExecutions.map(exec => (
+          <ExecutionItem key={exec.id} {...exec} />
+        ))}
+      </div>
+
+      {/* Quick actions - enable interaction without full app */}
+      <div className="quick-actions">
+        <button onClick={() => handleAction('trigger')}>
+          Add Trigger
+        </button>
+        <button onClick={() => handleAction('settings')}>
+          Settings
+        </button>
+      </div>
+    </div>
+  );
+}
 ```
 
-**Large (600×400px)** - Actionable detail
-```typescript
-// Shows recent activity, actions
-<Stats {...data} />
-<RecentActivity items={items} />
-<QuickActions />
+#### 2. Widget API Endpoint (Backend)
+
+**Location**: `backend/main.py`
+
+```python
+@app.get("/api/widget")
+async def get_widget_data(
+    size: str = "large",  # 'small' or 'large' only
+    user_id: str = Depends(get_current_user)
+):
+    """
+    Widget data endpoint - optimized for fast response
+    This is called EVERY TIME user's dashboard loads (frequently!)
+    """
+
+    if size == "small":
+        # Minimal data for quick glance
+        return {
+            "active_triggers": db.query(UserTriggerInstance)
+                .filter_by(user_id=user_id, enabled=True)
+                .count(),
+            "success_rate": calculate_success_rate(user_id),
+            "status": "healthy"  # or "attention_needed"
+        }
+
+    # Large widget - detailed but still fast
+    return {
+        "active_triggers": get_trigger_count(user_id),
+        "total_executions": get_execution_count(user_id),
+        "success_rate": calculate_success_rate(user_id),
+        "recent_executions": get_recent_executions(user_id, limit=5),
+        "alerts": get_urgent_alerts(user_id),  # Important!
+        "quick_stats": {
+            "today": get_today_stats(user_id),
+            "this_week": get_week_stats(user_id)
+        }
+    }
 ```
 
-**[See widget design guide →](docs/ARCHITECTURE.md#widget-first-design)**
+#### 3. Authentication via X-User-ID Header
+
+**CRITICAL**: Widgets load via iframe in Clarity dashboard. The platform injects user identity:
+
+```typescript
+// frontend/src/lib/api.ts
+api.interceptors.request.use((config) => {
+  // Priority 1: X-User-ID from Clarity platform (production)
+  const userId = localStorage.getItem('user_id');
+  if (userId) {
+    config.headers['X-User-ID'] = userId;
+  }
+
+  // Priority 2: Bearer token (development fallback)
+  const token = localStorage.getItem('auth_token') || 'test-user';
+  config.headers.Authorization = `Bearer ${token}`;
+
+  return config;
+});
+```
+
+### Widget Design Principles
+
+#### Small Widget Design
+
+**Goal**: Answer "Is everything okay?" in 2 seconds
+
+```
+DO show:
+✅ Number of active automations
+✅ Overall health status (green/yellow/red)
+✅ One critical metric (success rate, items pending, etc.)
+
+DON'T show:
+❌ Detailed logs
+❌ Configuration options
+❌ Long lists of items
+```
+
+#### Large Widget Design
+
+**Goal**: Enable daily tasks without opening full app
+
+```
+DO show:
+✅ Last 5 executions with status
+✅ Quick action buttons (Add Trigger, Settings)
+✅ Important alerts that need attention
+✅ This week's summary stats
+✅ Interactive elements (buttons, forms)
+
+DON'T show:
+❌ Complete history (that's for full app)
+❌ Complex configuration (link to full app)
+❌ Detailed analytics (link to full app)
+```
+
+### Performance Requirements
+
+Widgets load **every time** a user opens their dashboard:
+
+- **Small widget**: < 200ms response time
+- **Large widget**: < 500ms response time
+- **Real-time updates**: Use WebSocket or polling for status changes
+- **Error handling**: Never show error to user, show "Unable to load" state
+
+### Required Screenshots
+
+**MUST include** in `./screenshots/` directory:
+
+```
+screenshots/
+├── widget-small.png    # Small widget with real data
+├── widget-large.png    # Large widget with real data
+└── full-app.png        # (Optional) Full app screenshot
+```
+
+Configure in `app-config.json`:
+```json
+{
+  "screenshots": [
+    {
+      "url": "./screenshots/widget-small.png",
+      "type": "widget-small",
+      "required": true
+    },
+    {
+      "url": "./screenshots/widget-large.png",
+      "type": "widget-large",
+      "required": true
+    }
+  ]
+}
+```
+
+### Testing Your Widgets
+
+```bash
+# Test widget endpoint performance
+time curl http://localhost:8000/api/widget?size=small
+
+# Should respond in < 200ms
+
+# Test with different user IDs
+curl http://localhost:8000/api/widget?size=large \
+  -H "X-User-ID: user-123"
+
+# Test real-time updates
+# Open dashboard in browser, trigger workflow, see widget update
+```
+
+### Common Widget Mistakes to Avoid
+
+❌ **Showing too much data in small widget**
+- Small widget should have 2-3 metrics MAX
+
+❌ **No interactive elements in large widget**
+- Users should be able to take action directly
+
+❌ **Slow API responses**
+- Optimize queries, use caching, return minimal data
+
+❌ **Designing for full app first**
+- Always design widgets before full app pages
+
+❌ **Forgetting real-time updates**
+- Widgets should update when triggers fire
+
+**[See complete widget design guide →](docs/ARCHITECTURE.md#widget-first-design)**
 
 ---
 
