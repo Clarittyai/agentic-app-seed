@@ -1,6 +1,6 @@
-# 🚀 Agentic App Template
+# 🚀 Clarity Agentic App Template
 
-**Build AI apps where users control WHEN workflows run**
+**Build AI-powered apps where users control WHEN workflows run**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
@@ -9,60 +9,54 @@
 
 ---
 
-## ⚡ 60-Second Start
+## ⚡ One-Command Start
 
 ```bash
 git clone https://github.com/Clarittyai/agentic-app-seed.git
 cd agentic-app-seed
 cp .env.example .env
-# Add ANTHROPIC_API_KEY to .env
-docker-compose up
+# Add your ANTHROPIC_API_KEY to .env
+./start.sh  # Mac/Linux
+# OR
+start.bat   # Windows
 ```
 
-**Done! 🎉**
-- 📖 API Docs: http://localhost:8000/docs
-- 🏥 Health Check: http://localhost:8000/health
-- 🎨 Frontend: http://localhost:3200
+**That's it! 🎉**
+- 📖 Frontend: http://localhost:3200
+- 🔧 Backend API: http://localhost:8000
+- 📚 API Docs: http://localhost:8000/docs
 
 ---
 
-## 🎯 Overview
+## 🎯 What Is This?
 
-The **Clarity Agentic App Seed** is a complete, production-ready template for building sophisticated AI-powered applications with:
+A **production-ready template** for building agentic AI applications with:
 
-- 🤖 **AI Agent System** - Define intelligent agents using simple decorators
-- 🔄 **Workflow Orchestration** - Chain agents together with sequential, parallel, or DAG execution
-- ⏰ **User-Configurable Triggers** - Let users control WHEN workflows run (not developers!)
-- 🎨 **Beautiful UI** - Pre-built React components for agent management and monitoring
+- 🤖 **AI Agents** - Define intelligent agents using simple decorators
+- 🔄 **Workflows** - Chain agents together (sequential, parallel, or DAG execution)
+- ⏰ **User-Configurable Triggers** - Let users control WHEN workflows run
+- 🎨 **Beautiful UI** - Pre-built React components with widget support
 - 🔒 **Enterprise-Ready** - Security, scalability, and observability built-in
 
-### The Key Innovation: User-Configurable Triggers
+### The Key Innovation
 
-**Traditional approach**: Developers hardcode trigger schedules in code
+**Traditional approach**: Developers hardcode schedules
 ```python
-# ❌ Users can't customize this
-@cron("0 9 * * *")  # Fixed: 9am every day
+@cron("0 9 * * *")  # ❌ Fixed: 9am every day
 def daily_review():
     pass
 ```
 
-**Clarity approach**: Developers define templates, users create instances with their own configurations
+**Clarity approach**: Users configure their own schedules
 ```python
-# ✅ Users configure when they want it
-@trigger_template(
-    id="daily-review",
-    template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="task-review",
-    config_fields=[
-        {"key": "time", "label": "What time?", "type": "time"},
-        {"key": "timezone", "label": "Timezone", "type": "timezone"}
-    ]
+@trigger_template(  # ✅ Users choose their time
+    config_fields=[{"key": "time", "type": "time"}]
 )
-class DailyReviewTrigger:
+class DailyReview:
     pass
 ```
 
-**Result**: User A configures 9am EST, User B configures 6pm PST - same template, personalized experience!
+**Result**: User A configures 9am EST, User B configures 6pm PST - same template, personalized!
 
 ---
 
@@ -70,137 +64,52 @@ class DailyReviewTrigger:
 
 ### Prerequisites
 
-- Python 3.11+
 - Docker & Docker Compose (recommended)
-- PostgreSQL 15+ (or use Docker)
+- Python 3.11+ (if running without Docker)
 - Anthropic API key ([Get one here](https://console.anthropic.com/))
 
-### 1. Clone and Setup
+### Setup
 
 ```bash
-# Clone the template
+# 1. Clone and configure
 git clone https://github.com/Clarittyai/agentic-app-seed.git
 cd agentic-app-seed
-
-# Copy environment file
 cp .env.example .env
 
-# Add your Anthropic API key to .env
-ANTHROPIC_API_KEY=sk-ant-xxxxx
+# 2. Add your API key to .env
+echo "ANTHROPIC_API_KEY=sk-ant-xxxxx" >> .env
+
+# 3. Start everything
+./start.sh  # Mac/Linux
+# OR
+start.bat   # Windows
 ```
 
-### 2. Start with Docker (Recommended)
+The start script will:
+- ✅ Check Docker is running
+- ✅ Validate your API key
+- ✅ Start all services
+- ✅ Wait for health checks
+- ✅ Show you the URLs
+
+### Manual Start (Alternative)
 
 ```bash
-# Start all services (PostgreSQL + Backend)
+# Start with docker-compose
 docker-compose up
 
-# Backend available at: http://localhost:8000
-# API docs: http://localhost:8000/docs
+# Backend: http://localhost:8000
+# Frontend: http://localhost:3200
+# API Docs: http://localhost:8000/docs
 ```
-
-### 3. Or Start Locally
-
-```bash
-# Install SDK
-cd clarity_sdk
-pip install -e .
-
-# Install backend dependencies
-cd ../backend
-pip install -r requirements.txt
-
-# Start PostgreSQL (separately)
-# Update DATABASE_URL in .env
-
-# Run backend
-python main.py
-```
-
-### 4. Validate Your Setup
-
-```bash
-# Run pre-flight validation (recommended)
-cd backend
-python validate_startup.py
-
-# Expected: All checks pass ✅
-# - Environment variables
-# - Python imports
-# - Database connection
-# - SDK registration
-```
-
-### 5. Test It Out
-
-```bash
-# Health check
-curl http://localhost:8000/health
-
-# List registered agents (expect 2)
-curl http://localhost:8000/api/agents
-
-# List trigger templates (expect 4)
-curl http://localhost:8000/api/trigger-templates
-```
-
-### 6. Complete Testing
-
-For comprehensive testing and troubleshooting, see:
-- **[TESTING.md](TESTING.md)** - Complete testing guide (400+ lines)
-- **[VALIDATION_FIXES.md](VALIDATION_FIXES.md)** - System verification and fixes applied
-
----
-
-## 📚 Architecture
-
-### 2-Part Structure
-
-```
-clarity-agentic-app-seed/
-├── clarity_sdk/          # Python SDK for defining agents/workflows/triggers
-│   ├── agent.py          # @agent decorator
-│   ├── workflow.py       # @workflow and @uses_agent decorators
-│   ├── trigger.py        # @trigger_template decorator
-│   └── ...
-├── backend/              # FastAPI server + AI agents
-│   ├── main.py           # FastAPI application (17 endpoints)
-│   ├── database.py       # SQLAlchemy configuration
-│   ├── models.py         # Database models
-│   ├── agents/           # Your agent implementations
-│   ├── workflows/        # Your workflow definitions
-│   └── triggers/         # Your trigger templates
-├── frontend/             # React + Vite (Week 4)
-└── docker-compose.yml    # Full stack orchestration
-```
-
-### Technology Stack
-
-**Backend**:
-- FastAPI - Modern Python web framework
-- SQLAlchemy - ORM and database management
-- Pydantic - Data validation and type safety
-- LangChain + Anthropic - AI agent framework
-- APScheduler - Dynamic job scheduling
-
-**Database**:
-- PostgreSQL 15+ - Production-grade relational database
-- Connection pooling for performance
-- Full-text search support
-
-**Frontend** (Week 4):
-- React 18 + TypeScript
-- Vite for fast builds
-- Tailwind CSS + shadcn/ui
-- React Query for state management
 
 ---
 
 ## 🤖 Building Your First Agent
 
-### 1. Define an Agent
+### 1. Create Agent File
 
-Create `backend/agents/my_agent.py`:
+Create `backend/agents/greeting_agent.py`:
 
 ```python
 from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
@@ -209,498 +118,168 @@ from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
     id="greeting-agent",
     name="Greeting Agent",
     description="Generates personalized greetings",
-    category="communication",
-    inputs={
-        "name": {
-            "type": "string",
-            "description": "Person's name",
-            "required": True
-        }
-    },
-    outputs={
-        "greeting": {
-            "type": "string",
-            "description": "Personalized greeting"
-        }
-    },
-    timeout=30
+    inputs={"name": {"type": "string", "required": True}},
+    outputs={"greeting": {"type": "string"}}
 )
 class GreetingAgent(BaseAgent):
     async def execute(self, context: AgentContext) -> AgentResult:
         name = context.get_input("name")
         greeting = f"Hello, {name}! Welcome to Clarity!"
-
-        return AgentResult(
-            success=True,
-            data={"greeting": greeting}
-        )
+        return AgentResult(success=True, data={"greeting": greeting})
 ```
 
-### 2. Register the Agent
+### 2. That's It!
 
-Update `backend/agents/__init__.py`:
-
-```python
-from backend.agents.my_agent import GreetingAgent
-
-__all__ = ["GreetingAgent"]
-```
+**No registration needed!** The auto-discovery system automatically finds and registers your agent on startup.
 
 ### 3. Test It
 
 ```bash
 # Restart backend
-# Agent automatically registers on startup
+docker-compose restart backend
 
 # Execute agent
 curl -X POST http://localhost:8000/api/agents/greeting-agent/execute \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer user-123" \
   -d '{"name": "Alice"}'
-
-# Response:
-# {
-#   "success": true,
-#   "data": {"greeting": "Hello, Alice! Welcome to Clarity!"},
-#   "error": null
-# }
 ```
 
 ---
 
-## 🔄 Building Workflows
+## 📖 Documentation
 
-### Sequential Workflow
+### Essential Guides
 
-```python
-from clarity_sdk import workflow, uses_agent, ExecutionMode
+- **[Complete Usage Guide](docs/GUIDE.md)** - Building agents, workflows, and triggers
+- **[Architecture Documentation](docs/ARCHITECTURE.md)** - Technical deep dive
+- **[API Reference](docs/API.md)** - Complete API documentation
+- **[Marketplace Submission](docs/SUBMISSION_REQUIREMENTS.md)** - Deploy to Clarity Marketplace
+- **[AI Assistant Guide](CLAUDE.md)** - Guide for AI assistants working with this code
 
-@workflow(
-    id="onboarding-workflow",
-    name="User Onboarding",
-    execution_mode=ExecutionMode.SEQUENTIAL
-)
-@uses_agent("greeting-agent", output_key="greeting")
-@uses_agent("email-composer", input_from="greeting", output_key="email")
-async def onboarding_workflow(context):
-    """
-    1. Generate greeting
-    2. Compose welcome email
-    """
-    pass
-```
+### Quick Links
 
-### Parallel Workflow
-
-```python
-@workflow(
-    id="multi-channel-notify",
-    execution_mode=ExecutionMode.PARALLEL
-)
-@uses_agent("email-composer", output_key="email")
-@uses_agent("slack-notifier", output_key="slack")
-@uses_agent("sms-sender", output_key="sms")
-async def multi_channel_workflow(context):
-    """
-    Send notifications via email, Slack, and SMS simultaneously
-    """
-    pass
-```
+- 🏗️ [2-Part Architecture](#architecture) - SDK + Backend structure
+- 🔄 [Workflow Examples](docs/GUIDE.md#creating-workflows) - Sequential, parallel, DAG, conditional
+- ⏰ [Trigger System](docs/GUIDE.md#user-configurable-triggers) - User-configurable scheduling
+- 🎨 [Widget Design](docs/ARCHITECTURE.md#widget-first-design) - Widget-first philosophy
+- 🧪 [Testing Guide](docs/GUIDE.md#testing) - Testing agents and workflows
+- 🚀 [Deployment Guide](docs/GUIDE.md#deployment) - Production deployment
 
 ---
 
-## ⏰ User-Configurable Triggers
+## 🏗️ Architecture
 
-### 1. Define a Trigger Template
+### Two-Part Structure
 
-Create `backend/triggers/my_triggers.py`:
-
-```python
-from clarity_sdk import trigger_template, TriggerTemplateType
-
-@trigger_template(
-    id="morning-standup",
-    name="Morning Standup Reminder",
-    description="Daily standup reminder at your preferred time",
-    template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="standup-workflow",
-    config_fields=[
-        {
-            "key": "time",
-            "label": "What time is your standup?",
-            "type": "time",
-            "required": True,
-            "default": "10:00"
-        },
-        {
-            "key": "timezone",
-            "label": "Your timezone",
-            "type": "timezone",
-            "required": True,
-            "default": "America/New_York"
-        },
-        {
-            "key": "reminder_minutes",
-            "label": "Remind me ___ minutes before",
-            "type": "number",
-            "required": False,
-            "default": 15
-        }
-    ],
-    max_instances_per_user=3
-)
-class MorningStandupTrigger:
-    pass
+```
+clarity-agentic-app-seed/
+├── clarity_sdk/          # Python SDK (decorators, executors, triggers)
+├── backend/              # FastAPI server (port 8000)
+│   ├── agents/           # Your agent implementations
+│   ├── workflows/        # Your workflow definitions
+│   ├── triggers/         # Your trigger templates
+│   └── infrastructure/   # Auto-discovery & health checks
+├── frontend/             # React UI (port 3200)
+└── docker-compose.yml    # Full stack orchestration
 ```
 
-### 2. Users Create Instances
+### Technology Stack
 
-Via API:
+- **SDK**: Python 3.11+, Pydantic, APScheduler
+- **Backend**: FastAPI, SQLAlchemy, PostgreSQL, LangChain, Anthropic Claude
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
+- **Deployment**: Docker, docker-compose
 
-```bash
-curl -X POST http://localhost:8000/api/my/triggers \
-  -H "Authorization: Bearer user-123" \
-  -d '{
-    "template_id": "morning-standup",
-    "name": "My Team Standup",
-    "config": {
-      "time": "10:30",
-      "timezone": "America/Los_Angeles",
-      "reminder_minutes": 10
-    }
-  }'
-```
-
-Via UI (Week 4):
-- User browses trigger templates
-- Clicks "morning-standup"
-- Fills in form (auto-generated from config_fields)
-- Clicks "Create"
-- Done! Their personalized trigger is active
-
-### 3. System Schedules Dynamically
-
-The `DynamicTriggerManager` (Week 3):
-1. Loads user instances from database on startup
-2. Parses user's config values
-3. Schedules jobs with APScheduler
-4. Executes workflows at configured times
-5. Updates on trigger create/update/delete
+**[See complete architecture →](docs/ARCHITECTURE.md)**
 
 ---
 
-## 🗄️ Database Models
+## 🎨 Widget-First Design
 
-### UserTriggerInstance
+Apps built with this template are accessed primarily through **widgets** on the Clarity dashboard, not standalone web pages.
 
-Stores user-configured trigger instances:
+### Two Widget Sizes
 
+- **Small (300x150px)**: Quick glance - active triggers, success rate
+- **Large (600x400px)**: Detailed view - execution history, interactive controls
+
+### Implementation
+
+**Backend**:
 ```python
-{
-  "id": "trigger-uuid",
-  "user_id": "user-123",
-  "template_id": "morning-standup",
-  "name": "My Team Standup",
-  "config": {
-    "time": "10:30",
-    "timezone": "America/Los_Angeles",
-    "reminder_minutes": 10
-  },
-  "enabled": true,
-  "total_executions": 42,
-  "last_triggered_at": "2026-02-18T10:30:00Z"
-}
+@app.get("/api/widget")
+async def get_widget_data(size: str = "large"):
+    if size == "small":
+        return {"active_triggers": 5, "success_rate": "95%"}
+    return {"active_triggers": 5, "total_executions": 42, "recent_executions": [...]}
 ```
 
-### TriggerExecution
-
-Audit trail of all trigger fires:
-
-```python
-{
-  "id": "execution-uuid",
-  "trigger_instance_id": "trigger-uuid",
-  "workflow_execution_id": "workflow-uuid",
-  "triggered_at": "2026-02-18T10:30:00Z",
-  "success": true,
-  "trigger_data": { /* snapshot of trigger config */ }
-}
+**Frontend**:
+```typescript
+<Widget size="small" />  // Quick glance
+<Widget size="large" />  // Detailed view
 ```
 
-### WorkflowExecution
-
-Complete workflow execution history:
-
-```python
-{
-  "id": "workflow-uuid",
-  "workflow_id": "standup-workflow",
-  "status": "completed",
-  "input_data": { /* workflow inputs */ },
-  "output_data": { /* workflow outputs */ },
-  "started_at": "2026-02-18T10:30:00Z",
-  "completed_at": "2026-02-18T10:30:15Z",
-  "duration_seconds": 15
-}
-```
+**[Learn more about widget-first design →](docs/ARCHITECTURE.md#widget-first-design)**
 
 ---
 
-## 🔌 Integration Management
+## 📊 Features
 
-Agents can declare integration requirements:
+### For Developers
 
-```python
-@agent(
-    id="gmail-sender",
-    integrations=[
-        {
-            "service": "gmail",
-            "auth_type": "oauth",
-            "required": True,
-            "scopes": ["https://www.googleapis.com/auth/gmail.send"],
-            "config_fields": []
-        }
-    ]
-)
-class GmailSenderAgent(BaseAgent):
-    async def execute(self, context: AgentContext):
-        # Get user's Gmail credentials
-        gmail_creds = context.get_integration("gmail")
+- ✅ **Zero Configuration** - Auto-discovery eliminates manual registration
+- ✅ **One Command Start** - `./start.sh` handles everything
+- ✅ **Type-Safe** - Pydantic validation for all data structures
+- ✅ **Hot Reload** - Changes reflected immediately
+- ✅ **Comprehensive Examples** - Task analyzer, email composer, and more
 
-        if not gmail_creds:
-            return AgentResult(
-                success=False,
-                error="Gmail not connected. Please connect in settings."
-            )
+### For Users
 
-        # Use credentials to send email
-        # ...
-```
-
-The platform:
-1. Detects required integrations from agent metadata
-2. Prompts user to connect (OAuth flow, API key, etc.)
-3. Stores encrypted credentials in `UserIntegration` table
-4. Provides credentials to agent via context
-
----
-
-## 📊 Monitoring & Observability
-
-### Health Checks
-
-```bash
-GET /health
-```
-
-### Execution History
-
-```bash
-# List user's workflow executions
-GET /api/workflows/executions?user_id=user-123&limit=50
-
-# Get specific execution
-GET /api/workflows/executions/{execution_id}
-```
-
-### Trigger Statistics
-
-```bash
-# List user's triggers with execution counts
-GET /api/my/triggers
-# Returns: total_executions, total_failures, last_triggered_at
-```
-
-### Widget Endpoint (Clarity Platform Integration)
-
-```bash
-# Small widget
-GET /api/widget?size=small
-# Returns: active_triggers, success_rate
-
-# Large widget
-GET /api/widget?size=large
-# Returns: full execution history, detailed stats
-```
-
----
-
-## 🔒 Security
-
-### Authentication
-
-Currently uses simple Bearer token authentication. For production:
-
-```python
-def get_current_user(authorization: str = Header(...)):
-    # Validate JWT token
-    # Extract user_id from token
-    # Check permissions
-    # Return user_id
-```
-
-### Data Isolation
-
-All database queries filter by `user_id`:
-
-```python
-# ✅ Good - Per-user filtering
-triggers = db.query(UserTriggerInstance).filter(
-    UserTriggerInstance.user_id == user_id
-).all()
-
-# ❌ Bad - Leaks data across users
-triggers = db.query(UserTriggerInstance).all()
-```
-
-### Encrypted Credentials
-
-Integration credentials stored encrypted:
-
-```python
-# UserIntegration.credentials is JSON encrypted at rest
-# Decrypt only when needed for agent execution
-```
-
-### Rate Limiting
-
-Implement rate limiting per user:
-
-```python
-# TODO: Add rate limiting middleware
-# Max 100 agent executions per hour per user
-```
-
----
-
-## 🚀 Deployment
-
-### Docker Production Build
-
-```bash
-# Build production image
-docker build -t clarity-agentic-app:latest .
-
-# Run with production settings
-docker run -p 8000:8000 \
-  -e DATABASE_URL=postgresql://... \
-  -e ANTHROPIC_API_KEY=sk-ant-... \
-  -e DEBUG=false \
-  clarity-agentic-app:latest
-```
-
-### Environment Variables
-
-Required:
-- `ANTHROPIC_API_KEY` - Claude API key (get at console.anthropic.com)
-- `DATABASE_URL` - PostgreSQL connection string
-
-Optional:
-- `PORT` - Server port (default: 8000)
-- `DEBUG` - Debug mode (default: false)
-- `FRONTEND_URL` - Frontend URL for CORS
-- `REDIS_URL` - Redis for distributed scheduling
-- `LOG_LEVEL` - Logging level (INFO, DEBUG, etc.)
-
-### Scaling
-
-**Horizontal Scaling**:
-- Backend is stateless - run multiple instances behind load balancer
-- Database connection pooling handles concurrent requests
-- Use Redis for distributed trigger scheduling
-
-**Database Scaling**:
-- PostgreSQL read replicas for query scaling
-- Connection pooling (configured in `database.py`)
-- Indexes on user_id, template_id, status fields
-
----
-
-## 📖 API Documentation
-
-### Interactive Docs
-
-FastAPI automatically generates interactive API documentation:
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Endpoint Summary
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/api/widget` | Widget data (3 sizes) |
-| GET | `/api/agents` | List all agents |
-| GET | `/api/agents/{id}` | Get agent details |
-| POST | `/api/agents/{id}/execute` | Execute agent |
-| GET | `/api/workflows` | List workflows |
-| POST | `/api/workflows/{id}/execute` | Execute workflow |
-| GET | `/api/workflows/executions/{id}` | Get execution status |
-| GET | `/api/trigger-templates` | List trigger templates |
-| GET | `/api/my/triggers` | List user's triggers |
-| POST | `/api/my/triggers` | Create trigger instance |
-| PATCH | `/api/my/triggers/{id}` | Update trigger |
-| DELETE | `/api/my/triggers/{id}` | Delete trigger |
+- ✅ **Personalized Triggers** - Configure workflows to run on their schedule
+- ✅ **Widget Dashboard** - Monitor app status at a glance
+- ✅ **Execution History** - Track all workflow runs and results
+- ✅ **Beautiful UI** - Modern, responsive interface
 
 ---
 
 ## 🧪 Testing
 
-### Run Example Agent
-
 ```bash
-cd clarity_sdk
-python tests/examples/simple_agent_example.py
-```
-
-### Test API Endpoints
-
-```bash
-# Health check
+# Test health endpoint
 curl http://localhost:8000/health
 
-# List agents
+# List registered agents
 curl http://localhost:8000/api/agents
 
 # Execute agent
 curl -X POST http://localhost:8000/api/agents/task-analyzer/execute \
   -H "Authorization: Bearer test-user" \
   -H "Content-Type: application/json" \
-  -d '{
-    "task_title": "Prepare presentation",
-    "task_description": "Create slides for quarterly review"
-  }'
+  -d '{"task_title": "Test", "task_description": "Testing the agent"}'
+
+# Pre-flight validation
+cd backend
+python validate_startup.py
 ```
 
----
-
-## 📈 Roadmap
-
-- ✅ **Week 1**: SDK Foundation (Complete)
-- ✅ **Week 2**: Backend Core Implementation (Complete)
-- ⏳ **Week 3**: Trigger System (DynamicTriggerManager, APScheduler)
-- ⏳ **Week 4**: Frontend (React UI, trigger management)
-- ⏳ **Week 5**: Example App (Full TaskManager implementation)
-- ⏳ **Week 6**: Documentation & Polish
-
-**Current Progress**: 33.3% Complete (2 of 6 weeks)
-
-See [PROGRESS.md](PROGRESS.md) for detailed implementation status.
+**[See complete testing guide →](docs/GUIDE.md#testing)**
 
 ---
 
-## 📝 Example Applications
+## 🚀 What Can You Build?
 
-Ideas for what you can build with this template:
+Example applications built with this template:
 
-- **Task Management** - AI-powered task prioritization with deadline reminders
-- **CRM System** - Lead scoring, follow-up automation, email composition
-- **Content Pipeline** - Scheduled content generation, review, publishing
-- **Customer Support** - Ticket analysis, response drafting, escalation
-- **Analytics Dashboard** - Scheduled data analysis, anomaly detection, reporting
-- **IoT Monitoring** - Sensor data analysis, threshold alerts, predictive maintenance
+- **Task Management** - AI-powered prioritization with deadline reminders
+- **CRM System** - Lead scoring, follow-up automation
+- **Content Pipeline** - Scheduled generation, review, publishing
+- **Customer Support** - Ticket analysis, response drafting
+- **Analytics Dashboard** - Scheduled reports and anomaly detection
+- **IoT Monitoring** - Sensor analysis and predictive maintenance
+
+**[See more examples →](docs/GUIDE.md#example-applications)**
 
 ---
 
@@ -718,24 +297,16 @@ MIT License - See [LICENSE](LICENSE) file
 
 ---
 
-## 🙏 Acknowledgments
+## 🙏 Built With
 
-Built with:
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
 - [LangChain](https://www.langchain.com/) - AI agent framework
 - [Anthropic Claude](https://www.anthropic.com/) - Powerful AI model
-- [SQLAlchemy](https://www.sqlalchemy.org/) - Python ORM
-- [APScheduler](https://apscheduler.readthedocs.io/) - Job scheduling
-
----
-
-## 📞 Support
-
-For questions or support:
-- 📖 Read the [full design document](AGENTIC_APP_SEED_COMPLETE_DESIGN.md)
-- 📊 Check [implementation progress](PROGRESS.md)
-- 🔧 Review [trigger system design](TRIGGER_SYSTEM_DESIGN.md)
+- [React](https://react.dev/) - UI library
+- [PostgreSQL](https://www.postgresql.org/) - Database
 
 ---
 
 **Built with ❤️ by the Clarity team**
+
+**[Get started now →](#-one-command-start)** | **[Read the full guide →](docs/GUIDE.md)** | **[View API docs →](docs/API.md)**

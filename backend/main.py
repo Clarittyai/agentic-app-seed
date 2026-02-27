@@ -42,6 +42,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Include infrastructure routers (health checks, etc.)
+from backend.infrastructure import health_router
+app.include_router(health_router)
+
 # Global trigger manager (initialized on startup)
 trigger_manager: Optional[DynamicTriggerManager] = None
 
@@ -98,23 +102,11 @@ def get_current_user(
 # ============================================================================
 # CORE ENDPOINTS
 # ============================================================================
-
-@app.get("/health")
-async def health_check():
-    """
-    Health check endpoint.
-    Required by Clarity platform for app monitoring.
-    """
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "1.0.0"
-    }
-
+# Note: Health check endpoint is provided by backend/infrastructure/health.py
 
 @app.get("/api/widget")
 async def get_widget_data(
-    size: str = "medium",
+    size: str = "large",
     user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -122,7 +114,7 @@ async def get_widget_data(
     Widget data endpoint - REQUIRED by Clarity platform.
 
     Returns data to display in the user's Clarity dashboard widget.
-    Supports three sizes: small, medium, large
+    Supports two sizes: small (quick glance), large (detailed view)
     """
     # Get user's active triggers
     active_triggers = db.query(models.UserTriggerInstance).filter(
@@ -144,18 +136,13 @@ async def get_widget_data(
 
     # Return different data based on widget size
     if size == "small":
+        # Small widget: Quick glance - active triggers and success rate only
         return {
             "active_triggers": active_triggers,
             "success_rate": f"{success_rate:.0f}%"
         }
-    elif size == "medium":
-        return {
-            "active_triggers": active_triggers,
-            "total_executions": total_executions,
-            "success_rate": success_rate,
-            "last_execution": recent_executions[0].started_at.isoformat() if recent_executions else None
-        }
     else:  # large
+        # Large widget: Detailed view - full dashboard with execution history
         return {
             "active_triggers": active_triggers,
             "total_executions": total_executions,
@@ -683,13 +670,13 @@ async def startup_event():
     logger.info("📊 Initializing database...")
     init_db()
 
-    # Import agents, workflows, and triggers to register them
-    logger.info("🤖 Loading agents, workflows, and triggers...")
+    # Auto-discover and register all components
+    logger.info("🤖 Auto-discovering agents, workflows, and triggers...")
     try:
-        from backend import agents, workflows, triggers
-        logger.info("✅ Successfully imported all components")
+        from backend.infrastructure import discover_and_register_components
+        discover_and_register_components()
     except Exception as e:
-        logger.error(f"Failed to load components: {e}")
+        logger.error(f"Failed to discover components: {e}")
         raise
 
     # Log registered components

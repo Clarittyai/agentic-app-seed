@@ -6,6 +6,132 @@ This file helps AI assistants (like Claude Code) understand and work effectively
 
 This is a **production-ready template** for building AI-powered agentic applications with **user-configurable triggers**. The key innovation is that end users control WHEN workflows execute, not developers hardcoding schedules.
 
+## 🎨 CRITICAL: Widget-First Design Philosophy
+
+**⚠️ MOST IMPORTANT CONCEPT - READ THIS FIRST**
+
+When building apps with this template for the **Clarity Marketplace**, understand this fundamental principle:
+
+### **Widgets Are THE Primary Interface**
+
+Apps built with this template are NOT traditional web applications. They are **widget-first** applications:
+
+**The Reality:**
+1. ✅ **Users interact primarily through WIDGETS** on their Clarity dashboard
+2. ✅ **Widgets are always visible** in the user's dashboard grid
+3. ✅ **Full app pages are secondary** - accessed by clicking widget for details
+4. ❌ **Users do NOT navigate to standalone web pages** as their primary interaction
+
+**Think of it as:**
+```
+Widget = Your app's "storefront" (always visible, primary interaction)
+Full App = Your app's "back office" (detailed operations, advanced features)
+```
+
+### Two Widget Sizes ONLY
+
+**❌ DO NOT implement 3 widget sizes**
+**✅ ONLY implement 2 widget sizes: small and large**
+
+#### Small Widget (300x150px)
+- **Purpose**: Quick glance at key metrics
+- **Data**: Minimal - active triggers count, success rate
+- **When used**: User scans their dashboard grid for status
+
+#### Large Widget (600x400px)
+- **Purpose**: Detailed monitoring and interaction
+- **Data**: Full metrics, execution history, interactive elements
+- **When used**: User actively monitors or manages the app
+
+### Implementation Requirements
+
+**Backend (`backend/main.py` line 115):**
+```python
+@app.get("/api/widget")
+async def get_widget_data(
+    size: str = "large",  # Only "small" or "large"
+    user_id: str = Depends(get_current_user)
+):
+    if size == "small":
+        return {"active_triggers": 5, "success_rate": "95%"}
+    else:  # large (not elif - only two options)
+        return {"active_triggers": 5, "total_executions": 42, "recent_executions": [...]}
+```
+
+**Frontend (`frontend/src/components/Widget.tsx`):**
+```typescript
+interface WidgetProps {
+  size?: 'small' | 'large';  // NOT 'small' | 'medium' | 'large'
+}
+
+export default function Widget({ size = 'large' }: WidgetProps) {
+  if (size === 'small') {
+    return <SmallWidgetView />;
+  }
+  return <LargeWidgetView />;  // No medium option
+}
+```
+
+**Frontend API (`frontend/src/lib/api.ts`):**
+```typescript
+export const getWidgetData = async (size: 'small' | 'large' = 'large'): Promise<WidgetData> => {
+  const response = await api.get(`/api/widget?size=${size}`);
+  return response.data;
+};
+```
+
+### Authentication: X-User-ID Header (Priority 1)
+
+**CRITICAL**: Frontend MUST send X-User-ID header for marketplace integration:
+
+```typescript
+// frontend/src/lib/api.ts
+api.interceptors.request.use((config) => {
+  // Priority 1: X-User-ID header (Clarity platform marketplace)
+  const userId = localStorage.getItem('user_id');
+  if (userId) {
+    config.headers['X-User-ID'] = userId;
+  }
+
+  // Priority 2: Bearer token (development fallback)
+  const token = localStorage.getItem('auth_token') || 'test-user';
+  config.headers.Authorization = `Bearer ${token}`;
+
+  return config;
+});
+```
+
+### Required Screenshots
+
+**MUST include** in `./screenshots/` directory:
+- `widget-small.png` - Screenshot of small widget with real data
+- `widget-large.png` - Screenshot of large widget with real data
+
+Configure in `app-config.json`:
+```json
+"screenshots": [
+  {
+    "url": "./screenshots/widget-small.png",
+    "type": "widget-small",
+    "required": true
+  },
+  {
+    "url": "./screenshots/widget-large.png",
+    "type": "widget-large",
+    "required": true
+  }
+]
+```
+
+### When User Needs Full App
+
+Full app pages (`/dashboard`, `/triggers`) are accessed when:
+- User clicks "View Details" or similar button on widget
+- User needs advanced configuration (e.g., creating new triggers)
+- User wants comprehensive data beyond widget's compact view
+
+**Remember**: Design widgets as if they're the ONLY interface users will see most of the time, because they are!
+
 ## 🏗️ Architecture Overview
 
 ### Two-Part Structure
@@ -70,7 +196,7 @@ class DailyReview:
 **Layer 3: Frontend (frontend/)** - React UI
 - Dashboard (view agents/workflows)
 - Trigger Manager (CRUD triggers with dynamic forms)
-- Widget (3 sizes for embedding)
+- Widget (2 sizes: small and large for Clarity marketplace)
 
 ## 📂 File Structure & Locations
 
@@ -106,7 +232,7 @@ class DailyReview:
 
 **Core components**:
 - `components/Layout.tsx` - App shell
-- `components/Widget.tsx` - 3-size widget (230 lines)
+- `components/Widget.tsx` - 2-size widget (small/large) for marketplace
 - `pages/Dashboard.tsx` - Main dashboard (160 lines)
 - `pages/TriggerManager.tsx` - Trigger CRUD UI (400 lines)
 
@@ -395,11 +521,9 @@ When working on specific tasks:
 
 ## 🎓 Learning Resources
 
-- **Architecture**: `AGENTIC_APP_SEED_COMPLETE_DESIGN.md`
-- **Triggers**: `TRIGGER_SYSTEM_DESIGN.md`
-- **Quick Start**: `QUICK_START.md`
-- **Progress**: `PROGRESS.md`
-- **API Docs**: http://localhost:8000/docs (when running)
+- **Main Documentation**: `README.md` - Complete guide with quick start, architecture, and testing
+- **Marketplace Submission**: `SUBMISSION_REQUIREMENTS.md` - Checklist for submitting to Clarity Marketplace
+- **API Docs**: http://localhost:8000/docs (when running) - Interactive API documentation
 
 ## 💡 Pro Tips
 

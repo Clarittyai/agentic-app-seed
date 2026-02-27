@@ -243,16 +243,24 @@ class AppConfig(BaseModel):
 # GLOBAL CONFIGURATION INSTANCES
 # ============================================================================
 
+# Smart defaults for local development
+DEFAULT_DATABASE_URL = 'postgresql://clarity_user:clarity_password@localhost:5432/clarity_agentic_app'
+DEFAULT_JWT_SECRET = 'development-jwt-secret-change-in-production'
+DEFAULT_SESSION_SECRET = 'development-session-secret-change-in-production'
+DEFAULT_FRONTEND_URL = 'http://localhost:3200'
+DEFAULT_CORS_ORIGINS = 'http://localhost:3200,http://localhost:3000'
+
 try:
     platform_config = PlatformConfig(
-        database_url=os.getenv('DATABASE_URL', ''),
-        clarity_app_id=os.getenv('CLARITY_APP_ID', ''),
-        clarity_platform_url=os.getenv('CLARITY_PLATFORM_URL', ''),
-        anthropic_api_key=os.getenv('ANTHROPIC_API_KEY', ''),
-        jwt_secret=os.getenv('JWT_SECRET', ''),
-        session_secret=os.getenv('SESSION_SECRET', ''),
-        frontend_url=os.getenv('FRONTEND_URL', ''),
-        cors_allowed_origins=os.getenv('CORS_ALLOWED_ORIGINS', ''),
+        # Required with smart defaults
+        database_url=os.getenv('DATABASE_URL', DEFAULT_DATABASE_URL),
+        clarity_app_id=os.getenv('CLARITY_APP_ID', 'local-dev-app'),
+        clarity_platform_url=os.getenv('CLARITY_PLATFORM_URL', 'http://localhost:4000'),
+        anthropic_api_key=os.getenv('ANTHROPIC_API_KEY', ''),  # Only truly required var
+        jwt_secret=os.getenv('JWT_SECRET', DEFAULT_JWT_SECRET),
+        session_secret=os.getenv('SESSION_SECRET', DEFAULT_SESSION_SECRET),
+        frontend_url=os.getenv('FRONTEND_URL', DEFAULT_FRONTEND_URL),
+        cors_allowed_origins=os.getenv('CORS_ALLOWED_ORIGINS', DEFAULT_CORS_ORIGINS),
 
         # Optional fields with defaults
         redis_url=os.getenv('REDIS_URL'),
@@ -265,7 +273,7 @@ try:
         log_level=os.getenv('LOG_LEVEL', 'INFO'),
         log_format=os.getenv('LOG_FORMAT', 'json'),
         sentry_dsn=os.getenv('SENTRY_DSN'),
-        sentry_environment=os.getenv('SENTRY_ENVIRONMENT', 'production'),
+        sentry_environment=os.getenv('SENTRY_ENVIRONMENT', 'development'),
         workflow_max_concurrent=int(os.getenv('WORKFLOW_MAX_CONCURRENT', '5')),
         workflow_execution_timeout_seconds=int(os.getenv('WORKFLOW_EXECUTION_TIMEOUT_SECONDS', '300')),
         trigger_max_per_user=int(os.getenv('TRIGGER_MAX_PER_USER', '10')),
@@ -422,23 +430,33 @@ def validate_configuration():
         ValueError: If configuration is invalid or missing required fields
     """
     errors = []
+    warnings = []
 
-    # Validate platform config
-    if not platform_config.database_url:
-        errors.append("DATABASE_URL is required")
+    # Only ANTHROPIC_API_KEY is truly required
     if not platform_config.anthropic_api_key:
-        errors.append("ANTHROPIC_API_KEY is required")
-    if not platform_config.jwt_secret or len(platform_config.jwt_secret) < 32:
-        errors.append("JWT_SECRET is required and must be at least 32 characters")
-    if not platform_config.clarity_app_id:
-        errors.append("CLARITY_APP_ID is required")
+        errors.append("ANTHROPIC_API_KEY is required - get one at https://console.anthropic.com/")
 
-    # Validate app config
+    # Warn about development defaults (not errors)
+    if platform_config.jwt_secret == DEFAULT_JWT_SECRET:
+        warnings.append("Using development JWT_SECRET - set a secure secret in production")
+    if platform_config.session_secret == DEFAULT_SESSION_SECRET:
+        warnings.append("Using development SESSION_SECRET - set a secure secret in production")
+    if platform_config.clarity_app_id == 'local-dev-app':
+        warnings.append("Using local development app ID - platform will assign real ID in production")
+
+    # Validate app config ranges
     if app_config.ai_response_temperature < 0 or app_config.ai_response_temperature > 100:
         errors.append("AI_RESPONSE_TEMPERATURE must be between 0 and 100")
     if app_config.workflow_max_retries < 0:
         errors.append("WORKFLOW_MAX_RETRIES must be >= 0")
 
+    # Log warnings (non-fatal)
+    if warnings:
+        logger.warning("Configuration warnings (safe for development):")
+        for warning in warnings:
+            logger.warning(f"  ⚠️  {warning}")
+
+    # Check errors (fatal)
     if errors:
         error_message = "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
         logger.error(error_message)
