@@ -2,6 +2,66 @@
 
 This document provides a deep dive into the technical architecture of the Clarity Agentic App template.
 
+## Understanding This Document
+
+**New to Clarity?** Read [Understanding Clarity Platform](CLARITY_PLATFORM.md) first to understand:
+- The Clarity ecosystem and marketplace
+- What agentic apps are and why they exist
+- How users interact with apps via widgets
+- The deployment and hosting model
+
+This document explains **how the architecture implements** the Clarity vision. It assumes you understand **why** things work this way.
+
+---
+
+## How This Architecture Fits the Clarity Ecosystem
+
+### The Big Picture
+
+Your agentic app lives within the Clarity Platform ecosystem:
+
+```
+Clarity Platform (The Marketplace)
+    ↓
+Your App (This Template)
+    ↓
+End Users (Via Widgets)
+```
+
+**Key Points**:
+1. **Multi-Tenant by Design**: One deployment serves all users with complete data isolation
+2. **Widget-First Interface**: Primary interaction is via widgets on the Clarity dashboard
+3. **Platform-Managed Infrastructure**: Clarity handles hosting, scaling, monitoring
+4. **Standardized Contracts**: Health endpoints, widget endpoints, authentication headers
+
+### Architectural Principles Driven by Clarity
+
+The architecture you see here is shaped by Clarity's requirements:
+
+**Principle 1: User Autonomy**
+- Users control trigger scheduling → DynamicTriggerManager with per-user configurations
+- Users configure workflows → Template-based system with config_fields
+- Users see personalized data → Multi-tenant database design with user_id filtering
+
+**Principle 2: Widget-First UX**
+- Widgets are primary interface → Dedicated `/api/widget` endpoint with size parameter
+- Quick glance data → Small widget optimization (minimal data payload)
+- Detailed interactions → Large widget with actionable data
+- Advanced features → Full app (optional click-through from widget)
+
+**Principle 3: Platform Integration**
+- Clarity manages auth → X-User-ID header injection, no user management needed
+- Clarity manages hosting → Docker containerization, health checks required
+- Clarity manages scaling → Stateless backend, connection pooling
+- Clarity manages monitoring → Health endpoint, execution logging
+
+**Principle 4: Developer Experience**
+- Focus on business logic → Auto-discovery eliminates boilerplate
+- Fast iteration → Hot reload, zero-config development
+- Clear separation → Infrastructure abstracted away from user code
+
+---
+
 ## Table of Contents
 
 1. [System Overview](#system-overview)

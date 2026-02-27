@@ -38,6 +38,25 @@ A **production-ready template** for building agentic AI applications with:
 - 🎨 **Beautiful UI** - Pre-built React components with widget support
 - 🔒 **Enterprise-Ready** - Security, scalability, and observability built-in
 
+## 🌟 About Clarity Platform
+
+This template helps you build apps for the **Clarity Platform** - an AI-native marketplace where users discover and use agentic applications through widgets on a unified dashboard.
+
+**Think of it as**:
+- App Store for AI agents
+- One dashboard for all automation
+- Users control when things happen
+- Widgets show status without opening apps
+
+**New to Clarity?** → [Understanding Clarity Platform](docs/CLARITY_PLATFORM.md)
+
+This comprehensive guide explains:
+- What Clarity is and why it exists
+- How agentic apps work vs traditional apps
+- The widget-first interaction model
+- How apps are hosted and deployed
+- Complete user and developer journeys
+
 ### The Key Innovation
 
 **Traditional approach**: Developers hardcode schedules

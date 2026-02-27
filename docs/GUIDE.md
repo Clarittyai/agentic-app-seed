@@ -2,6 +2,18 @@
 
 This guide covers everything you need to build sophisticated agentic applications with user-configurable triggers.
 
+## Before You Start
+
+**New to Clarity Platform?** We recommend reading [Understanding Clarity Platform](CLARITY_PLATFORM.md) first to understand:
+- What Clarity is and how it works
+- The agentic app concept and philosophy
+- How users interact with apps via widgets
+- The hosting and deployment model
+
+This guide focuses on the **technical implementation details** - how to actually build agents, workflows, and triggers. It assumes you understand the Clarity ecosystem and why things work the way they do.
+
+---
+
 ## Table of Contents
 
 1. [Understanding the Architecture](#understanding-the-architecture)
