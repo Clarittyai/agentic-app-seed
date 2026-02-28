@@ -6,8 +6,8 @@ uvicorn[standard]==0.27.0
 python-multipart==0.0.9
 
 # Clarity SDK (from PyPI)
-# For local development: pip install -e /path/to/clarity-sdk
-clarity-sdk>=1.0.0,<2.0.0
+# For local development: pip install -e /path/to/claritty-sdk
+claritty-sdk>=1.0.0,<2.0.0
 
 # Database
 sqlalchemy==2.0.25

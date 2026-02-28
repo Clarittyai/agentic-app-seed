@@ -139,7 +139,7 @@ Full app pages (`/dashboard`, `/triggers`) are accessed when:
 ```
 clarity-agentic-app-seed/
 ├── backend/              # FastAPI server (port 8000)
-│   ├── requirements.txt  # Includes clarity-sdk>=1.0.0,<2.0.0
+│   ├── requirements.txt  # Includes claritty-sdk>=1.0.0,<2.0.0
 │   ├── agents/           # Your agent implementations
 │   ├── workflows/        # Your workflow definitions
 │   └── triggers/         # Your trigger templates
@@ -149,12 +149,12 @@ clarity-agentic-app-seed/
 
 **Clarity SDK**: Installed from PyPI as a standard Python package
 ```bash
-pip install clarity-sdk  # Automatically installed from requirements.txt
+pip install claritty-sdk  # Automatically installed from requirements.txt
 ```
 
 ### Technology Stack
 
-- **Clarity SDK**: `pip install clarity-sdk` - PyPI package with decorators, executors, triggers
+- **Clarity SDK**: `pip install claritty-sdk` - PyPI package with decorators, executors, triggers
 - **Backend**: FastAPI, SQLAlchemy, PostgreSQL, LangChain, Anthropic Claude
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Axios
 - **Deployment**: Docker, docker-compose
@@ -191,7 +191,7 @@ class DailyReview:
 ### 2. Three-Layer Architecture
 
 **Layer 1: Clarity SDK (PyPI Package)** - Decorator-based API
-- Installed via `pip install clarity-sdk`
+- Installed via `pip install claritty-sdk`
 - Provides: `@agent`, `@workflow`, `@trigger_template` decorators
 - Includes: `WorkflowExecutor`, `DynamicTriggerManager`
 - **You import it**, you don't modify it
@@ -514,7 +514,7 @@ When working on specific tasks:
 **Adding triggers**: Look at `backend/triggers/task_triggers.py`
 **API endpoints**: Look at `backend/main.py` (lines 280-478)
 **SDK Reference**: https://github.com/Clarittyai/claritty-sdk (for understanding SDK internals)
-**SDK Documentation**: `pip show clarity-sdk` then check the README
+**SDK Documentation**: `pip show claritty-sdk` then check the README
 **Frontend forms**: Look at `frontend/src/pages/TriggerManager.tsx` (lines 200-300)
 
 ## 🎓 Learning Resources

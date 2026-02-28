@@ -706,18 +706,18 @@ clarity-agentic-app-seed/
 │   ├── triggers/         # Your trigger templates
 │   └── infrastructure/   # Auto-discovery (don't touch)
 ├── frontend/             # React UI with widgets
-├── requirements.txt      # Includes clarity-sdk from PyPI
+├── requirements.txt      # Includes claritty-sdk from PyPI
 └── docker-compose.yml    # One-command startup
 ```
 
 **No SDK bloat!** The Clarity SDK is installed from PyPI as a dependency:
 ```bash
-pip install clarity-sdk  # Installed automatically
+pip install claritty-sdk  # Installed automatically
 ```
 
 ### Technology Stack
 
-- **Clarity SDK**: `pip install clarity-sdk` - Decorator-based framework
+- **Clarity SDK**: `pip install claritty-sdk` - Decorator-based framework
 - **AI**: Anthropic Claude + LangChain
 - **Backend**: Python, FastAPI, PostgreSQL
 - **Frontend**: React, TypeScript, Tailwind CSS

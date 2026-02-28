@@ -22,13 +22,13 @@ agentic-app-seed/
 ```
 agentic-app-seed/
 ├── backend/
-│   ├── requirements.txt  # clarity-sdk>=1.0.0,<2.0.0
+│   ├── requirements.txt  # claritty-sdk>=1.0.0,<2.0.0
 │   └── ...
 ```
 
 **SDK is now installed like any other package:**
 ```bash
-pip install clarity-sdk
+pip install claritty-sdk
 ```
 
 ## Migration Steps for Existing Apps
@@ -46,7 +46,7 @@ If you have an existing app built with the old template:
 **New:**
 ```txt
 # Clarity SDK (from PyPI)
-clarity-sdk>=1.0.0,<2.0.0
+claritty-sdk>=1.0.0,<2.0.0
 ```
 
 ### 2. Remove clarity_sdk Directory
@@ -59,8 +59,8 @@ rm -rf clarity_sdk
 ### 3. Install SDK from PyPI
 
 ```bash
-pip uninstall clarity-sdk  # Remove old editable install if exists
-pip install clarity-sdk
+pip uninstall claritty-sdk  # Remove old editable install if exists
+pip install claritty-sdk
 ```
 
 ### 4. Verify Imports Still Work
@@ -83,7 +83,7 @@ from clarity_sdk import trigger_template, TriggerTemplateType
 
 ### ✅ **For You (Developer)**
 - **No SDK bloat**: 2,652 lines removed from your repo
-- **Easy updates**: `pip install --upgrade clarity-sdk`
+- **Easy updates**: `pip install --upgrade claritty-sdk`
 - **Version pinning**: Specify compatible versions (e.g., `>=1.0.0,<2.0.0`)
 - **Standard workflow**: Same as django, fastapi, etc.
 
@@ -108,13 +108,13 @@ The SDK follows [Semantic Versioning](https://semver.org/):
 
 ```txt
 # Pin to major version (allows minor updates, patches)
-clarity-sdk>=1.0.0,<2.0.0
+claritty-sdk>=1.0.0,<2.0.0
 
 # Pin to minor version (allows patches only)
-clarity-sdk>=1.1.0,<1.2.0
+claritty-sdk>=1.1.0,<1.2.0
 
 # Exact version (no automatic updates)
-clarity-sdk==1.0.0
+claritty-sdk==1.0.0
 ```
 
 ## Troubleshooting
@@ -125,8 +125,8 @@ clarity-sdk==1.0.0
 
 **Solution**:
 ```bash
-pip uninstall clarity-sdk  # Remove any old version
-pip install clarity-sdk    # Install from PyPI
+pip uninstall claritty-sdk  # Remove any old version
+pip install claritty-sdk    # Install from PyPI
 ```
 
 ### Issue: "Cannot import name 'agent' from 'clarity_sdk'"
@@ -135,7 +135,7 @@ pip install clarity-sdk    # Install from PyPI
 
 **Solution**:
 ```bash
-pip install --upgrade --force-reinstall clarity-sdk
+pip install --upgrade --force-reinstall claritty-sdk
 ```
 
 ### Issue: Imports work but decorators fail
@@ -145,7 +145,7 @@ pip install --upgrade --force-reinstall clarity-sdk
 **Solution**:
 Check your requirements.txt has the correct version range:
 ```txt
-clarity-sdk>=1.0.0,<2.0.0
+claritty-sdk>=1.0.0,<2.0.0
 ```
 
 ## Development Workflow
@@ -170,8 +170,8 @@ cd /path/to/your-app
 When done:
 ```bash
 # Switch back to PyPI version
-pip uninstall clarity-sdk
-pip install clarity-sdk
+pip uninstall claritty-sdk
+pip install claritty-sdk
 ```
 
 ## FAQ
