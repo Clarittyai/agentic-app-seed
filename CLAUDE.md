@@ -159,7 +159,7 @@ pip install clarity-sdk  # Automatically installed from requirements.txt
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Axios
 - **Deployment**: Docker, docker-compose
 
-**SDK Repository**: https://github.com/Clarittyai/clarity-sdk
+**SDK Repository**: https://github.com/Clarittyai/claritty-sdk
 
 ## 🔑 Key Concepts
 
@@ -513,7 +513,7 @@ When working on specific tasks:
 **Adding workflows**: Look at `backend/workflows/task_management.py`
 **Adding triggers**: Look at `backend/triggers/task_triggers.py`
 **API endpoints**: Look at `backend/main.py` (lines 280-478)
-**SDK Reference**: https://github.com/Clarittyai/clarity-sdk (for understanding SDK internals)
+**SDK Reference**: https://github.com/Clarittyai/claritty-sdk (for understanding SDK internals)
 **SDK Documentation**: `pip show clarity-sdk` then check the README
 **Frontend forms**: Look at `frontend/src/pages/TriggerManager.tsx` (lines 200-300)
 

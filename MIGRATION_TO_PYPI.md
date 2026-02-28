@@ -156,8 +156,8 @@ If you're contributing to the SDK itself:
 
 ```bash
 # Clone SDK repository
-git clone https://github.com/Clarittyai/clarity-sdk.git
-cd clarity-sdk
+git clone https://github.com/Clarittyai/claritty-sdk.git
+cd claritty-sdk
 
 # Install in editable mode
 pip install -e .
@@ -180,14 +180,14 @@ pip install clarity-sdk
 **A**: No! Imports remain exactly the same.
 
 **Q: What if I customized the SDK?**
-**A**: Fork the [SDK repository](https://github.com/Clarittyai/clarity-sdk) and install from GitHub:
+**A**: Fork the [SDK repository](https://github.com/Clarittyai/claritty-sdk) and install from GitHub:
 ```bash
-pip install git+https://github.com/your-username/clarity-sdk.git@your-branch
+pip install git+https://github.com/your-username/claritty-sdk.git@your-branch
 ```
 
 **Q: How do I see the SDK source code?**
 **A**:
-- View on GitHub: https://github.com/Clarittyai/clarity-sdk
+- View on GitHub: https://github.com/Clarittyai/claritty-sdk
 - View locally: `python -c "import clarity_sdk; print(clarity_sdk.__file__)"`
 
 **Q: Can I still use the old embedded SDK?**
@@ -198,9 +198,9 @@ pip install git+https://github.com/your-username/clarity-sdk.git@your-branch
 
 ## Support
 
-- **Issues**: https://github.com/Clarittyai/clarity-sdk/issues
-- **Discussions**: https://github.com/Clarittyai/clarity-sdk/discussions
-- **Documentation**: https://github.com/Clarittyai/clarity-sdk#readme
+- **Issues**: https://github.com/Clarittyai/claritty-sdk/issues
+- **Discussions**: https://github.com/Clarittyai/claritty-sdk/discussions
+- **Documentation**: https://github.com/Clarittyai/claritty-sdk#readme
 
 ---
 
