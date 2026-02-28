@@ -134,22 +134,32 @@ Full app pages (`/dashboard`, `/triggers`) are accessed when:
 
 ## 🏗️ Architecture Overview
 
-### Two-Part Structure
+### Clean Template Structure (PyPI-Based)
 
 ```
 clarity-agentic-app-seed/
-├── clarity_sdk/          # Python SDK (decorators, executors, triggers)
 ├── backend/              # FastAPI server (port 8000)
+│   ├── requirements.txt  # Includes clarity-sdk>=1.0.0,<2.0.0
+│   ├── agents/           # Your agent implementations
+│   ├── workflows/        # Your workflow definitions
+│   └── triggers/         # Your trigger templates
 ├── frontend/             # React UI (port 3200)
 └── docker-compose.yml    # Orchestration
 ```
 
+**Clarity SDK**: Installed from PyPI as a standard Python package
+```bash
+pip install clarity-sdk  # Automatically installed from requirements.txt
+```
+
 ### Technology Stack
 
-- **SDK**: Python 3.11+, Pydantic, APScheduler
+- **Clarity SDK**: `pip install clarity-sdk` - PyPI package with decorators, executors, triggers
 - **Backend**: FastAPI, SQLAlchemy, PostgreSQL, LangChain, Anthropic Claude
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Axios
 - **Deployment**: Docker, docker-compose
+
+**SDK Repository**: https://github.com/Clarittyai/clarity-sdk
 
 ## 🔑 Key Concepts
 
@@ -180,41 +190,29 @@ class DailyReview:
 
 ### 2. Three-Layer Architecture
 
-**Layer 1: SDK (clarity_sdk/)** - Decorator-based API
-- `@agent` - Define AI agents
-- `@workflow` - Chain agents together
-- `@trigger_template` - Define user-configurable triggers
-- `WorkflowExecutor` - Execute workflows (sequential, parallel, DAG)
-- `DynamicTriggerManager` - Schedule user triggers
+**Layer 1: Clarity SDK (PyPI Package)** - Decorator-based API
+- Installed via `pip install clarity-sdk`
+- Provides: `@agent`, `@workflow`, `@trigger_template` decorators
+- Includes: `WorkflowExecutor`, `DynamicTriggerManager`
+- **You import it**, you don't modify it
 
 **Layer 2: Backend (backend/)** - FastAPI application
 - REST API (17 endpoints)
 - Database (PostgreSQL with SQLAlchemy)
 - Agent/workflow registration on startup
 - Trigger lifecycle management
+- **This is where you write your code**
 
 **Layer 3: Frontend (frontend/)** - React UI
 - Dashboard (view agents/workflows)
 - Trigger Manager (CRUD triggers with dynamic forms)
 - Widget (2 sizes: small and large for Clarity marketplace)
 
-## 📂 File Structure & Locations
+## 📂 Template File Structure
 
-### SDK Files (`clarity_sdk/`)
+### What's in the Template
 
-**Core decorators**:
-- `agent.py` - @agent decorator
-- `workflow.py` - @workflow, @uses_agent decorators
-- `trigger.py` - @trigger_template decorator
-
-**Execution**:
-- `executor.py` - WorkflowExecutor (550 lines, 4 modes)
-- `trigger_manager.py` - DynamicTriggerManager (500 lines)
-
-**Models & Context**:
-- `models.py` - Pydantic models (AgentMetadata, TriggerTemplate, etc.)
-- `context.py` - AgentContext, WorkflowContext
-- `registry.py` - Global registries
+You work with **your own code**, not the SDK:
 
 ### Backend Files (`backend/`)
 
@@ -515,8 +513,8 @@ When working on specific tasks:
 **Adding workflows**: Look at `backend/workflows/task_management.py`
 **Adding triggers**: Look at `backend/triggers/task_triggers.py`
 **API endpoints**: Look at `backend/main.py` (lines 280-478)
-**Workflow execution**: Look at `clarity_sdk/executor.py`
-**Trigger scheduling**: Look at `clarity_sdk/trigger_manager.py`
+**SDK Reference**: https://github.com/Clarittyai/clarity-sdk (for understanding SDK internals)
+**SDK Documentation**: `pip show clarity-sdk` then check the README
 **Frontend forms**: Look at `frontend/src/pages/TriggerManager.tsx` (lines 200-300)
 
 ## 🎓 Learning Resources

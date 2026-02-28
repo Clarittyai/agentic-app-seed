@@ -696,22 +696,28 @@ Real applications developers have built with this template:
 
 ## 🏗️ Architecture Overview
 
-### Two-Part Structure
+### Clean Template Structure
 
 ```
 clarity-agentic-app-seed/
-├── clarity_sdk/          # SDK for defining agents/workflows/triggers
 ├── backend/              # FastAPI server (your business logic)
 │   ├── agents/           # Your AI agents
 │   ├── workflows/        # Your workflow definitions
 │   ├── triggers/         # Your trigger templates
 │   └── infrastructure/   # Auto-discovery (don't touch)
 ├── frontend/             # React UI with widgets
+├── requirements.txt      # Includes clarity-sdk from PyPI
 └── docker-compose.yml    # One-command startup
+```
+
+**No SDK bloat!** The Clarity SDK is installed from PyPI as a dependency:
+```bash
+pip install clarity-sdk  # Installed automatically
 ```
 
 ### Technology Stack
 
+- **Clarity SDK**: `pip install clarity-sdk` - Decorator-based framework
 - **AI**: Anthropic Claude + LangChain
 - **Backend**: Python, FastAPI, PostgreSQL
 - **Frontend**: React, TypeScript, Tailwind CSS

@@ -5,9 +5,9 @@ fastapi==0.109.0
 uvicorn[standard]==0.27.0
 python-multipart==0.0.9
 
-# Clarity SDK (local development)
-# In production: clarity-sdk>=1.0.0
--e ../clarity_sdk
+# Clarity SDK (from PyPI)
+# For local development: pip install -e /path/to/clarity-sdk
+clarity-sdk>=1.0.0,<2.0.0
 
 # Database
 sqlalchemy==2.0.25
