@@ -12,9 +12,6 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy clarity_sdk first (needed for backend installation)
-COPY clarity_sdk /app/clarity_sdk
-
 # Copy backend requirements
 COPY backend/requirements.txt .
 
