@@ -63,7 +63,7 @@ GET /api/widget?size=small|large
 **Headers**: `X-User-ID: {user_id}`
 **Response**: JSON object with widget data
 
-**Small widget response (minimal data)**:
+**Small widget response (minimal data):**
 ```json
 {
   "active_triggers": 5,
@@ -72,7 +72,7 @@ GET /api/widget?size=small|large
 }
 ```
 
-**Large widget response (detailed data)**:
+**Large widget response (detailed data):**
 ```json
 {
   "active_triggers": 5,
@@ -89,7 +89,13 @@ GET /api/widget?size=small|large
 }
 ```
 
-⚠️ **CRITICAL**: Only TWO widget sizes exist: `small` (300×150px, 2:1 ratio) and `large` (600×400px, 1.5:1 ratio). See [Widget Design Guide](WIDGET_DESIGN_GUIDE.md) for complete specifications.
+⚠️ **CRITICAL**: Only TWO widget sizes exist (Apple standards):
+- **Small**: 170×170px (1:1 ratio - SQUARE)
+- **Large**: 360×170px (2.1:1 ratio - WIDE RECTANGLE)
+- **Padding**: 16px (p-4) consistent across all widgets
+- **Border Radius**: 24px (rounded-3xl) Apple-style corners
+
+See [Widget Design Guide](WIDGET_DESIGN_GUIDE.md) for complete specifications.
 
 ### 3. Authentication Integration
 

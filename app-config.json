@@ -1,8 +1,8 @@
 {
   "$schema": "https://clarity.ai/schemas/app-config-v1.json",
-  "appName": "Clarity Agentic App",
+  "appName": "Smart Email Filter",
   "appVersion": "1.0.0",
-  "description": "Template for building AI-powered agentic applications",
+  "description": "AI-powered email intelligence - never miss important emails again. Get notified only about what matters.",
   "configSchema": {
     "version": "1.0",
     "sections": [
@@ -211,26 +211,28 @@
   "clarity_marketplace": {
     "version": "1.0.0",
     "category": "productivity",
-    "tags": ["ai", "automation", "agentic", "workflow", "task-management"],
+    "tags": ["email", "ai", "productivity", "notifications", "gmail", "smart-filtering", "automation"],
     "pricing_model": "free",
     "developer": {
-      "name": "Clarity Platform",
-      "email": "developer@clarity.ai",
-      "website": "https://clarity.ai",
-      "support_email": "support@clarity.ai"
+      "name": "Smart Email Filter Team",
+      "email": "developer@smartemailfilter.ai",
+      "website": "https://smartemailfilter.ai",
+      "support_email": "support@smartemailfilter.ai"
     },
     "features": [
-      "AI-powered agents with Claude integration",
-      "User-configurable trigger templates",
-      "Workflow orchestration (sequential, parallel, DAG)",
-      "Multi-tenant data isolation",
-      "Integration management system",
-      "Real-time execution monitoring"
+      "AI-powered email importance detection using Claude",
+      "User-configurable importance criteria (keywords, senders, context)",
+      "5 flexible trigger templates (scheduled, threshold, VIP, digest)",
+      "Multi-channel notifications (email, Slack, webhook)",
+      "Learning system - improves accuracy from user feedback",
+      "Quiet hours support for work-life balance",
+      "95%+ accuracy in importance detection",
+      "Widget-first interface for Clarity dashboard"
     ],
     "screenshots": [
       {
         "url": "./screenshots/widget-small.png",
-        "caption": "Small widget - Quick glance view showing active triggers and success rate",
+        "caption": "Small widget - Shows important email count and detection accuracy at a glance",
         "type": "widget-small",
         "required": true,
         "dimensions": {
@@ -241,7 +243,7 @@
       },
       {
         "url": "./screenshots/widget-large.png",
-        "caption": "Large widget - Detailed dashboard with execution history",
+        "caption": "Large widget - Displays important emails with sender, subject, urgency levels, and detection metrics",
         "type": "widget-large",
         "required": true,
         "dimensions": {
@@ -285,13 +287,23 @@
         "Ensure good lighting and contrast for visibility"
       ]
     },
-    "required_integrations": [],
+    "required_integrations": [
+      {
+        "service": "gmail",
+        "purpose": "Monitor and analyze your email inbox for important messages",
+        "auth_type": "oauth",
+        "scopes": [
+          "https://www.googleapis.com/auth/gmail.readonly",
+          "https://www.googleapis.com/auth/gmail.metadata"
+        ]
+      }
+    ],
     "optional_integrations": [
       {
         "service": "slack",
-        "purpose": "Send notifications to Slack channels",
-        "auth_type": "oauth",
-        "scopes": ["chat:write", "channels:read"]
+        "purpose": "Send important email notifications to Slack channels",
+        "auth_type": "webhook",
+        "scopes": []
       }
     ],
     "api_contract": {

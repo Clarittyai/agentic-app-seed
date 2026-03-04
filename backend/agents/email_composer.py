@@ -65,6 +65,7 @@ logger = logging.getLogger(__name__)
     integrations=[
         {
             "service": "gmail",
+            "description": "Connect to Gmail to send emails directly",
             "auth_type": "oauth",
             "required": False,  # Optional - only needed if send_now=True
             "scopes": ["https://www.googleapis.com/auth/gmail.send"],

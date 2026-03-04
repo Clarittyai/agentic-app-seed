@@ -103,9 +103,11 @@ Think of it this way:
 └─────────────────────────────────────────────────────┘
 ```
 
-### Two Widget Sizes - Your App's Storefront
+### ⚠️ CRITICAL: Two Widget Sizes ONLY
 
-#### Small Widget (300×150px) - The "At a Glance" View
+**NO medium size exists!** The platform supports exactly TWO widget sizes (Apple standards):
+
+#### Small Widget (170×170px - 1:1 SQUARE) - The "At a Glance" View
 
 **Purpose**: Quick status check, always-on monitoring
 **What to show**: Essential metrics only
@@ -123,7 +125,7 @@ Think of it this way:
 
 **Design principle**: Answer "Is everything okay?" in 2 seconds
 
-#### Large Widget (600×400px) - The "Interactive Dashboard"
+#### Large Widget (360×170px - 2.1:1 WIDE RECTANGLE) - The "Interactive Dashboard"
 
 **Purpose**: Detailed monitoring and immediate action
 **What to show**: Recent activity, trends, quick actions
@@ -153,6 +155,8 @@ Think of it this way:
 ```
 
 **Design principle**: Enable action without opening full app
+
+**📖 Complete Widget Design Guide**: See [Widget Design Guide](docs/WIDGET_DESIGN_GUIDE.md) for comprehensive specifications, layout patterns, and AI code generator instructions.
 
 ### When Users Access the Full App
 
@@ -622,7 +626,7 @@ curl http://localhost:8000/api/widget?size=large \
 ❌ **Forgetting real-time updates**
 - Widgets should update when triggers fire
 
-**[See complete widget design guide →](docs/ARCHITECTURE.md#widget-first-design)**
+**[📖 Complete Widget Design Guide →](docs/WIDGET_DESIGN_GUIDE.md)** - Essential reading for building great widgets
 
 ---
 

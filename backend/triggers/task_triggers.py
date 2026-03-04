@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
         {
             "key": "days_of_week",
             "label": "Which days?",
-            "type": "multi-select",
+            "type": "multiselect",
             "required": False,
             "default": ["monday", "tuesday", "wednesday", "thursday", "friday"],
             "options": [
@@ -113,7 +113,7 @@ class DailyTaskReviewTrigger:
         {
             "key": "priority_filter",
             "label": "Only notify for tasks with priority:",
-            "type": "multi-select",
+            "type": "multiselect",
             "required": False,
             "default": ["high", "urgent"],
             "options": [

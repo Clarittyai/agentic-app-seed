@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  listTriggerTemplates,
-  listMyTriggers,
-  createTrigger,
-  updateTrigger,
-  deleteTrigger,
+  getTriggerTemplates,
+  getUserTriggers,
+  createUserTrigger,
+  updateUserTrigger,
+  deleteUserTrigger,
   type TriggerTemplate,
-  type TriggerInstance,
+  type UserTrigger,
 } from '@/lib/api';
 import {
   Zap,
@@ -18,13 +18,12 @@ import {
   Play,
   Pause,
   Trash2,
-  Edit,
 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 
 export default function TriggerManager() {
   const [templates, setTemplates] = useState<TriggerTemplate[]>([]);
-  const [triggers, setTriggers] = useState<TriggerInstance[]>([]);
+  const [triggers, setTriggers] = useState<UserTrigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TriggerTemplate | null>(null);
@@ -37,12 +36,12 @@ export default function TriggerManager() {
 
   const loadData = async () => {
     try {
-      const [templatesData, triggersData] = await Promise.all([
-        listTriggerTemplates(),
-        listMyTriggers(),
+      const [templatesResp, triggersResp] = await Promise.all([
+        getTriggerTemplates(),
+        getUserTriggers(),
       ]);
-      setTemplates(templatesData);
-      setTriggers(triggersData);
+      setTemplates(templatesResp.templates);
+      setTriggers(triggersResp.triggers);
     } catch (error) {
       console.error('Failed to load trigger data:', error);
     } finally {
@@ -54,7 +53,11 @@ export default function TriggerManager() {
     if (!selectedTemplate) return;
 
     try {
-      await createTrigger(selectedTemplate.id, triggerName, formData);
+      await createUserTrigger({
+        template_id: selectedTemplate.id,
+        name: triggerName,
+        config: formData,
+      });
       setShowCreateModal(false);
       setSelectedTemplate(null);
       setFormData({});
@@ -66,9 +69,9 @@ export default function TriggerManager() {
     }
   };
 
-  const handleToggleTrigger = async (trigger: TriggerInstance) => {
+  const handleToggleTrigger = async (trigger: UserTrigger) => {
     try {
-      await updateTrigger(trigger.id, { enabled: !trigger.enabled });
+      await updateUserTrigger(trigger.id, { enabled: !trigger.enabled });
       await loadData();
     } catch (error) {
       console.error('Failed to toggle trigger:', error);
@@ -79,7 +82,7 @@ export default function TriggerManager() {
     if (!confirm('Are you sure you want to delete this trigger?')) return;
 
     try {
-      await deleteTrigger(triggerId);
+      await deleteUserTrigger(triggerId);
       await loadData();
     } catch (error) {
       console.error('Failed to delete trigger:', error);
@@ -90,7 +93,7 @@ export default function TriggerManager() {
     setSelectedTemplate(template);
     // Initialize form with default values
     const defaults: Record<string, any> = {};
-    template.config_fields.forEach((field) => {
+    template.config_fields.forEach((field: { key: string; default?: any }) => {
       defaults[field.key] = field.default || '';
     });
     setFormData(defaults);
@@ -250,7 +253,7 @@ export default function TriggerManager() {
                   <div>
                     <h3 className="font-semibold">{template.name}</h3>
                     <p className="text-xs text-muted-foreground capitalize mt-1">
-                      {template.category}
+                      {template.template_type.replace(/_/g, ' ').toLowerCase()}
                     </p>
                   </div>
                   <Icon className="h-5 w-5 text-primary" />
@@ -297,7 +300,7 @@ export default function TriggerManager() {
             </div>
 
             {/* Dynamic Form Fields */}
-            {selectedTemplate.config_fields.map((field) => (
+            {selectedTemplate.config_fields.map((field: any) => (
               <div key={field.key} className="mb-4">
                 <label className="block text-sm font-medium mb-2">
                   {field.label}
@@ -312,7 +315,7 @@ export default function TriggerManager() {
                     }
                     className="w-full px-3 py-2 bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    {field.options.map((option) => (
+                    {field.options.map((option: { value: any; label: string }) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -320,7 +323,7 @@ export default function TriggerManager() {
                   </select>
                 ) : field.type === 'multi-select' && field.options ? (
                   <div className="space-y-2">
-                    {field.options.map((option) => (
+                    {field.options.map((option: { value: any; label: string }) => (
                       <label key={option.value} className="flex items-center gap-2">
                         <input
                           type="checkbox"

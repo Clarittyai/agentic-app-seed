@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import TriggerManager from './pages/TriggerManager';
+import WidgetPage from './pages/WidgetPage';
 import Layout from './components/Layout';
 
 function App() {
@@ -29,12 +30,22 @@ function App() {
 
   return (
     <Router>
-      <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/triggers" element={<TriggerManager />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        {/* Widget route - standalone, no layout (Apple-style widget display) */}
+        <Route path="/widget" element={<WidgetPage />} />
+
+        {/* App routes - with navigation layout */}
+        <Route path="/" element={
+          <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+            <Dashboard />
+          </Layout>
+        } />
+        <Route path="/triggers" element={
+          <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+            <TriggerManager />
+          </Layout>
+        } />
+      </Routes>
     </Router>
   );
 }

@@ -12,6 +12,15 @@ This is a **production-ready template** for building AI-powered agentic applicat
 
 When building apps with this template for the **Clarity Marketplace**, understand this fundamental principle:
 
+### **🎯 TWO WIDGET SIZES ONLY - NO MEDIUM!**
+
+**CRITICAL**: The platform supports EXACTLY two widget sizes (Apple standards):
+- **Small**: 170×170px (1:1 ratio - SQUARE)
+- **Large**: 360×170px (2.1:1 ratio - WIDE RECTANGLE)
+- **Padding**: 16px (p-4) consistent across all widgets
+- **Border Radius**: 24px (rounded-3xl) Apple-style corners
+- **NO MEDIUM SIZE EXISTS**
+
 ### **Widgets Are THE Primary Interface**
 
 Apps built with this template are NOT traditional web applications. They are **widget-first** applications:
@@ -30,18 +39,24 @@ Full App = Your app's "back office" (detailed operations, advanced features)
 
 ### Two Widget Sizes ONLY
 
+**⚠️ CRITICAL RULE**: The platform supports EXACTLY two widget sizes. **NO medium size exists!**
+
 **❌ DO NOT implement 3 widget sizes**
 **✅ ONLY implement 2 widget sizes: small and large**
 
-#### Small Widget (300x150px)
+**📖 Complete Specifications**: See [Widget Design Guide](docs/WIDGET_DESIGN_GUIDE.md) for comprehensive design patterns, component examples, and AI code generator instructions.
+
+#### Small Widget (170×170px - 1:1 SQUARE)
 - **Purpose**: Quick glance at key metrics
 - **Data**: Minimal - active triggers count, success rate
 - **When used**: User scans their dashboard grid for status
+- **Layout**: Vertical stack - Icon → Metric → Action button
 
-#### Large Widget (600x400px)
+#### Large Widget (360×170px - 2.1:1 WIDE RECTANGLE)
 - **Purpose**: Detailed monitoring and interaction
 - **Data**: Full metrics, execution history, interactive elements
 - **When used**: User actively monitors or manages the app
+- **Layout**: Horizontal or grid - Stats + Recent activity + Actions
 
 ### Implementation Requirements
 
@@ -131,6 +146,13 @@ Full app pages (`/dashboard`, `/triggers`) are accessed when:
 - User wants comprehensive data beyond widget's compact view
 
 **Remember**: Design widgets as if they're the ONLY interface users will see most of the time, because they are!
+
+**📖 Essential Reading**: See [Widget Design Guide](docs/WIDGET_DESIGN_GUIDE.md) for:
+- Complete layout principles and patterns
+- Visual design system (typography, spacing, colors)
+- Component patterns with code examples
+- Performance requirements and testing checklist
+- Specific instructions for AI code generators
 
 ## 🏗️ Architecture Overview
 

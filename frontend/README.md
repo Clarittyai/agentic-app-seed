@@ -5,7 +5,7 @@ React + TypeScript + Vite frontend for managing AI agents, workflows, and trigge
 ## Features
 
 - **Dashboard**: View agents, workflows, and execution statistics
-- **Widget Component**: 3 sizes (small, medium, large) for embedding
+- **Widget Component**: 2 sizes (small, large) for Clarity Platform embedding
 - **Trigger Manager**: User-configurable triggers with dynamic form generation
 - **Dark Mode**: Full dark mode support
 - **Responsive**: Mobile-friendly design
@@ -55,20 +55,21 @@ src/
 
 ### Widget Component
 
-Displays app statistics in 3 sizes:
+Displays app statistics in 2 sizes optimized for Clarity Platform:
 
 ```tsx
 import Widget from '@/components/Widget';
 
-// Small - Minimal info
+// Small (170×170px SQUARE) - Quick glance: Primary metric + action button
+// Apple standard: 16px padding (p-4), 24px border radius (rounded-3xl)
 <Widget size="small" />
 
-// Medium - More details (default)
-<Widget size="medium" />
-
-// Large - Full dashboard with execution history
+// Large (360×170px WIDE RECTANGLE) - Detailed view: Stats grid + recent activity + actions
+// Apple standard: 16px padding (p-4), 24px border radius (rounded-3xl)
 <Widget size="large" />
 ```
+
+⚠️ **Note**: Only TWO widget sizes exist (Apple standards). See [Widget Design Guide](../docs/WIDGET_DESIGN_GUIDE.md) for complete specifications.
 
 ### Dashboard
 

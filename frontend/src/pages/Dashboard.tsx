@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { listAgents, listWorkflows, type Agent, type Workflow } from '@/lib/api';
+import { getAgents, getWorkflows, type Agent, type Workflow } from '@/lib/api';
 import Widget from '@/components/Widget';
 import { Bot, Workflow as WorkflowIcon, Play, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -15,12 +14,12 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [agentsData, workflowsData] = await Promise.all([
-        listAgents(),
-        listWorkflows(),
+      const [agentsResp, workflowsResp] = await Promise.all([
+        getAgents(),
+        getWorkflows(),
       ]);
-      setAgents(agentsData);
-      setWorkflows(workflowsData);
+      setAgents(agentsResp.agents);
+      setWorkflows(workflowsResp.workflows);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -83,20 +82,20 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground">Inputs:</span>
                   <span className="font-medium">
-                    {Object.keys(agent.inputs).length}
+                    {agent.inputs ? Object.keys(agent.inputs).length : 0}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground">Outputs:</span>
                   <span className="font-medium">
-                    {Object.keys(agent.outputs).length}
+                    {agent.outputs ? Object.keys(agent.outputs).length : 0}
                   </span>
                 </div>
-                {agent.integrations.length > 0 && (
+                {agent.integrations && agent.integrations.length > 0 && (
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">Integrations:</span>
                     <span className="font-medium">
-                      {agent.integrations.map((i) => i.service).join(', ')}
+                      {agent.integrations.map((i: { service: string }) => i.service).join(', ')}
                     </span>
                   </div>
                 )}
@@ -139,23 +138,25 @@ export default function Dashboard() {
               </p>
 
               {/* Workflow Steps */}
-              <div className="mb-4">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Steps ({workflow.steps.length}):
-                </p>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {workflow.steps.map((step, index) => (
-                    <div key={index} className="flex items-center">
-                      <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
-                        {step.agent_id}
-                      </span>
-                      {index < workflow.steps.length - 1 && (
-                        <ChevronRight className="h-3 w-3 text-muted-foreground mx-1" />
-                      )}
-                    </div>
-                  ))}
+              {workflow.agent_steps && workflow.agent_steps.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Steps ({workflow.agent_steps.length}):
+                  </p>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {workflow.agent_steps.map((step: { agent_id: string }, index: number) => (
+                      <div key={index} className="flex items-center">
+                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
+                          {step.agent_id}
+                        </span>
+                        {workflow.agent_steps && index < workflow.agent_steps.length - 1 && (
+                          <ChevronRight className="h-3 w-3 text-muted-foreground mx-1" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-2 px-4 text-sm font-medium hover:bg-primary/90 transition-colors">
                 <Play className="h-4 w-4" />

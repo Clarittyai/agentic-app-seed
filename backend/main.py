@@ -107,7 +107,7 @@ def get_current_user(
 @app.get("/api/widget")
 async def get_widget_data(
     size: str = "large",
-    user_id: str = Depends(get_current_user),
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
     db: Session = Depends(get_db)
 ):
     """
@@ -115,48 +115,143 @@ async def get_widget_data(
 
     Returns data to display in the user's Clarity dashboard widget.
     Supports two sizes: small (quick glance), large (detailed view)
+
+    For Smart Email Filter: Shows important email intelligence data
+
+    Authentication:
+    - X-User-ID header (from Clarity platform) if present
+    - Defaults to "test-user" for development/testing
+    - No authentication required - Clarity platform handles access control
     """
-    # Get user's active triggers
-    active_triggers = db.query(models.UserTriggerInstance).filter(
-        models.UserTriggerInstance.user_id == user_id,
-        models.UserTriggerInstance.enabled == True
+    # Use X-User-ID header if provided by Clarity platform, otherwise default to test-user
+    user_id = x_user_id if x_user_id else "test-user"
+
+    from datetime import datetime, timedelta
+
+    # Get important emails from last 24 hours
+    yesterday = datetime.utcnow() - timedelta(days=1)
+
+    important_emails_today = db.query(models.ProcessedEmail).filter(
+        models.ProcessedEmail.user_id == user_id,
+        models.ProcessedEmail.is_important == True,
+        models.ProcessedEmail.processed_at >= yesterday
     ).count()
 
-    # Get recent executions
-    recent_executions = db.query(models.WorkflowExecution).filter(
-        models.WorkflowExecution.user_id == user_id
-    ).order_by(
-        models.WorkflowExecution.started_at.desc()
-    ).limit(5).all()
+    # Get total emails processed in last 24 hours
+    total_emails_processed = db.query(models.ProcessedEmail).filter(
+        models.ProcessedEmail.user_id == user_id,
+        models.ProcessedEmail.processed_at >= yesterday
+    ).count()
 
-    # Calculate success rate
-    total_executions = len(recent_executions)
-    successful = sum(1 for e in recent_executions if e.status == "completed")
-    success_rate = (successful / total_executions * 100) if total_executions > 0 else 0
+    # Calculate detection accuracy from user feedback
+    feedback_emails = db.query(models.ProcessedEmail).filter(
+        models.ProcessedEmail.user_id == user_id,
+        models.ProcessedEmail.user_feedback.in_(['correct', 'false_positive', 'false_negative'])
+    ).all()
+
+    if feedback_emails:
+        correct_predictions = sum(1 for e in feedback_emails if e.user_feedback == 'correct')
+        detection_accuracy = int((correct_predictions / len(feedback_emails)) * 100)
+    else:
+        # Default accuracy when no feedback yet
+        detection_accuracy = 95
+
+    # Get last check time from most recent processed email
+    last_email = db.query(models.ProcessedEmail).filter(
+        models.ProcessedEmail.user_id == user_id
+    ).order_by(
+        models.ProcessedEmail.processed_at.desc()
+    ).first()
+
+    if last_email:
+        time_diff = datetime.utcnow() - last_email.processed_at
+        if time_diff.seconds < 60:
+            last_checked = "just now"
+        elif time_diff.seconds < 3600:
+            minutes = time_diff.seconds // 60
+            last_checked = f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        else:
+            hours = time_diff.seconds // 3600
+            last_checked = f"{hours} hour{'s' if hours != 1 else ''} ago"
+    else:
+        last_checked = "not yet checked"
 
     # Return different data based on widget size
     if size == "small":
-        # Small widget: Quick glance - active triggers and success rate only
+        # Small widget: Quick glance - important email count and accuracy
         return {
-            "active_triggers": active_triggers,
-            "success_rate": f"{success_rate:.0f}%"
+            "important_emails_today": important_emails_today,
+            "detection_accuracy": f"{detection_accuracy}%",
+            "last_checked": last_checked
         }
     else:  # large
-        # Large widget: Detailed view - full dashboard with execution history
+        # Large widget: Detailed view - recent important emails with full details
+        recent_important_emails = db.query(models.ProcessedEmail).filter(
+            models.ProcessedEmail.user_id == user_id,
+            models.ProcessedEmail.is_important == True
+        ).order_by(
+            models.ProcessedEmail.processed_at.desc()
+        ).limit(5).all()
+
         return {
-            "active_triggers": active_triggers,
-            "total_executions": total_executions,
-            "success_rate": success_rate,
-            "recent_executions": [
+            "important_emails_today": important_emails_today,
+            "total_emails_processed": total_emails_processed,
+            "detection_accuracy": detection_accuracy,
+            "recent_important_emails": [
                 {
-                    "workflow_id": e.workflow_id,
-                    "status": e.status,
-                    "started_at": e.started_at.isoformat(),
-                    "duration_seconds": e.duration_seconds
+                    "sender": email.sender,
+                    "subject": email.subject,
+                    "importance_score": email.importance_score,
+                    "urgency_level": email.urgency_level or "medium",
+                    "detected_at": email.processed_at.isoformat(),
+                    "snippet": email.snippet[:100] if email.snippet else ""
                 }
-                for e in recent_executions
-            ]
+                for email in recent_important_emails
+            ],
+            "last_checked": last_checked
         }
+
+
+@app.post("/api/emails/mark-read")
+async def mark_urgent_emails_as_read(
+    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Mark all urgent emails as read (clears important flags).
+
+    This endpoint is called from the widget's "Mark Read" button
+    to clear urgent email notifications.
+    """
+    # Use X-User-ID header if provided by Clarity platform, otherwise default to test-user
+    user_id = x_user_id if x_user_id else "test-user"
+
+    from datetime import datetime, timedelta
+
+    # Get urgent emails from last 24 hours
+    yesterday = datetime.utcnow() - timedelta(days=1)
+
+    urgent_emails = db.query(models.ProcessedEmail).filter(
+        models.ProcessedEmail.user_id == user_id,
+        models.ProcessedEmail.is_important == True,
+        models.ProcessedEmail.processed_at >= yesterday
+    ).all()
+
+    # Mark as read by setting is_important to False
+    count = 0
+    for email in urgent_emails:
+        email.is_important = False
+        count += 1
+
+    db.commit()
+
+    logger.info(f"Marked {count} urgent emails as read for user {user_id}")
+
+    return {
+        "success": True,
+        "marked_count": count,
+        "message": f"Marked {count} urgent email{'s' if count != 1 else ''} as read"
+    }
 
 
 # ============================================================================
