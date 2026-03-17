@@ -141,8 +141,8 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
           >
             Open Inbox
           </button>
-          <div className="text-xs text-center text-muted-foreground">
-            {data.last_checked}
+          <div className="text-[10px] text-center text-muted-foreground/60">
+            Powered by Clarity
           </div>
         </div>
       </div>
@@ -207,26 +207,31 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
       )}
 
       {/* Quick Action Buttons - 32px */}
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          onClick={handleOpenDashboard}
-          className="text-xs font-bold text-white bg-primary hover:bg-primary/90 py-2 rounded-lg transition-colors h-8 flex items-center justify-center"
-        >
-          Open
-        </button>
-        <button
-          onClick={handleMarkAsRead}
-          disabled={actionLoading}
-          className="text-xs font-bold text-foreground bg-secondary hover:bg-secondary/80 py-2 rounded-lg transition-colors h-8 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {actionLoading ? 'Loading...' : 'Mark Read'}
-        </button>
-        <button
-          onClick={handleOpenDashboard}
-          className="text-xs font-bold text-foreground bg-secondary hover:bg-secondary/80 py-2 rounded-lg transition-colors h-8 flex items-center justify-center"
-        >
-          View All
-        </button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2 flex-1">
+          <button
+            onClick={handleOpenDashboard}
+            className="text-xs font-bold text-white bg-primary hover:bg-primary/90 py-2 px-3 rounded-lg transition-colors h-8 flex items-center justify-center"
+          >
+            Open
+          </button>
+          <button
+            onClick={handleMarkAsRead}
+            disabled={actionLoading}
+            className="text-xs font-bold text-foreground bg-secondary hover:bg-secondary/80 py-2 px-3 rounded-lg transition-colors h-8 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {actionLoading ? 'Loading...' : 'Mark Read'}
+          </button>
+          <button
+            onClick={handleOpenDashboard}
+            className="text-xs font-bold text-foreground bg-secondary hover:bg-secondary/80 py-2 px-3 rounded-lg transition-colors h-8 flex items-center justify-center"
+          >
+            View All
+          </button>
+        </div>
+        <div className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
+          Powered by Clarity
+        </div>
       </div>
     </div>
   );

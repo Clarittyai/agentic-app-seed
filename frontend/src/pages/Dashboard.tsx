@@ -40,6 +40,50 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Template Welcome Banner */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <span className="text-4xl">👋</span>
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-indigo-900 dark:text-indigo-100 mb-2">
+              Welcome to Clarity Starter Template
+            </h2>
+            <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-4">
+              This is a working example of an agentic app with a <strong>Smart Email Filter</strong> demonstration.
+              Clone this template and customize it to build your own AI-powered application.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="https://github.com/Clarittyai/agentic-app-seed/blob/main/DEVELOPER_GUIDE.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                📚 Developer Guide
+              </a>
+              <a
+                href="https://github.com/Clarittyai/agentic-app-seed/blob/main/CUSTOMIZATION_GUIDE.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-indigo-900 dark:text-indigo-100 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
+              >
+                🎨 Customization Guide
+              </a>
+              <a
+                href="https://github.com/Clarittyai/agentic-app-seed"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-indigo-900 dark:text-indigo-100 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
+              >
+                🚀 View on GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>

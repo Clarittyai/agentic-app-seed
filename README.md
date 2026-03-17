@@ -379,21 +379,51 @@ curl -X POST http://localhost:8000/api/agents/task-analyzer/execute \
 
 ## 📖 Complete Documentation
 
-### Start Here
-- **[Understanding Clarity Platform](docs/CLARITY_PLATFORM.md)** - Complete ecosystem guide
-  - What Clarity is and why it exists
-  - How agentic apps work
-  - User and developer journeys
-  - Hosting and deployment model
+### 🚀 Getting Started (Essential Reading)
 
-### Build Your App
-- **[Usage Guide](docs/GUIDE.md)** - Building agents, workflows, and triggers
+- **[Developer Guide](DEVELOPER_GUIDE.md)** - Complete technical reference for building agentic apps
+  - Quick start (60 seconds)
+  - Building agents step-by-step
+  - Creating workflows
+  - Widget endpoint implementation
+  - Database patterns
+  - Testing & deployment
+
+- **[Customization Guide](CUSTOMIZATION_GUIDE.md)** - Step-by-step guide to customize this template
+  - Planning your app
+  - Replacing example agents
+  - Real-world example (RedditSignals)
+  - Common patterns
+
+- **[Requirements Checklist](REQUIREMENTS.md)** - Platform requirements for deployment
+  - Critical requirements (blockers)
+  - Recommended practices
+  - Validation checklist
+  - Common failures & fixes
+
+### 🔧 Tools & Validation
+
+- **[Validation Script](scripts/validate-app.py)** - Automated requirement checking
+  ```bash
+  python scripts/validate-app.py
+  # Validates health endpoint, widget, agents, workflows, Docker
+  ```
+
+- **[FAQ & Troubleshooting](FAQ.md)** - Common questions and solutions
+  - Getting started issues
+  - Agent/workflow problems
+  - Database errors
+  - Docker troubleshooting
+  - Real developer experiences
+
+### 📚 Advanced Topics
+- **[Understanding Clarity Platform](docs/CLARITY_PLATFORM.md)** - Complete ecosystem guide
 - **[Architecture Guide](docs/ARCHITECTURE.md)** - Technical deep dive
 - **[API Reference](docs/API.md)** - Complete endpoint documentation
 
-### Deploy to Marketplace
+### 🚢 Deployment
 - **[Submission Requirements](docs/SUBMISSION_REQUIREMENTS.md)** - How to submit your app
-- **[AI Assistant Guide](CLAUDE.md)** - For AI assistants working with this code
+- **[GitHub CI Workflows](.github/workflows/)** - Automated validation on push
 
 ---
 

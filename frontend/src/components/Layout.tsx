@@ -23,9 +23,19 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
         <div className="container flex h-14 items-center">
           <div className="mr-4 flex">
             <Link to="/" className="mr-6 flex items-center space-x-2">
-              <span className="text-2xl">⚡</span>
+              <img
+                src="https://clarity.ai/logo.svg"
+                alt="Clarity"
+                className="h-8"
+                onError={(e) => {
+                  // Fallback to emoji if logo fails to load
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement?.querySelector('.logo-fallback')?.classList.remove('hidden');
+                }}
+              />
+              <span className="text-2xl logo-fallback hidden">⚡</span>
               <span className="hidden font-bold sm:inline-block">
-                Clarity Agentic App
+                Clarity Starter Template
               </span>
             </Link>
             <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -71,16 +81,23 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
       <footer className="border-t py-6 md:py-0">
         <div className="container flex flex-col items-center justify-between gap-4 md:h-14 md:flex-row">
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            Built with{' '}
+            <a
+              href="https://clarity.ai"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium underline underline-offset-4"
+            >
+              Clarity Platform
+            </a>
+            {' '}• Official Starter Template • Built with{' '}
             <a
               href="https://www.anthropic.com/claude"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"
             >
-              Claude
+              Claude AI
             </a>
-            {' '}and the Clarity SDK
           </p>
         </div>
       </footer>

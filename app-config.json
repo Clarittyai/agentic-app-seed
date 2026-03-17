@@ -1,8 +1,8 @@
 {
   "$schema": "https://clarity.ai/schemas/app-config-v1.json",
-  "appName": "Smart Email Filter",
+  "appName": "Clarity Starter Template",
   "appVersion": "1.0.0",
-  "description": "AI-powered email intelligence - never miss important emails again. Get notified only about what matters.",
+  "description": "Official starter template for building AI-powered agentic apps on Clarity Platform. Includes a working Smart Email Filter example to demonstrate agents, workflows, and triggers. Clone, customize, and deploy your own agentic application.",
   "configSchema": {
     "version": "1.0",
     "sections": [
@@ -205,29 +205,29 @@
   "metadata": {
     "author": "Clarity Platform",
     "license": "MIT",
-    "documentation": "https://docs.clarity.ai/agentic-apps/configuration",
+    "documentation": "https://docs.clarity.ai/agentic-apps/getting-started",
     "support": "https://clarity.ai/support"
   },
   "clarity_marketplace": {
     "version": "1.0.0",
-    "category": "productivity",
-    "tags": ["email", "ai", "productivity", "notifications", "gmail", "smart-filtering", "automation"],
+    "category": "templates",
+    "tags": ["template", "starter", "agentic-app", "ai", "agents", "workflows", "triggers", "clarity-platform"],
     "pricing_model": "free",
     "developer": {
-      "name": "Smart Email Filter Team",
-      "email": "developer@smartemailfilter.ai",
-      "website": "https://smartemailfilter.ai",
-      "support_email": "support@smartemailfilter.ai"
+      "name": "Clarity Platform Team",
+      "email": "developers@clarity.ai",
+      "website": "https://clarity.ai",
+      "support_email": "support@clarity.ai"
     },
     "features": [
-      "AI-powered email importance detection using Claude",
-      "User-configurable importance criteria (keywords, senders, context)",
-      "5 flexible trigger templates (scheduled, threshold, VIP, digest)",
-      "Multi-channel notifications (email, Slack, webhook)",
-      "Learning system - improves accuracy from user feedback",
-      "Quiet hours support for work-life balance",
-      "95%+ accuracy in importance detection",
-      "Widget-first interface for Clarity dashboard"
+      "Complete starter template for building agentic apps",
+      "Working Smart Email Filter example with AI agents",
+      "Auto-discovery system for agents and workflows",
+      "Widget-first design following Apple HIG standards",
+      "Multi-tenant architecture with user isolation",
+      "Docker-ready deployment configuration",
+      "Comprehensive developer documentation",
+      "Production-ready code structure and patterns"
     ],
     "screenshots": [
       {
