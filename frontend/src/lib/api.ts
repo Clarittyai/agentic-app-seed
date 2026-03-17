@@ -204,7 +204,8 @@ export const getAgents = async () => ({ agents: await listAgents() });
 export const getWorkflows = async () => ({ workflows: await listWorkflows() });
 export const getTriggerTemplates = async () => ({ templates: await listTriggerTemplates() });
 export const getUserTriggers = async () => ({ triggers: await listMyTriggers() });
-export const createUserTrigger = createTrigger;
+export const createUserTrigger = async (params: { template_id: string; name: string; config: Record<string, any> }) =>
+  createTrigger(params.template_id, params.name, params.config);
 export const updateUserTrigger = updateTrigger;
 export const deleteUserTrigger = deleteTrigger;
 export type UserTrigger = TriggerInstance;
