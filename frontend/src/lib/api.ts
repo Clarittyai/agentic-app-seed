@@ -108,6 +108,14 @@ export interface WidgetData {
     started_at: string;
     duration_seconds?: number;
   }>;
+  // Email-specific fields (for Smart Email Filter example)
+  important_emails_today?: number;
+  last_checked?: string;
+  recent_important_emails?: Array<{
+    sender: string;
+    subject: string;
+    urgency_level: 'critical' | 'high' | 'medium' | 'low';
+  }>;
 }
 
 // API Methods
@@ -191,11 +199,11 @@ export const deleteTrigger = async (triggerId: string): Promise<void> => {
   await api.delete(`/api/my/triggers/${triggerId}`);
 };
 
-// Helper functions / aliases for convenience
-export const getAgents = listAgents;
-export const getWorkflows = listWorkflows;
-export const getTriggerTemplates = listTriggerTemplates;
-export const getUserTriggers = listMyTriggers;
+// Helper functions / aliases for convenience (wrapped format for Dashboard compatibility)
+export const getAgents = async () => ({ agents: await listAgents() });
+export const getWorkflows = async () => ({ workflows: await listWorkflows() });
+export const getTriggerTemplates = async () => ({ templates: await listTriggerTemplates() });
+export const getUserTriggers = async () => ({ triggers: await listMyTriggers() });
 export const createUserTrigger = createTrigger;
 export const updateUserTrigger = updateTrigger;
 export const deleteUserTrigger = deleteTrigger;
