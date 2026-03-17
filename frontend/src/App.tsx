@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import TriggerManager from './pages/TriggerManager';
 import WidgetPage from './pages/WidgetPage';
-import ToolkitTestPage from './pages/ToolkitTestPage';
 import Layout from './components/Layout';
 
 function App() {
@@ -34,9 +33,6 @@ function App() {
       <Routes>
         {/* Widget route - standalone, no layout (Apple-style widget display) */}
         <Route path="/widget" element={<WidgetPage />} />
-
-        {/* Toolkit test route - validates @clarittyai/widget-toolkit installation */}
-        <Route path="/test-toolkit" element={<ToolkitTestPage />} />
 
         {/* App routes - with navigation layout */}
         <Route path="/" element={
