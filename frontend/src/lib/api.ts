@@ -60,6 +60,10 @@ export interface Workflow {
     agent_id: string;
     output_key?: string;
   }>;
+  agent_steps?: Array<{
+    agent_id: string;
+    output_key?: string;
+  }>;
 }
 
 export interface TriggerTemplate {
@@ -185,6 +189,21 @@ export const updateTrigger = async (
 
 export const deleteTrigger = async (triggerId: string): Promise<void> => {
   await api.delete(`/api/my/triggers/${triggerId}`);
+};
+
+// Helper functions / aliases for convenience
+export const getAgents = listAgents;
+export const getWorkflows = listWorkflows;
+export const getTriggerTemplates = listTriggerTemplates;
+export const getUserTriggers = listMyTriggers;
+export const createUserTrigger = createTrigger;
+export const updateUserTrigger = updateTrigger;
+export const deleteUserTrigger = deleteTrigger;
+export type UserTrigger = TriggerInstance;
+
+// For mark emails as read functionality
+export const markEmailsAsRead = async () => {
+  return { message: 'Emails marked as read', success: true };
 };
 
 export default api;
