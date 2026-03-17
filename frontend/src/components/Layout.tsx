@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Home, Zap } from 'lucide-react';
+import { Moon, Sun, Home, Settings } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface LayoutProps {
@@ -12,93 +13,138 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
   const location = useLocation();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Triggers', href: '/triggers', icon: Zap },
+    { name: 'Home', href: '/', icon: Home },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <div className="mr-4 flex">
-            <Link to="/" className="mr-6 flex items-center space-x-2">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      {/* Header - Apple-style glass morphism */}
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className="sticky top-0 z-50 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 lg:h-20">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3 group">
               <img
-                src="https://clarity.ai/logo.svg"
-                alt="Clarity"
-                className="h-8"
+                src="https://www.claritty.ai/logo.svg"
+                alt="Claritty"
+                className="h-6 lg:h-7 w-auto"
                 onError={(e) => {
-                  // Fallback to emoji if logo fails to load
+                  // Fallback to emoji if logo fails
                   e.currentTarget.style.display = 'none';
-                  e.currentTarget.parentElement?.querySelector('.logo-fallback')?.classList.remove('hidden');
+                  const fallback = e.currentTarget.parentElement?.querySelector('.logo-fallback');
+                  if (fallback) {
+                    fallback.classList.remove('hidden');
+                  }
                 }}
               />
               <span className="text-2xl logo-fallback hidden">⚡</span>
-              <span className="hidden font-bold sm:inline-block">
-                Clarity Starter Template
+              <span className="hidden sm:inline-block text-lg lg:text-xl font-bold text-gray-900 dark:text-white group-hover:text-accent transition-colors">
+                Clarity
               </span>
             </Link>
-            <nav className="flex items-center space-x-6 text-sm font-medium">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    'transition-colors hover:text-foreground/80 flex items-center gap-2',
-                    location.pathname === item.href
-                      ? 'text-foreground'
-                      : 'text-foreground/60'
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
-                </Link>
-              ))}
+
+            {/* Navigation */}
+            <nav className="flex items-center gap-1 lg:gap-2">
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="relative px-4 lg:px-5 py-2 rounded-lg group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      <span
+                        className={cn(
+                          'text-sm lg:text-base font-medium transition-colors',
+                          isActive
+                            ? 'text-accent'
+                            : 'text-gray-600 dark:text-gray-300 group-hover:text-accent'
+                        )}
+                      >
+                        {item.name}
+                      </span>
+                    </div>
+
+                    {/* Active indicator */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeNav"
+                        className="absolute inset-0 bg-accent/10 rounded-lg -z-10"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+
+                    {/* Hover effect */}
+                    <span className="absolute inset-0 bg-gray-100 dark:bg-gray-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity -z-20" />
+                  </Link>
+                );
+              })}
+
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={toggleDarkMode}
+                className="ml-2 p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors touch-manipulation"
+                aria-label="Toggle dark mode"
+              >
+                {darkMode ? (
+                  <Sun className="h-5 w-5 text-yellow-500" />
+                ) : (
+                  <Moon className="h-5 w-5 text-gray-600" />
+                )}
+              </button>
             </nav>
           </div>
-          <div className="ml-auto flex items-center space-x-4">
-            <button
-              onClick={toggleDarkMode}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-9 w-9"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </button>
-          </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Main Content */}
-      <main className="container mx-auto py-6">
-        {children}
+      <main className="min-h-[calc(100vh-16rem)]">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12"
+        >
+          {children}
+        </motion.div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-14 md:flex-row">
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            <a
-              href="https://clarity.ai"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              Clarity Platform
-            </a>
-            {' '}• Official Starter Template • Built with{' '}
-            <a
-              href="https://www.anthropic.com/claude"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              Claude AI
-            </a>
-          </p>
+      {/* Footer - Minimal Apple style */}
+      <footer className="border-t border-gray-200 dark:border-gray-800 py-8 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-center sm:text-left">
+              Powered by{' '}
+              <a
+                href="https://www.claritty.ai"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-accent hover:underline underline-offset-4 transition-colors"
+              >
+                Claritty
+              </a>
+              {' '}• Built with{' '}
+              <a
+                href="https://www.anthropic.com/claude"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-accent hover:underline underline-offset-4 transition-colors"
+              >
+                Claude AI
+              </a>
+            </p>
+            <p className="text-center sm:text-right text-xs text-gray-500 dark:text-gray-500">
+              © 2025 Claritty. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

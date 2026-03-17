@@ -1,215 +1,207 @@
-import { useEffect, useState } from 'react';
-import { getAgents, getWorkflows, type Agent, type Workflow } from '@/lib/api';
+import { motion } from 'framer-motion';
 import Widget from '@/components/Widget';
-import { Bot, Workflow as WorkflowIcon, Play, ChevronRight } from 'lucide-react';
+import { Mail, Clock, TrendingUp, Sparkles } from 'lucide-react';
 
 export default function Dashboard() {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const [agentsResp, workflowsResp] = await Promise.all([
-        getAgents(),
-        getWorkflows(),
-      ]);
-      setAgents(agentsResp.agents);
-      setWorkflows(workflowsResp.workflows);
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
-          <div className="h-48 bg-muted rounded"></div>
+  return (
+    <div className="space-y-12">
+      {/* Hero Section with Widget */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-center"
+      >
+        <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-1.5 mb-6">
+          <Sparkles className="w-4 h-4 text-accent" />
+          <span className="text-sm font-medium text-accent">
+            Smart Email Filtering
+          </span>
         </div>
-      </div>
-    );
-  }
+
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+          Your Inbox,{' '}
+          <span className="text-gradient">Simplified</span>
+        </h1>
+
+        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-12">
+          AI-powered email filtering that learns what's important to you.
+          Stay focused on what matters.
+        </p>
+
+        {/* Widget - Hero Element */}
+        <div className="flex justify-center mb-8">
+          <Widget size="large" className="hover-lift" />
+        </div>
+
+        <p className="text-sm text-gray-500 dark:text-gray-500">
+          Updates automatically every 30 seconds
+        </p>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+      >
+        <StatsCard
+          icon={<Mail className="w-6 h-6 text-accent" />}
+          label="Filtered Today"
+          value="24"
+          change="+12%"
+          changeType="positive"
+        />
+        <StatsCard
+          icon={<TrendingUp className="w-6 h-6 text-green" />}
+          label="Time Saved"
+          value="18 min"
+          change="+5 min"
+          changeType="positive"
+        />
+        <StatsCard
+          icon={<Clock className="w-6 h-6 text-purple" />}
+          label="Last Check"
+          value="Just now"
+          change="Active"
+          changeType="neutral"
+        />
+      </motion.div>
+
+      {/* Recent Activity */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Recent Activity
+          </h2>
+          <button className="text-sm font-medium text-accent hover:text-accent-600 transition-colors">
+            View All
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <ActivityItem
+            time="2 minutes ago"
+            action="3 emails filtered as high priority"
+            icon={<Mail className="w-4 h-4 text-orange" />}
+          />
+          <ActivityItem
+            time="15 minutes ago"
+            action="Inbox checked and organized"
+            icon={<Clock className="w-4 h-4 text-accent" />}
+          />
+          <ActivityItem
+            time="1 hour ago"
+            action="12 emails sorted successfully"
+            icon={<TrendingUp className="w-4 h-4 text-green" />}
+          />
+        </div>
+      </motion.div>
+
+      {/* How It Works (Optional - can be removed if too much info) */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+        className="bg-gradient-to-br from-accent/5 to-purple/5 rounded-2xl p-8 border border-gray-200 dark:border-gray-800"
+      >
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          How It Works
+        </h3>
+        <div className="grid sm:grid-cols-3 gap-6 text-sm">
+          <div>
+            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mb-3">
+              <span className="font-bold text-accent">1</span>
+            </div>
+            <p className="text-gray-700 dark:text-gray-300">
+              <strong>Monitor</strong> - Automatically checks your inbox every 15 minutes
+            </p>
+          </div>
+          <div>
+            <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center mb-3">
+              <span className="font-bold text-purple">2</span>
+            </div>
+            <p className="text-gray-700 dark:text-gray-300">
+              <strong>Analyze</strong> - AI determines urgency and importance using Claude
+            </p>
+          </div>
+          <div>
+            <div className="w-10 h-10 rounded-full bg-green/10 flex items-center justify-center mb-3">
+              <span className="font-bold text-green">3</span>
+            </div>
+            <p className="text-gray-700 dark:text-gray-300">
+              <strong>Organize</strong> - Priority emails highlighted for quick action
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// Stats Card Component
+interface StatsCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  change: string;
+  changeType: 'positive' | 'negative' | 'neutral';
+}
+
+function StatsCard({ icon, label, value, change, changeType }: StatsCardProps) {
+  const changeColor =
+    changeType === 'positive' ? 'text-green' :
+    changeType === 'negative' ? 'text-red-500' :
+    'text-gray-500';
 
   return (
-    <div className="space-y-8">
-      {/* Template Welcome Banner */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0">
-            <span className="text-4xl">👋</span>
-          </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-indigo-900 dark:text-indigo-100 mb-2">
-              Welcome to Clarity Starter Template
-            </h2>
-            <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-4">
-              This is a working example of an agentic app with a <strong>Smart Email Filter</strong> demonstration.
-              Clone this template and customize it to build your own AI-powered application.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="https://github.com/Clarittyai/agentic-app-seed/blob/main/DEVELOPER_GUIDE.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                📚 Developer Guide
-              </a>
-              <a
-                href="https://github.com/Clarittyai/agentic-app-seed/blob/main/CUSTOMIZATION_GUIDE.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-indigo-900 dark:text-indigo-100 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
-              >
-                🎨 Customization Guide
-              </a>
-              <a
-                href="https://github.com/Clarittyai/agentic-app-seed"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-indigo-900 dark:text-indigo-100 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
-              >
-                🚀 View on GitHub
-              </a>
-            </div>
-          </div>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover-lift">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          {icon}
         </div>
+        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          {label}
+        </span>
       </div>
+      <div className="flex items-end justify-between">
+        <span className="text-3xl font-bold text-gray-900 dark:text-white">
+          {value}
+        </span>
+        <span className={`text-sm font-medium ${changeColor}`}>
+          {change}
+        </span>
+      </div>
+    </div>
+  );
+}
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Monitor your agentic app, manage workflows, and view execution history.
+// Activity Item Component
+interface ActivityItemProps {
+  time: string;
+  action: string;
+  icon: React.ReactNode;
+}
+
+function ActivityItem({ time, action, icon }: ActivityItemProps) {
+  return (
+    <div className="flex items-start gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+      <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {action}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {time}
         </p>
       </div>
-
-      {/* Widget */}
-      <Widget size="large" />
-
-      {/* Agents Section */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-          <Bot className="h-6 w-6 text-primary" />
-          AI Agents
-          <span className="text-base font-normal text-muted-foreground">
-            ({agents.length})
-          </span>
-        </h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {agents.map((agent) => (
-            <div
-              key={agent.id}
-              className="bg-card rounded-lg border p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-lg">{agent.name}</h3>
-                  <p className="text-xs text-muted-foreground capitalize mt-1">
-                    {agent.category}
-                  </p>
-                </div>
-                <Bot className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                {agent.description}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">Inputs:</span>
-                  <span className="font-medium">
-                    {agent.inputs ? Object.keys(agent.inputs).length : 0}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">Outputs:</span>
-                  <span className="font-medium">
-                    {agent.outputs ? Object.keys(agent.outputs).length : 0}
-                  </span>
-                </div>
-                {agent.integrations && agent.integrations.length > 0 && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground">Integrations:</span>
-                    <span className="font-medium">
-                      {agent.integrations.map((i: { service: string }) => i.service).join(', ')}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <button className="mt-4 w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-2 px-4 text-sm font-medium hover:bg-primary/90 transition-colors">
-                <Play className="h-4 w-4" />
-                Execute Agent
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Workflows Section */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-          <WorkflowIcon className="h-6 w-6 text-primary" />
-          Workflows
-          <span className="text-base font-normal text-muted-foreground">
-            ({workflows.length})
-          </span>
-        </h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {workflows.map((workflow) => (
-            <div
-              key={workflow.id}
-              className="bg-card rounded-lg border p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-lg">{workflow.name}</h3>
-                  <p className="text-xs text-muted-foreground capitalize mt-1">
-                    {workflow.execution_mode} mode
-                  </p>
-                </div>
-                <WorkflowIcon className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                {workflow.description}
-              </p>
-
-              {/* Workflow Steps */}
-              {workflow.agent_steps && workflow.agent_steps.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Steps ({workflow.agent_steps.length}):
-                  </p>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {workflow.agent_steps.map((step: { agent_id: string }, index: number) => (
-                      <div key={index} className="flex items-center">
-                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
-                          {step.agent_id}
-                        </span>
-                        {workflow.agent_steps && index < workflow.agent_steps.length - 1 && (
-                          <ChevronRight className="h-3 w-3 text-muted-foreground mx-1" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-2 px-4 text-sm font-medium hover:bg-primary/90 transition-colors">
-                <Play className="h-4 w-4" />
-                Execute Workflow
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

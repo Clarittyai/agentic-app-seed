@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
-import TriggerManager from './pages/TriggerManager';
+import Settings from './pages/Settings';
 import WidgetPage from './pages/WidgetPage';
 import Layout from './components/Layout';
 
@@ -40,9 +40,9 @@ function App() {
             <Dashboard />
           </Layout>
         } />
-        <Route path="/triggers" element={
+        <Route path="/settings" element={
           <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
-            <TriggerManager />
+            <Settings />
           </Layout>
         } />
       </Routes>

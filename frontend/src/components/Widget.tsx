@@ -92,16 +92,16 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
   if (size === 'small') {
     const maxUrgency = data.recent_important_emails?.[0]?.urgency_level || 'low';
     const urgencyColor =
-      maxUrgency === 'critical' ? 'text-red-600' :
-      maxUrgency === 'high' ? 'text-orange-600' :
-      maxUrgency === 'medium' ? 'text-yellow-600' :
-      'text-blue-600';
+      maxUrgency === 'critical' ? 'text-pink' :
+      maxUrgency === 'high' ? 'text-orange' :
+      maxUrgency === 'medium' ? 'text-yellow' :
+      'text-accent';
 
     const urgencyBgColor =
-      maxUrgency === 'critical' ? 'bg-red-50 dark:bg-red-950/20' :
-      maxUrgency === 'high' ? 'bg-orange-50 dark:bg-orange-950/20' :
-      maxUrgency === 'medium' ? 'bg-yellow-50 dark:bg-yellow-950/20' :
-      'bg-blue-50 dark:bg-blue-950/20';
+      maxUrgency === 'critical' ? 'bg-pink/10 dark:bg-pink/20' :
+      maxUrgency === 'high' ? 'bg-orange/10 dark:bg-orange/20' :
+      maxUrgency === 'medium' ? 'bg-yellow/10 dark:bg-yellow/20' :
+      'bg-accent/10 dark:bg-accent/20';
 
     const urgencyText =
       maxUrgency === 'critical' ? 'CRITICAL' :
@@ -137,12 +137,12 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
         <div className="w-full flex flex-col gap-1">
           <button
             onClick={handleOpenDashboard}
-            className="w-full text-sm font-bold text-white bg-primary hover:bg-primary/90 py-2 px-3 rounded-lg transition-colors"
+            className="w-full text-sm font-bold text-white bg-accent hover:bg-accent-600 py-2 px-3 rounded-lg transition-all active:scale-95"
           >
             Open Inbox
           </button>
-          <div className="text-[10px] text-center text-muted-foreground/60">
-            Powered by Clarity
+          <div className="text-[10px] text-center text-gray-500 dark:text-gray-500">
+            Powered by Claritty
           </div>
         </div>
       </div>
@@ -166,14 +166,14 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
       <div className="flex items-center justify-between mb-2 h-6">
         <div className="flex items-center gap-2">
           <span className="text-xl font-bold leading-none">{totalUrgent}</span>
-          <span className="text-xs text-muted-foreground">urgent</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">urgent</span>
           {criticalCount > 0 && (
-            <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded">
+            <span className="text-xs font-bold text-pink bg-pink/10 dark:bg-pink/20 px-1.5 py-0.5 rounded">
               {criticalCount} Critical
             </span>
           )}
           {highCount > 0 && (
-            <span className="text-xs font-bold text-orange-600 bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded">
+            <span className="text-xs font-bold text-orange bg-orange/10 dark:bg-orange/20 px-1.5 py-0.5 rounded">
               {highCount} High
             </span>
           )}
@@ -191,9 +191,9 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
             </div>
             <span className={cn(
               'text-xs font-bold px-1.5 py-0.5 rounded whitespace-nowrap flex-shrink-0',
-              mostUrgentEmail.urgency_level === 'critical' ? 'text-red-600 bg-red-50 dark:bg-red-950/20' :
-              mostUrgentEmail.urgency_level === 'high' ? 'text-orange-600 bg-orange-50 dark:bg-orange-950/20' :
-              'text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20'
+              mostUrgentEmail.urgency_level === 'critical' ? 'text-pink bg-pink/10 dark:bg-pink/20' :
+              mostUrgentEmail.urgency_level === 'high' ? 'text-orange bg-orange/10 dark:bg-orange/20' :
+              'text-yellow bg-yellow/10 dark:bg-yellow/20'
             )}>
               {mostUrgentEmail.urgency_level === 'critical' ? 'CRITICAL' :
                mostUrgentEmail.urgency_level === 'high' ? 'HIGH' : 'MEDIUM'}
@@ -211,26 +211,26 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
         <div className="flex gap-2 flex-1">
           <button
             onClick={handleOpenDashboard}
-            className="text-xs font-bold text-white bg-primary hover:bg-primary/90 py-2 px-3 rounded-lg transition-colors h-8 flex items-center justify-center"
+            className="text-xs font-bold text-white bg-accent hover:bg-accent-600 py-2 px-3 rounded-lg transition-all active:scale-95 h-8 flex items-center justify-center"
           >
             Open
           </button>
           <button
             onClick={handleMarkAsRead}
             disabled={actionLoading}
-            className="text-xs font-bold text-foreground bg-secondary hover:bg-secondary/80 py-2 px-3 rounded-lg transition-colors h-8 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-xs font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 py-2 px-3 rounded-lg transition-all active:scale-95 h-8 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {actionLoading ? 'Loading...' : 'Mark Read'}
           </button>
           <button
             onClick={handleOpenDashboard}
-            className="text-xs font-bold text-foreground bg-secondary hover:bg-secondary/80 py-2 px-3 rounded-lg transition-colors h-8 flex items-center justify-center"
+            className="text-xs font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 py-2 px-3 rounded-lg transition-all active:scale-95 h-8 flex items-center justify-center"
           >
             View All
           </button>
         </div>
-        <div className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
-          Powered by Clarity
+        <div className="text-[10px] text-gray-500 dark:text-gray-500 whitespace-nowrap">
+          Powered by Claritty
         </div>
       </div>
     </div>
