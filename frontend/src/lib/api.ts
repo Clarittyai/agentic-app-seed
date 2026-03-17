@@ -1,0 +1,190 @@
+/**
+ * API Client for Clarity Agentic App Backend
+ *
+ * Communicates with FastAPI backend on port 8000
+ */
+
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add authentication headers to requests
+api.interceptors.request.use((config) => {
+  // Authentication priority:
+  // 1. X-User-ID header (Clarity platform marketplace - production)
+  // 2. Bearer token (development / direct access)
+
+  // Priority 1: X-User-ID for marketplace integration
+  const userId = localStorage.getItem('user_id');
+  if (userId) {
+    config.headers['X-User-ID'] = userId;
+  }
+
+  // Priority 2: Bearer token for development
+  const token = localStorage.getItem('auth_token') || 'test-user';
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
+// Types
+export interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  inputs: Record<string, any>;
+  outputs: Record<string, any>;
+  integrations: Array<{
+    service: string;
+    required: boolean;
+    auth_type: string;
+  }>;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  execution_mode: string;
+  steps: Array<{
+    agent_id: string;
+    output_key?: string;
+  }>;
+}
+
+export interface TriggerTemplate {
+  id: string;
+  name: string;
+  description: string;
+  template_type: string;
+  workflow_id: string;
+  category: string;
+  config_fields: Array<{
+    key: string;
+    label: string;
+    type: string;
+    required: boolean;
+    default?: any;
+    options?: Array<{ value: any; label: string }>;
+    validation?: Record<string, any>;
+  }>;
+  max_instances_per_user?: number;
+}
+
+export interface TriggerInstance {
+  id: string;
+  template_id: string;
+  name: string;
+  config: Record<string, any>;
+  enabled: boolean;
+  created_at: string;
+  last_triggered_at?: string;
+  total_executions: number;
+  total_failures: number;
+}
+
+export interface WidgetData {
+  active_triggers: number;
+  total_executions?: number;
+  success_rate?: number;
+  last_execution?: string;
+  recent_executions?: Array<{
+    workflow_id: string;
+    status: string;
+    started_at: string;
+    duration_seconds?: number;
+  }>;
+}
+
+// API Methods
+
+export const healthCheck = async () => {
+  const response = await api.get('/health');
+  return response.data;
+};
+
+export const getWidgetData = async (size: 'small' | 'large' = 'large'): Promise<WidgetData> => {
+  const response = await api.get(`/api/widget?size=${size}`);
+  return response.data;
+};
+
+export const listAgents = async (): Promise<Agent[]> => {
+  const response = await api.get('/api/agents');
+  return response.data.agents;
+};
+
+export const getAgent = async (agentId: string): Promise<Agent> => {
+  const response = await api.get(`/api/agents/${agentId}`);
+  return response.data;
+};
+
+export const executeAgent = async (agentId: string, inputData: Record<string, any>) => {
+  const response = await api.post(`/api/agents/${agentId}/execute`, inputData);
+  return response.data;
+};
+
+export const listWorkflows = async (): Promise<Workflow[]> => {
+  const response = await api.get('/api/workflows');
+  return response.data.workflows;
+};
+
+export const executeWorkflow = async (workflowId: string, inputData?: Record<string, any>) => {
+  const response = await api.post(`/api/workflows/${workflowId}/execute`, inputData);
+  return response.data;
+};
+
+export const getWorkflowExecution = async (executionId: string) => {
+  const response = await api.get(`/api/workflows/executions/${executionId}`);
+  return response.data;
+};
+
+export const listTriggerTemplates = async (): Promise<TriggerTemplate[]> => {
+  const response = await api.get('/api/trigger-templates');
+  return response.data.templates;
+};
+
+export const listMyTriggers = async (): Promise<TriggerInstance[]> => {
+  const response = await api.get('/api/my/triggers');
+  return response.data.triggers;
+};
+
+export const createTrigger = async (
+  templateId: string,
+  name: string,
+  config: Record<string, any>
+): Promise<TriggerInstance> => {
+  const response = await api.post('/api/my/triggers', {
+    template_id: templateId,
+    name,
+    config,
+  });
+  return response.data;
+};
+
+export const updateTrigger = async (
+  triggerId: string,
+  updates: {
+    name?: string;
+    config?: Record<string, any>;
+    enabled?: boolean;
+  }
+): Promise<TriggerInstance> => {
+  const response = await api.patch(`/api/my/triggers/${triggerId}`, updates);
+  return response.data;
+};
+
+export const deleteTrigger = async (triggerId: string): Promise<void> => {
+  await api.delete(`/api/my/triggers/${triggerId}`);
+};
+
+export default api;
