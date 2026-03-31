@@ -1,6 +1,8 @@
 name: Validate Clarity App
 
 on:
+  repository_dispatch:
+    types: [claritty-validate]
   push:
     branches: [ main, develop ]
   pull_request:
@@ -15,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.branch || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,7 +41,7 @@ jobs:
 
       - name: Start services
         run: |
-          docker-compose up -d
+          docker compose up -d
           # Wait for services to be ready
           sleep 30
 
@@ -53,7 +57,7 @@ jobs:
             sleep 2
           done
           echo "Backend health check failed after 60 seconds"
-          docker-compose logs backend
+          docker compose logs backend
           exit 1
 
       - name: Run validation script
@@ -66,16 +70,16 @@ jobs:
         if: failure()
         run: |
           echo "=== Backend Logs ==="
-          docker-compose logs backend
+          docker compose logs backend
           echo "=== Frontend Logs ==="
-          docker-compose logs frontend
+          docker compose logs frontend
           echo "=== Database Logs ==="
-          docker-compose logs postgres
+          docker compose logs postgres
 
       - name: Stop services
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
 
   lint-backend:
     name: Lint Backend Code
@@ -84,6 +88,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.branch || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -119,6 +125,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.branch || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -149,6 +157,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.branch || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -162,18 +172,18 @@ jobs:
 
       - name: Start services
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 20
 
       - name: Run backend tests
         run: |
-          docker-compose exec -T backend pytest -v
+          docker compose exec -T backend pytest -v
         continue-on-error: true
 
       - name: Stop services
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
 
   build-check:
     name: Docker Build Check
@@ -182,6 +192,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.branch || github.ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -193,35 +205,175 @@ jobs:
 
       - name: Build backend
         run: |
-          docker-compose build backend
+          docker compose build backend
 
       - name: Build frontend
         run: |
-          docker-compose build frontend
+          docker compose build frontend
 
       - name: Build summary
         run: |
           echo "✅ All Docker images built successfully"
 
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.branch || github.ref }}
+
+      - name: Security scan - Detect hardcoded secrets
+        run: |
+          echo "============================================"
+          echo "🔒 SECURITY SCANNING"
+          echo "============================================"
+          echo "Scanning for hardcoded secrets..."
+
+          secrets_found=false
+
+          # Check backend (Python)
+          if grep -r -E "(password|secret|api_key|apikey|token|private_key|access_key)[\s]*=[\s]*['\"][^'\"]{10,}['\"]" backend/ \
+            --exclude-dir=__pycache__ \
+            --exclude="*.pyc" \
+            --exclude=".env.example" 2>/dev/null; then
+            echo "❌ Found hardcoded secrets in backend!"
+            secrets_found=true
+          fi
+
+          # Check frontend (JavaScript/TypeScript)
+          if grep -r -E "(password|secret|api_key|apikey|token|private_key)[\s]*=[\s]*['\"][^'\"]{10,}['\"]" frontend/src/ \
+            --exclude-dir=node_modules \
+            --exclude-dir=dist 2>/dev/null; then
+            echo "❌ Found hardcoded secrets in frontend!"
+            secrets_found=true
+          fi
+
+          # Check for committed .env files
+          if [ -f ".env" ]; then
+            echo "⚠️  WARNING: .env file found (should be in .gitignore)"
+            if grep -E "(API_KEY|SECRET|TOKEN|PASSWORD)" .env 2>/dev/null; then
+              echo "❌ .env contains sensitive data!"
+              secrets_found=true
+            fi
+          fi
+
+          if [ "$secrets_found" = true ]; then
+            echo "❌ SECURITY FAILURE: Hardcoded secrets detected"
+            exit 1
+          fi
+
+          echo "✅ No hardcoded secrets detected"
+
+      - name: Security scan - Detect malicious patterns
+        run: |
+          echo ""
+          echo "Scanning for dangerous code patterns..."
+
+          # Python backend patterns
+          echo "Checking Python backend..."
+          if grep -r -E "eval\(|exec\(|__import__\(|compile\(" backend/ \
+            --include="*.py" \
+            --exclude-dir=__pycache__ 2>/dev/null; then
+            echo "⚠️  WARNING: Dangerous Python patterns found (eval, exec, etc.)"
+          fi
+
+          if grep -r -E "subprocess\.call|os\.system|os\.popen" backend/ \
+            --include="*.py" \
+            --exclude-dir=__pycache__ 2>/dev/null; then
+            echo "⚠️  WARNING: System command execution found in backend"
+          fi
+
+          # JavaScript frontend patterns
+          echo "Checking JavaScript frontend..."
+          if grep -r -E "eval\(|new Function\(|dangerouslySetInnerHTML" frontend/src/ \
+            --include="*.js" \
+            --include="*.jsx" \
+            --include="*.ts" \
+            --include="*.tsx" 2>/dev/null; then
+            echo "⚠️  WARNING: Dangerous JavaScript patterns found"
+          fi
+
+          echo "✅ Security pattern scan complete"
+
+      - name: Dependency security audit
+        run: |
+          echo ""
+          echo "Running dependency security audits..."
+
+          # Python dependencies
+          echo "Auditing Python dependencies..."
+          cd backend
+          if [ -f requirements.txt ]; then
+            pip install pip-audit 2>/dev/null || echo "pip-audit not available"
+            pip-audit --requirement requirements.txt 2>/dev/null || echo "⚠️  Python audit check complete"
+          fi
+          cd ..
+
+          # JavaScript dependencies
+          echo "Auditing JavaScript dependencies..."
+          cd frontend
+          npm audit --audit-level=high || echo "⚠️  Frontend vulnerabilities found"
+          cd ..
+
+          echo "✅ Dependency audit complete"
+
   summary:
     name: Validation Summary
     runs-on: ubuntu-latest
-    needs: [validate, lint-backend, lint-frontend, test-backend, build-check]
+    needs: [validate, lint-backend, lint-frontend, test-backend, build-check, security-scan]
     if: always()
 
     steps:
       - name: Check validation results
         run: |
-          echo "=== Validation Summary ==="
-          echo "Validate: ${{ needs.validate.result }}"
-          echo "Lint Backend: ${{ needs.lint-backend.result }}"
-          echo "Lint Frontend: ${{ needs.lint-frontend.result }}"
-          echo "Test Backend: ${{ needs.test-backend.result }}"
-          echo "Build Check: ${{ needs.build-check.result }}"
+          echo "============================================"
+          echo "📊 VALIDATION SUMMARY"
+          echo "============================================"
+          echo "Validate:        ${{ needs.validate.result }}"
+          echo "Lint Backend:    ${{ needs.lint-backend.result }}"
+          echo "Lint Frontend:   ${{ needs.lint-frontend.result }}"
+          echo "Test Backend:    ${{ needs.test-backend.result }}"
+          echo "Build Check:     ${{ needs.build-check.result }}"
+          echo "Security Scan:   ${{ needs.security-scan.result }}"
+          echo "============================================"
 
           if [ "${{ needs.validate.result }}" != "success" ]; then
             echo "❌ Critical validation failed"
             exit 1
           fi
 
+          if [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "❌ Security scan failed"
+            exit 1
+          fi
+
           echo "✅ All critical checks passed!"
+          echo "============================================"
+
+      - name: Report validation results to Claritty
+        if: ${{ github.event_name == 'repository_dispatch' && always() }}
+        run: |
+          STATUS="success"
+          if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.security-scan.result }}" != "success" ]; then
+            STATUS="failure"
+          fi
+
+          # Only report if callback URL is provided (triggered by Claritty)
+          if [ -n "${{ github.event.client_payload.callback_url }}" ]; then
+            echo "Reporting validation results to Claritty..."
+            curl -X POST "${{ github.event.client_payload.callback_url }}" \
+              -H "Content-Type: application/json" \
+              -H "X-Claritty-Secret: ${{ github.event.client_payload.secret }}" \
+              -d "{
+                \"validation_id\": \"${{ github.event.client_payload.validation_id }}\",
+                \"submission_id\": \"${{ github.event.client_payload.submission_id }}\",
+                \"status\": \"$STATUS\",
+                \"run_id\": \"${{ github.run_id }}\",
+                \"run_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+                \"check_run_id\": ${{ github.event.client_payload.check_run_id || 0 }}
+              }"
+            echo "✅ Validation results reported to Claritty"
+          fi
