@@ -15,6 +15,12 @@ RUN npm install
 # Copy source
 COPY . .
 
+# ⚠️ CRITICAL: VITE_API_URL must use relative paths (empty string) for production
+# Frontend makes relative API calls like /api/widget which are proxied by Nginx to backend:8000
+# DO NOT set this to http://localhost:* as it will break production deployments
+ARG VITE_API_URL=
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build application
 RUN npm run build
 

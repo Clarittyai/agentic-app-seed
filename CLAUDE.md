@@ -15,8 +15,8 @@ When building apps with this template for the **Clarity Marketplace**, understan
 ### **🎯 TWO WIDGET SIZES ONLY - NO MEDIUM!**
 
 **CRITICAL**: The platform supports EXACTLY two widget sizes (Apple standards):
-- **Small**: 170×170px (1:1 ratio - SQUARE)
-- **Large**: 360×170px (2.1:1 ratio - WIDE RECTANGLE)
+- **Small**: 190×190px (1:1 ratio - SQUARE)
+- **Large**: 400×190px (2.1:1 ratio - WIDE RECTANGLE)
 - **Padding**: 16px (p-4) consistent across all widgets
 - **Border Radius**: 24px (rounded-3xl) Apple-style corners
 - **NO MEDIUM SIZE EXISTS**
@@ -46,13 +46,13 @@ Full App = Your app's "back office" (detailed operations, advanced features)
 
 **📖 Complete Specifications**: See [Widget Design Guide](docs/WIDGET_DESIGN_GUIDE.md) for comprehensive design patterns, component examples, and AI code generator instructions.
 
-#### Small Widget (170×170px - 1:1 SQUARE)
+#### Small Widget (190×190px - 1:1 SQUARE)
 - **Purpose**: Quick glance at key metrics
 - **Data**: Minimal - active triggers count, success rate
 - **When used**: User scans their dashboard grid for status
 - **Layout**: Vertical stack - Icon → Metric → Action button
 
-#### Large Widget (360×170px - 2.1:1 WIDE RECTANGLE)
+#### Large Widget (400×190px - 2.1:1 WIDE RECTANGLE)
 - **Purpose**: Detailed monitoring and interaction
 - **Data**: Full metrics, execution history, interactive elements
 - **When used**: User actively monitors or manages the app
@@ -565,3 +565,184 @@ You now understand the complete architecture and can:
 - ✅ Extend the system
 
 **Happy coding!** 🎉
+
+## ⚠️ Infrastructure Files - DO NOT MODIFY
+
+**CRITICAL FOR AI ASSISTANTS**: The following files are managed by the Clarity Platform and **MUST NOT be modified** unless the developer fully understands the multi-service architecture implications.
+
+### 🚨 Files You MUST NOT Suggest Modifying
+
+#### 1. `docker-compose.yml`
+**DO NOT modify**: Port configuration and VITE_API_URL settings
+
+**Why**: The Clarity Platform uses dynamic port allocation for multi-tenancy. Changing ports or VITE_API_URL will break production deployments.
+
+**What's managed**:
+- `POSTGRES_PORT`, `BACKEND_PORT`, `FRONTEND_PORT` - Platform assigns unique ports
+- `VITE_API_URL` - MUST be empty string (relative URLs)
+- `CONTAINER_PREFIX` - Container naming for isolation
+
+**What developers CAN modify**:
+- Environment variables specific to their app logic
+- Resource limits (memory, CPU) if needed
+- Database credentials (though defaults work fine)
+
+#### 2. `frontend/Dockerfile`
+**DO NOT modify**: Build configuration and VITE_API_URL
+
+**Critical lines**:
+```dockerfile
+# ⚠️ CRITICAL: VITE_API_URL must use relative paths (empty string) for production
+ARG VITE_API_URL=
+ENV VITE_API_URL=${VITE_API_URL}
+```
+
+**Why**: Frontend must use relative URLs for production. Hardcoding `http://localhost:8000` breaks multi-service architecture.
+
+**What developers CAN modify**:
+- Node version (if needed)
+- Build optimizations
+- Additional dependencies
+
+#### 3. `frontend/nginx.conf`
+**DO NOT remove**: The `/api/` location block
+
+**Critical section**:
+```nginx
+location /api/ {
+    proxy_pass http://backend:8000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    # ... other headers
+}
+```
+
+**Why**: This proxies all `/api/*` requests from frontend to backend service. Removing it breaks API communication in production.
+
+**What developers CAN modify**:
+- Add additional location blocks for custom routes
+- Adjust cache settings for static assets
+- Add custom headers (but don't break the /api/ proxy)
+
+#### 4. `frontend/src/lib/api.ts`
+**DO NOT modify**: The API_BASE_URL default
+
+**Critical line**:
+```typescript
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+```
+
+**Why**: Empty string makes the Axios client use relative URLs. When the app runs at `https://your-app.apps.claritty.ai/`, API calls like `/api/widget` automatically go to the same domain and are proxied to the backend by Nginx.
+
+**What developers CAN modify**:
+- Add new API methods
+- Customize request/response interceptors
+- Add authentication logic
+
+### 🏗️ Multi-Service Architecture (Why This Matters)
+
+Apps built with this template have **two services**:
+
+```
+┌─────────────────────────────────────────────────┐
+│  https://your-app.apps.claritty.ai/            │
+│                                                 │
+│  ┌─────────────────────────────────────────┐  │
+│  │  Frontend (Nginx + React)               │  │
+│  │  Port: 3200                             │  │
+│  │                                          │  │
+│  │  Routes:                                 │  │
+│  │  • /             → React SPA            │  │
+│  │  • /widget       → React Widget Page    │  │
+│  │  • /api/*        → Proxy to Backend ↓   │  │
+│  └────────────────────────────┬─────────────┘  │
+│                               │                 │
+│  ┌────────────────────────────┴─────────────┐  │
+│  │  Backend (FastAPI + Python)              │  │
+│  │  Port: 8000                              │  │
+│  │                                           │  │
+│  │  Routes:                                  │  │
+│  │  • /health       → Health check          │  │
+│  │  • /api/widget   → Widget data           │  │
+│  │  • /api/agents   → Agent management      │  │
+│  └──────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
+### 🚨 Common Mistakes to PREVENT
+
+#### ❌ NEVER Suggest: Hardcode localhost URLs
+```typescript
+// WRONG - breaks in production
+const API_BASE_URL = 'http://localhost:8000';
+```
+
+#### ✅ ALWAYS Use: Relative URLs
+```typescript
+// CORRECT - works in both dev and production
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+```
+
+#### ❌ NEVER Suggest: Remove the /api/ proxy from nginx.conf
+```nginx
+# WRONG - API calls will fail
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+#### ✅ ALWAYS Keep: The /api/ proxy block
+```nginx
+# CORRECT - proxies API calls to backend
+location /api/ {
+    proxy_pass http://backend:8000;
+    # ... headers
+}
+```
+
+#### ❌ NEVER Suggest: Change port mappings in docker-compose.yml
+```yaml
+# WRONG - conflicts with Clarity Platform
+ports:
+  - "8000:8000"  # Hardcoded port
+```
+
+#### ✅ ALWAYS Use: Environment variables
+```yaml
+# CORRECT - dynamic port allocation
+ports:
+  - "${BACKEND_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
+```
+
+### 📚 When Developers Need Infrastructure Help
+
+If a developer asks about infrastructure files:
+
+1. **First**, ask them to read `INFRASTRUCTURE.md` (comprehensive guide)
+2. **Explain** the multi-service architecture and why it matters
+3. **Warn** about breaking production deployments
+4. **Only then** help them modify IF they understand the implications
+
+### 🎯 Your Job as an AI Assistant
+
+**When to WARN developers**:
+- They want to change `VITE_API_URL` to a hardcoded localhost URL
+- They want to modify port mappings in `docker-compose.yml`
+- They want to remove the `/api/` location block from `nginx.conf`
+- They want to change `API_BASE_URL` in `frontend/src/lib/api.ts`
+
+**What to SAY**:
+> ⚠️ **Warning**: This file is managed by the Clarity Platform infrastructure. Modifying it may break your production deployment. Please read `INFRASTRUCTURE.md` to understand the multi-service architecture before making changes.
+
+**When it's OK to help**:
+- They understand the multi-service architecture
+- They're adding new API methods to `api.ts` (not changing the base URL)
+- They're adding new location blocks to `nginx.conf` (not removing /api/)
+- They're adding environment variables to `docker-compose.yml` (not changing ports)
+
+### 📖 Further Reading
+
+For complete infrastructure documentation, see:
+- **`INFRASTRUCTURE.md`** - Comprehensive guide with examples
+- **`README.md`** - Quick reference section on infrastructure
+- **File comments** - Warning comments in each infrastructure file

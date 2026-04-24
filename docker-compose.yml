@@ -1,10 +1,19 @@
 # Clarity Agentic App - Docker Compose Configuration
-# Orchestrates all services: PostgreSQL, Backend, Frontend
+# Orchestrates PostgreSQL database + Monolithic App Container
+#
+# ⚠️ WARNING: Port configuration is managed by Clarity Platform
+# DO NOT modify port mappings or VITE_API_URL defaults unless you understand the implications
 #
 # Port Configuration:
-# - Set POSTGRES_PORT, BACKEND_PORT, FRONTEND_PORT in .env file
-# - Defaults: PostgreSQL=5432, Backend=8000, Frontend=3200
+# - Set POSTGRES_PORT, APP_PORT in .env file (via Clarity Platform)
+# - Defaults: PostgreSQL=5432, App=3200
 # - Required for Clarity Platform deployment (dynamic port allocation)
+#
+# Architecture (Monolithic Container):
+# - Single container runs both Nginx (port 3200) + FastAPI (port 8000) via supervisord
+# - Nginx proxies /api/* requests to localhost:8000 (see frontend/nginx.conf)
+# - VITE_API_URL must be empty string (relative URLs) for production
+# - Compatible with Clarity Platform's single-container ECS deployment
 
 version: '3.8'
 
@@ -29,18 +38,20 @@ services:
     networks:
       - clarity-network
 
-  # Backend (FastAPI + AI Agents)
-  backend:
+  # Monolithic App Container (Nginx + FastAPI + Supervisord)
+  app:
     build:
       context: .
-      dockerfile: backend/Dockerfile
-    container_name: ${CONTAINER_PREFIX:-clarity-agentic}-backend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: ${CONTAINER_PREFIX:-clarity-agentic}-app
     environment:
       # Database
       DATABASE_URL: postgresql://${POSTGRES_USER:-clarity_user}:${POSTGRES_PASSWORD:-clarity_password}@postgres:5432/${POSTGRES_DB:-clarity_agentic_app}
 
       # Server
-      PORT: ${BACKEND_INTERNAL_PORT:-8000}
+      PORT: 8000  # Internal FastAPI port
       HOST: 0.0.0.0
       DEBUG: "${DEBUG:-false}"
 
@@ -53,28 +64,10 @@ services:
       # Logging
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
-      - "${BACKEND_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
+      - "${APP_PORT:-3200}:3200"  # Nginx port (proxies to FastAPI on localhost:8000)
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend:/app/backend
-    networks:
-      - clarity-network
-    restart: unless-stopped
-
-  # Frontend (React + Vite)
-  frontend:
-    build:
-      context: frontend
-      dockerfile: Dockerfile
-    container_name: ${CONTAINER_PREFIX:-clarity-agentic}-frontend
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-    ports:
-      - "${FRONTEND_PORT:-3200}:3200"
-    depends_on:
-      - backend
     networks:
       - clarity-network
     restart: unless-stopped

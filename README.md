@@ -761,6 +761,56 @@ pip install claritty-sdk  # Installed automatically
 
 ---
 
+## ⚠️ Infrastructure Files - Do Not Modify
+
+**IMPORTANT**: Certain infrastructure files are managed by the Clarity Platform and should **NOT be modified** unless you fully understand the implications.
+
+### 🚨 Critical Files (Do Not Touch)
+- `docker-compose.yml` - Port configuration managed by platform
+- `frontend/Dockerfile` - Build configuration with VITE_API_URL settings
+- `frontend/nginx.conf` - The `/api/` location block is REQUIRED
+- `frontend/src/lib/api.ts` - API_BASE_URL must use empty string default
+
+### Why?
+The Clarity Platform uses **dynamic port allocation** and **Nginx reverse proxying** for multi-tenancy. Your app's frontend makes API calls using **relative URLs** (like `/api/widget`) which are automatically proxied by Nginx to the backend service.
+
+**Common mistake**: Hardcoding `http://localhost:8000` breaks production deployments!
+
+```typescript
+// ❌ WRONG - breaks in production
+const API_BASE_URL = 'http://localhost:8000';
+
+// ✅ CORRECT - works everywhere
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+```
+
+### Multi-Service Routing Architecture
+
+```
+Production URL: https://your-app.apps.claritty.ai/
+
+Frontend (Nginx):
+  /            → React SPA
+  /widget      → Widget page
+  /api/*       → Proxy to backend:8000 ← CRITICAL!
+
+Backend (FastAPI):
+  /health      → Health check
+  /api/widget  → Widget data
+  /api/*       → All API endpoints
+```
+
+**[📖 Complete Infrastructure Guide →](INFRASTRUCTURE.md)** - Essential reading before modifying any infrastructure files!
+
+### What You CAN Modify
+- ✅ Application logic (`backend/agents/`, `frontend/src/`)
+- ✅ Dependencies (`requirements.txt`, `package.json`)
+- ✅ Database models and migrations
+- ✅ Custom environment variables
+- ✅ Resource limits (memory, CPU)
+
+---
+
 ## 📊 Key Features
 
 ### For Developers
