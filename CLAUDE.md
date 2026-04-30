@@ -1,335 +1,215 @@
-# CLAUDE.md - Guide for AI Assistants
+# CLAUDE.MD - AI Assistant Guide for Agentic App Development
 
-This file helps AI assistants (like Claude Code) understand and work effectively with the Clarity Agentic App Seed codebase.
+**For AI assistants working with developers on the Claritty Platform**
 
-## 🎯 Project Purpose
+---
 
-This is a **production-ready template** for building AI-powered agentic applications with **user-configurable triggers**. The key innovation is that end users control WHEN workflows execute, not developers hardcoding schedules.
+## 🎯 Repository Purpose
 
-## 🎨 CRITICAL: Widget-First Design Philosophy
+This is a **minimal template repository** for developers building agentic apps that deploy to Claritty Platform.
 
-**⚠️ MOST IMPORTANT CONCEPT - READ THIS FIRST**
+**Target users**: Anyone with an idea for an agentic app (not just experienced developers)
 
-When building apps with this template for the **Clarity Marketplace**, understand this fundamental principle:
-
-### **🎯 TWO WIDGET SIZES ONLY - NO MEDIUM!**
-
-**CRITICAL**: The platform supports EXACTLY two widget sizes (Apple standards):
-- **Small**: 190×190px (1:1 ratio - SQUARE)
-- **Large**: 400×190px (2.1:1 ratio - WIDE RECTANGLE)
-- **Padding**: 16px (p-4) consistent across all widgets
-- **Border Radius**: 24px (rounded-3xl) Apple-style corners
-- **NO MEDIUM SIZE EXISTS**
-
-### **Widgets Are THE Primary Interface**
-
-Apps built with this template are NOT traditional web applications. They are **widget-first** applications:
-
-**The Reality:**
-1. ✅ **Users interact primarily through WIDGETS** on their Clarity dashboard
-2. ✅ **Widgets are always visible** in the user's dashboard grid
-3. ✅ **Full app pages are secondary** - accessed by clicking widget for details
-4. ❌ **Users do NOT navigate to standalone web pages** as their primary interaction
-
-**Think of it as:**
+**Developer workflow**:
 ```
-Widget = Your app's "storefront" (always visible, primary interaction)
-Full App = Your app's "back office" (detailed operations, advanced features)
+1. Clone this repo
+2. Open in Claude Code
+3. Brainstorm app idea with AI (/superpowers:brainstorming)
+4. Implement agents/workflows/triggers following minimal examples
+5. Deploy to Claritty Platform (one click)
 ```
 
-### Two Widget Sizes ONLY
+**Your role as AI assistant**: Help developers transform ideas into production-ready agentic apps with minimal friction.
 
-**⚠️ CRITICAL RULE**: The platform supports EXACTLY two widget sizes. **NO medium size exists!**
+---
 
-**❌ DO NOT implement 3 widget sizes**
-**✅ ONLY implement 2 widget sizes: small and large**
+## 📖 Quick Navigation
 
-**📖 Complete Specifications**: See [Widget Design Guide](docs/WIDGET_DESIGN_GUIDE.md) for comprehensive design patterns, component examples, and AI code generator instructions.
+- [Claude Code Workflow](#-claude-code-workflow) - Start here for brainstorming
+- [File Structure](#-lean-file-structure) - What to touch, what to avoid
+- [Platform Integration](#-platform-integration-critical) - Claritty-specific rules
+- [Common Tasks](#-common-tasks-quick-reference) - Task-based index
+- [Best Practices](#-best-practices-for-ai-assistants) - DO/DON'T/WARN patterns
+- [Examples](#-minimal-examples) - Code patterns to follow
+- [Related Documentation](#-documentation-index) - External references
 
-#### Small Widget (190×190px - 1:1 SQUARE)
-- **Purpose**: Quick glance at key metrics
-- **Data**: Minimal - active triggers count, success rate
-- **When used**: User scans their dashboard grid for status
-- **Layout**: Vertical stack - Icon → Metric → Action button
+---
 
-#### Large Widget (400×190px - 2.1:1 WIDE RECTANGLE)
-- **Purpose**: Detailed monitoring and interaction
-- **Data**: Full metrics, execution history, interactive elements
-- **When used**: User actively monitors or manages the app
-- **Layout**: Horizontal or grid - Stats + Recent activity + Actions
+## 🤖 Claude Code Workflow
 
-### Implementation Requirements
+### Step 1: Brainstorming (ALWAYS START HERE)
 
-**Backend (`backend/main.py` line 115):**
-```python
-@app.get("/api/widget")
-async def get_widget_data(
-    size: str = "large",  # Only "small" or "large"
-    user_id: str = Depends(get_current_user)
-):
-    if size == "small":
-        return {"active_triggers": 5, "success_rate": "95%"}
-    else:  # large (not elif - only two options)
-        return {"active_triggers": 5, "total_executions": 42, "recent_executions": [...]}
-```
-
-**Frontend (`frontend/src/components/Widget.tsx`):**
-```typescript
-interface WidgetProps {
-  size?: 'small' | 'large';  // NOT 'small' | 'medium' | 'large'
-}
-
-export default function Widget({ size = 'large' }: WidgetProps) {
-  if (size === 'small') {
-    return <SmallWidgetView />;
-  }
-  return <LargeWidgetView />;  // No medium option
-}
-```
-
-**Frontend API (`frontend/src/lib/api.ts`):**
-```typescript
-export const getWidgetData = async (size: 'small' | 'large' = 'large'): Promise<WidgetData> => {
-  const response = await api.get(`/api/widget?size=${size}`);
-  return response.data;
-};
-```
-
-### Authentication: X-User-ID Header (Priority 1)
-
-**CRITICAL**: Frontend MUST send X-User-ID header for marketplace integration:
-
-```typescript
-// frontend/src/lib/api.ts
-api.interceptors.request.use((config) => {
-  // Priority 1: X-User-ID header (Clarity platform marketplace)
-  const userId = localStorage.getItem('user_id');
-  if (userId) {
-    config.headers['X-User-ID'] = userId;
-  }
-
-  // Priority 2: Bearer token (development fallback)
-  const token = localStorage.getItem('auth_token') || 'test-user';
-  config.headers.Authorization = `Bearer ${token}`;
-
-  return config;
-});
-```
-
-### Required Screenshots
-
-**MUST include** in `./screenshots/` directory:
-- `widget-small.png` - Screenshot of small widget with real data
-- `widget-large.png` - Screenshot of large widget with real data
-
-Configure in `app-config.json`:
-```json
-"screenshots": [
-  {
-    "url": "./screenshots/widget-small.png",
-    "type": "widget-small",
-    "required": true
-  },
-  {
-    "url": "./screenshots/widget-large.png",
-    "type": "widget-large",
-    "required": true
-  }
-]
-```
-
-### When User Needs Full App
-
-Full app pages (`/dashboard`, `/triggers`) are accessed when:
-- User clicks "View Details" or similar button on widget
-- User needs advanced configuration (e.g., creating new triggers)
-- User wants comprehensive data beyond widget's compact view
-
-**Remember**: Design widgets as if they're the ONLY interface users will see most of the time, because they are!
-
-**📖 Essential Reading**: See [Widget Design Guide](docs/WIDGET_DESIGN_GUIDE.md) for:
-- Complete layout principles and patterns
-- Visual design system (typography, spacing, colors)
-- Component patterns with code examples
-- Performance requirements and testing checklist
-- Specific instructions for AI code generators
-
-## 🏗️ Architecture Overview
-
-### Clean Template Structure (PyPI-Based)
+When a developer opens this template, **immediately suggest**:
 
 ```
-clarity-agentic-app-seed/
-├── backend/              # FastAPI server (port 8000)
-│   ├── requirements.txt  # Includes claritty-sdk>=1.0.0,<2.0.0
-│   ├── agents/           # Your agent implementations
-│   ├── workflows/        # Your workflow definitions
-│   └── triggers/         # Your trigger templates
-├── frontend/             # React UI (port 3200)
-└── docker-compose.yml    # Orchestration
+Let's brainstorm your agentic app idea! Run:
+
+/superpowers:brainstorming
 ```
 
-**Clarity SDK**: Installed from PyPI as a standard Python package
-```bash
-pip install claritty-sdk  # Automatically installed from requirements.txt
+**Ask these questions:**
+1. **Problem**: What problem does your app solve?
+2. **Users**: Who will use this app?
+3. **Automation**: What tasks should agents handle automatically?
+4. **Schedule**: When/how often should it run? (user-configurable triggers)
+5. **Widgets**: What should users see at a glance? (small: 190×190px, large: 400×190px)
+
+**Output**: Clear design for agents, workflows, triggers, and widgets.
+
+### Step 2: Implementation Planning
+
+After brainstorming, create an implementation plan:
+
+```
+Based on your idea, here's the implementation plan:
+
+Phase 1: Core Agent
+- Create `backend/agents/[name]_agent.py`
+- Implement core AI logic with Claude
+- Test via API
+
+Phase 2: Workflow
+- Create `backend/workflows/[name]_workflow.py`
+- Chain agents together
+- Test execution
+
+Phase 3: Triggers
+- Create `backend/triggers/[name]_triggers.py`
+- Define user-configurable templates
+- Test trigger creation UI
+
+Phase 4: Widgets
+- Update `frontend/src/components/Widget.tsx`
+- Implement small (190×190px) and large (400×190px) views
+- Test widget endpoint performance
+
+Phase 5: Testing & Deployment
+- Test locally (docker-compose up)
+- Push to GitHub
+- Submit to Claritty Platform
 ```
 
-### Technology Stack
+### Step 3: Iterative Development
 
-- **Clarity SDK**: `pip install claritty-sdk` - PyPI package with decorators, executors, triggers
-- **Backend**: FastAPI, SQLAlchemy, PostgreSQL, LangChain, Anthropic Claude
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Axios
-- **Deployment**: Docker, docker-compose
+Use superpowers skills throughout:
+- `/superpowers:test-driven-development` - Write tests first
+- `/superpowers:systematic-debugging` - Debug issues
+- `/superpowers:requesting-code-review` - Review before deployment
 
-**SDK Repository**: https://github.com/Clarittyai/claritty-sdk
+---
 
-## 🔑 Key Concepts
+## 📂 Lean File Structure
 
-### 1. User-Configurable Triggers (THE INNOVATION)
+### ✅ Files You WILL Modify Often
 
-**Problem Solved**: Traditional approach = developers hardcode schedules
-**Our Approach**: Developers define templates, users create instances with their own values
-
-**Example**:
-```python
-# Developer defines template
-@trigger_template(
-    id="daily-review",
-    template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="task-review-workflow",
-    config_fields=[
-        {"key": "time", "label": "What time?", "type": "time"},
-        {"key": "timezone", "label": "Timezone", "type": "timezone"}
-    ]
-)
-class DailyReview:
-    pass
-
-# User A creates instance: 9am EST
-# User B creates instance: 6pm PST
-# System schedules both independently
+```
+backend/
+├── agents/
+│   ├── __init__.py              # Register agents here
+│   └── example_agent.py         # ONE minimal example (replace with yours)
+│
+├── workflows/
+│   ├── __init__.py              # Register workflows here
+│   └── example_workflow.py      # ONE minimal example (replace with yours)
+│
+├── triggers/
+│   ├── __init__.py              # Register triggers here
+│   └── example_trigger.py       # ONE minimal template (replace with yours)
+│
+frontend/src/
+├── components/
+│   └── Widget.tsx               # 2 widget sizes (small/large) - customize this
+│
+└── pages/
+    └── Dashboard.tsx            # Full app interface (optional)
 ```
 
-### 2. Three-Layer Architecture
+### ⚠️ Files You SHOULD NOT Modify (Platform-Controlled)
 
-**Layer 1: Clarity SDK (PyPI Package)** - Decorator-based API
-- Installed via `pip install claritty-sdk`
-- Provides: `@agent`, `@workflow`, `@trigger_template` decorators
-- Includes: `WorkflowExecutor`, `DynamicTriggerManager`
-- **You import it**, you don't modify it
-
-**Layer 2: Backend (backend/)** - FastAPI application
-- REST API (17 endpoints)
-- Database (PostgreSQL with SQLAlchemy)
-- Agent/workflow registration on startup
-- Trigger lifecycle management
-- **This is where you write your code**
-
-**Layer 3: Frontend (frontend/)** - React UI
-- Dashboard (view agents/workflows)
-- Trigger Manager (CRUD triggers with dynamic forms)
-- Widget (2 sizes: small and large for Clarity marketplace)
-
-## 📂 Template File Structure
-
-### What's in the Template
-
-You work with **your own code**, not the SDK:
-
-### Backend Files (`backend/`)
-
-**Core**:
-- `main.py` - FastAPI app with 17 endpoints (600+ lines)
-- `database.py` - SQLAlchemy config
-- `models.py` - Database models (4 models)
-
-**Examples** (Users should add their own here):
-- `agents/` - Agent implementations (TaskAnalyzerAgent, EmailComposerAgent)
-- `workflows/` - Workflow definitions (task_review_workflow, etc.)
-- `triggers/` - Trigger templates (DailyTaskReviewTrigger, etc.)
-
-### Frontend Files (`frontend/src/`)
-
-**Core components**:
-- `components/Layout.tsx` - App shell
-- `components/Widget.tsx` - 2-size widget (small/large) for marketplace
-- `pages/Dashboard.tsx` - Main dashboard (160 lines)
-- `pages/TriggerManager.tsx` - Trigger CRUD UI (400 lines)
-
-**API**:
-- `lib/api.ts` - Complete API client (180 lines)
-- `lib/utils.ts` - Utilities
-
-## 🚫 What NOT to Do
-
-### ❌ DO NOT Create Files Outside Designated Folders
-
-**WRONG**:
 ```
-backend/custom_agents/my_agent.py  # ❌ Wrong location
-backend/my_workflow.py             # ❌ Wrong location
+Dockerfile                       # Platform generates production Dockerfile
+docker-compose.yml               # Platform manages port allocation
+frontend/nginx.conf              # Required /api/ proxy for monolithic container
+frontend/src/lib/api.ts          # Must use relative URLs (VITE_API_URL='')
+backend/infrastructure/          # Auto-discovery system (platform-managed)
 ```
 
-**RIGHT**:
-```
-backend/agents/my_agent.py         # ✅ Correct
-backend/workflows/my_workflow.py   # ✅ Correct
-backend/triggers/my_trigger.py     # ✅ Correct
-```
+**Why?** Platform uses:
+- ECR Public Gallery base images (not Docker Hub)
+- Resilient package installation (`npm install --no-audit --no-fund --prefer-offline`)
+- Dynamic port allocation for multi-tenancy
+- Health endpoint injection
 
-### ❌ DO NOT Hardcode Schedules
+**📚 See**: `INFRASTRUCTURE.md` and `claritty-core/INFRASTRUCTURE.md` for details
 
-**WRONG**:
-```python
-@cron("0 9 * * *")  # ❌ Users can't customize this
-def daily_task():
-    pass
+### 📋 Core Infrastructure Files (Don't Touch Unless You Know Why)
+
 ```
-
-**RIGHT**:
-```python
-@trigger_template(  # ✅ Users configure their own times
-    config_fields=[{"key": "time", "type": "time"}]
-)
-class DailyTask:
-    pass
+backend/
+├── main.py                      # Core FastAPI app (extend with routes)
+├── database.py                  # Database configuration
+├── models.py                    # Database models
+└── config.py                    # Configuration management
 ```
 
-### ❌ DO NOT Skip Registration
+---
 
-All agents/workflows/triggers MUST be registered:
+## 🏗️ Platform Integration (CRITICAL)
 
-**WRONG**:
-```python
-# Created agent but didn't add to __init__.py
-# Result: Agent never registers, users can't see it
-```
+### What Claritty Platform Controls
 
-**RIGHT**:
-```python
-# backend/agents/__init__.py
-from backend.agents.my_agent import MyAgent
-__all__ = ["MyAgent", ...]
-```
+1. **Docker Image Generation**
+   - Platform auto-generates Dockerfile during validation
+   - Uses ECR Public Gallery base images (`public.ecr.aws/docker/library/*`)
+   - Resilient package installation (handles lockfile mismatches)
+   - Health endpoints baked in
 
-### ❌ DO NOT Use Synchronous Code
+2. **Environment Variables (Auto-Injected)**
+   - `DATABASE_URL` - PostgreSQL connection (platform-configured)
+   - `PORT` - Application port (dynamically assigned)
+   - `CLARITY_APP_ID` - Unique app identifier
+   - `CLARITY_WORKSPACE_ID` - Tenant/workspace ID (for multi-tenancy)
+   - `JWT_SECRET` - JWT signing secret
+   - `REDIS_URL` - Redis connection (if needed)
 
-**WRONG**:
-```python
-def execute(self, context):  # ❌ Not async
-    return result
-```
+3. **User-Provided Variables** (Developer sets in `.env.example`)
+   - `ANTHROPIC_API_KEY` - Claude API key
+   - `OPENAI_API_KEY` - OpenAI API key (if needed)
+   - App-specific secrets (Slack webhook, Stripe key, etc.)
 
-**RIGHT**:
-```python
-async def execute(self, context: AgentContext) -> AgentResult:  # ✅ Async
-    return result
-```
+4. **Widget Specifications** (EXACTLY 2 sizes, no medium!)
+   - Small: **190×190px** (1:1 square) - quick status check
+   - Large: **400×190px** (2.1:1 wide rectangle) - detailed view + actions
+   - **NO MEDIUM SIZE EXISTS**
 
-## ✅ Common Tasks
+5. **Multi-Tenancy**
+   - All database queries MUST filter by `CLARITY_WORKSPACE_ID`
+   - User isolation enforced at platform level
+   - Never query across workspaces
 
-### Adding a New Agent
+### Your Dockerfile vs Platform Dockerfile
 
+**Your Dockerfile** (this repo):
+- Uses Docker Hub images for local development convenience
+- Basic setup for testing locally
+
+**Platform Dockerfile** (auto-generated):
+- Uses ECR Public Gallery (`public.ecr.aws/docker/library/*`)
+- Resilient npm install with `--no-audit --no-fund --prefer-offline`
+- Health endpoints baked in
+- Platform environment variables injected
+
+**Why different?** Platform ensures consistency, avoids Docker Hub rate limits, handles lockfile integrity issues.
+
+**📚 See**: `claritty-core/INFRASTRUCTURE.md` for complete platform infrastructure guide
+
+---
+
+## 🎯 Common Tasks (Quick Reference)
+
+### Task 1: Add a New Agent
+
+**Steps:**
 1. Create `backend/agents/my_agent.py`:
 ```python
 from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
@@ -337,27 +217,36 @@ from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
 @agent(
     id="my-agent",
     name="My Agent",
-    description="Does X",
-    inputs={"input": {"type": "string", "required": True}},
-    outputs={"output": {"type": "string"}}
+    description="Does something useful",
+    inputs={"task": {"type": "string", "required": True}},
+    outputs={"result": {"type": "string"}}
 )
 class MyAgent(BaseAgent):
     async def execute(self, context: AgentContext) -> AgentResult:
-        input_val = context.get_input("input")
-        result = f"Processed: {input_val}"
-        return AgentResult(success=True, data={"output": result})
+        task = context.get_input("task")
+
+        # Your AI logic here (use Claude, process data, etc.)
+        result = f"Processed: {task}"
+
+        return AgentResult(
+            success=True,
+            data={"result": result}
+        )
 ```
 
 2. Register in `backend/agents/__init__.py`:
 ```python
 from backend.agents.my_agent import MyAgent
-__all__ = ["MyAgent", ...]
+__all__ = ["MyAgent", ...]  # Add to list
 ```
 
-3. Restart backend → Agent available!
+3. Restart backend - done!
 
-### Adding a New Workflow
+**📚 See**: `backend/agents/example_agent.py` for complete minimal example
 
+### Task 2: Add a New Workflow
+
+**Steps:**
 1. Create `backend/workflows/my_workflow.py`:
 ```python
 from clarity_sdk import workflow, uses_agent, ExecutionMode
@@ -365,31 +254,35 @@ from clarity_sdk import workflow, uses_agent, ExecutionMode
 @workflow(
     id="my-workflow",
     name="My Workflow",
-    execution_mode=ExecutionMode.SEQUENTIAL
+    description="Chains agents together",
+    execution_mode=ExecutionMode.SEQUENTIAL  # or PARALLEL, DAG
 )
 @uses_agent("agent-1", output_key="step1")
 @uses_agent("agent-2", input_from="step1", output_key="step2")
 async def my_workflow(context):
-    """Workflow description"""
-    pass
+    """Workflow automatically chains agents"""
+    pass  # Execution handled by decorator
 ```
 
 2. Register in `backend/workflows/__init__.py`
 
-3. Restart → Workflow available!
+3. Test via API or frontend
 
-### Adding a New Trigger Template
+**📚 See**: `backend/workflows/example_workflow.py` for complete example
 
+### Task 3: Add a User-Configurable Trigger
+
+**Steps:**
 1. Create `backend/triggers/my_trigger.py`:
 ```python
 from clarity_sdk import trigger_template, TriggerTemplateType
 
 @trigger_template(
     id="my-trigger",
-    name="My Trigger",
-    description="User-friendly description",
+    name="My Daily Trigger",
+    description="User configures when this runs daily",
     template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="my-workflow",
+    workflow_id="my-workflow",  # Links to your workflow
     config_fields=[
         {
             "key": "time",
@@ -408,341 +301,290 @@ from clarity_sdk import trigger_template, TriggerTemplateType
     max_instances_per_user=5  # Optional limit
 )
 class MyTrigger:
-    pass
+    pass  # Just a template, platform handles execution
 ```
 
 2. Register in `backend/triggers/__init__.py`
 
-3. Restart → Template available in UI!
+3. Frontend automatically generates configuration UI!
 
-4. **Frontend automatically generates form** from config_fields!
+**📚 See**: `backend/triggers/example_trigger.py` for complete example
 
-### Testing Workflow Execution
+### Task 4: Customize Widgets
 
-```bash
-# Manual execution via API
-curl -X POST http://localhost:8000/api/workflows/my-workflow/execute \
-  -H "Authorization: Bearer test-user" \
-  -H "Content-Type: application/json" \
-  -d '{"input_data": "test"}'
+**Steps:**
+1. Update `frontend/src/components/Widget.tsx`:
+```typescript
+interface WidgetProps {
+  size?: 'small' | 'large';  // ONLY 2 sizes, no 'medium'
+}
 
-# Check execution record
-curl http://localhost:8000/api/workflows/executions/{execution_id} \
-  -H "Authorization: Bearer test-user"
-```
+export default function Widget({ size = 'large' }: WidgetProps) {
+  const { data } = useQuery(['widget', size], () =>
+    api.getWidgetData(size)
+  );
 
-### Debugging Triggers
+  if (size === 'small') {
+    // Small widget: 190×190px - quick status check
+    return (
+      <div className="widget-small">
+        <h3>{data.appName}</h3>
+        <div className="metrics">
+          <span>Active: {data.activeTriggers}</span>
+          <span>Success: {data.successRate}%</span>
+        </div>
+      </div>
+    );
+  }
 
-```bash
-# View backend logs
-docker-compose logs -f backend
-
-# Look for:
-# "✅ Registered trigger: template-id"
-# "🔥 Trigger fired: template-id"
-# "✅ Trigger execution completed"
-
-# Query database
-docker-compose exec backend python -c "
-from backend.database import SessionLocal
-from backend.models import UserTriggerInstance
-db = SessionLocal()
-triggers = db.query(UserTriggerInstance).all()
-for t in triggers:
-    print(f'{t.id}: {t.name} - enabled={t.enabled}')
-"
-```
-
-## 📋 Checklist for New Features
-
-When adding new functionality:
-
-- [ ] Agent has `@agent` decorator with all metadata
-- [ ] Agent class extends `BaseAgent`
-- [ ] Agent has `async def execute(self, context: AgentContext)`
-- [ ] Agent returns `AgentResult`
-- [ ] Agent registered in `__init__.py`
-- [ ] Workflow has `@workflow` decorator
-- [ ] Workflow uses `@uses_agent` for each step
-- [ ] Workflow is `async def`
-- [ ] Workflow registered in `__init__.py`
-- [ ] Trigger template has `@trigger_template` decorator
-- [ ] Trigger has `config_fields` for user configuration
-- [ ] Trigger references existing `workflow_id`
-- [ ] Trigger registered in `__init__.py`
-- [ ] Backend restarted after changes
-- [ ] Tested via API or UI
-- [ ] Documentation updated (if public-facing)
-
-## 🔍 Understanding the Flow
-
-### User Creates Trigger
-
-1. **Frontend**: User clicks "Create Trigger" on template
-2. **Frontend**: Form auto-generates from `config_fields`
-3. **Frontend**: User fills in values, submits
-4. **API**: `POST /api/my/triggers` receives request
-5. **Backend**: Creates `UserTriggerInstance` in database
-6. **Backend**: Calls `trigger_manager.register_trigger()`
-7. **DynamicTriggerManager**: Parses config, builds APScheduler trigger
-8. **APScheduler**: Schedules job for user's configured time
-9. **Frontend**: Refreshes, shows trigger in "My Triggers"
-
-### Trigger Fires
-
-1. **APScheduler**: Time matches, fires callback
-2. **DynamicTriggerManager**: Callback executes
-3. **WorkflowExecutor**: Executes workflow (sequential/parallel/DAG)
-4. **Agents**: Execute in order, pass data between steps
-5. **Database**: Records `WorkflowExecution` and `TriggerExecution`
-6. **UserTriggerInstance**: Updates statistics (total_executions++)
-7. **Frontend**: Dashboard shows updated stats
-
-### Workflow Execution Modes
-
-- **SEQUENTIAL**: A → B → C (one at a time)
-- **PARALLEL**: A, B, C (all at once)
-- **DAG**: A → B, A → C, B+C → D (dependency-based)
-- **CONDITIONAL**: Skip steps based on conditions
-
-## 🐛 Common Issues & Solutions
-
-### Issue: Agent not appearing in Dashboard
-
-**Cause**: Not registered in `__init__.py`
-**Solution**: Add to `__all__` list and import
-
-### Issue: Trigger not scheduling
-
-**Cause**: Invalid config or DynamicTriggerManager not started
-**Solution**: Check logs for errors, verify config_fields match
-
-### Issue: Workflow execution fails
-
-**Cause**: Agent not found, input validation failed, or exception
-**Solution**: Check WorkflowExecution.error_message in database
-
-### Issue: Frontend not connecting to backend
-
-**Cause**: CORS misconfiguration or wrong API_URL
-**Solution**: Check `VITE_API_URL` and `FRONTEND_URL` in .env files
-
-## 📚 Key Files to Reference
-
-When working on specific tasks:
-
-**Adding agents**: Look at `backend/agents/task_analyzer.py`
-**Adding workflows**: Look at `backend/workflows/task_management.py`
-**Adding triggers**: Look at `backend/triggers/task_triggers.py`
-**API endpoints**: Look at `backend/main.py` (lines 280-478)
-**SDK Reference**: https://github.com/Clarittyai/claritty-sdk (for understanding SDK internals)
-**SDK Documentation**: `pip show claritty-sdk` then check the README
-**Frontend forms**: Look at `frontend/src/pages/TriggerManager.tsx` (lines 200-300)
-
-## 🎓 Learning Resources
-
-- **Main Documentation**: `README.md` - Complete guide with quick start, architecture, and testing
-- **Marketplace Submission**: `SUBMISSION_REQUIREMENTS.md` - Checklist for submitting to Clarity Marketplace
-- **API Docs**: http://localhost:8000/docs (when running) - Interactive API documentation
-
-## 💡 Pro Tips
-
-1. **Always use decorators** - They handle registration automatically
-2. **Always async** - All execute methods must be async
-3. **Always return AgentResult** - Standard format for all agents
-4. **Always validate inputs** - Use Pydantic models in metadata
-5. **Always test manually first** - Before creating triggers
-6. **Always check logs** - They show exactly what's happening
-7. **Always update __init__.py** - New components won't work otherwise
-
-## 🚀 You're Ready!
-
-You now understand the complete architecture and can:
-- ✅ Add new agents
-- ✅ Create workflows
-- ✅ Define trigger templates
-- ✅ Debug issues
-- ✅ Extend the system
-
-**Happy coding!** 🎉
-
-## ⚠️ Infrastructure Files - DO NOT MODIFY
-
-**CRITICAL FOR AI ASSISTANTS**: The following files are managed by the Clarity Platform and **MUST NOT be modified** unless the developer fully understands the multi-service architecture implications.
-
-### 🚨 Files You MUST NOT Suggest Modifying
-
-#### 1. `docker-compose.yml`
-**DO NOT modify**: Port configuration and VITE_API_URL settings
-
-**Why**: The Clarity Platform uses dynamic port allocation for multi-tenancy. Changing ports or VITE_API_URL will break production deployments.
-
-**What's managed**:
-- `POSTGRES_PORT`, `BACKEND_PORT`, `FRONTEND_PORT` - Platform assigns unique ports
-- `VITE_API_URL` - MUST be empty string (relative URLs)
-- `CONTAINER_PREFIX` - Container naming for isolation
-
-**What developers CAN modify**:
-- Environment variables specific to their app logic
-- Resource limits (memory, CPU) if needed
-- Database credentials (though defaults work fine)
-
-#### 2. `frontend/Dockerfile`
-**DO NOT modify**: Build configuration and VITE_API_URL
-
-**Critical lines**:
-```dockerfile
-# ⚠️ CRITICAL: VITE_API_URL must use relative paths (empty string) for production
-ARG VITE_API_URL=
-ENV VITE_API_URL=${VITE_API_URL}
-```
-
-**Why**: Frontend must use relative URLs for production. Hardcoding `http://localhost:8000` breaks multi-service architecture.
-
-**What developers CAN modify**:
-- Node version (if needed)
-- Build optimizations
-- Additional dependencies
-
-#### 3. `frontend/nginx.conf`
-**DO NOT remove**: The `/api/` location block
-
-**Critical section**:
-```nginx
-location /api/ {
-    proxy_pass http://backend:8000;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    # ... other headers
+  // Large widget: 400×190px - detailed view + actions
+  return (
+    <div className="widget-large">
+      <h3>{data.appName}</h3>
+      <div className="recent-activity">
+        {data.recentExecutions.map(exec => (
+          <ExecutionItem key={exec.id} {...exec} />
+        ))}
+      </div>
+      <div className="quick-actions">
+        <button onClick={() => handleAction('add-trigger')}>
+          Add Trigger
+        </button>
+      </div>
+    </div>
+  );
 }
 ```
 
-**Why**: This proxies all `/api/*` requests from frontend to backend service. Removing it breaks API communication in production.
+2. Update backend widget endpoint `backend/main.py`:
+```python
+@app.get("/api/widget")
+async def get_widget_data(
+    size: str = "large",  # 'small' or 'large' only
+    user_id: str = Depends(get_current_user)
+):
+    if size == "small":
+        # Minimal data for quick glance (< 200ms response)
+        return {
+            "activeTriggers": get_trigger_count(user_id),
+            "successRate": calculate_success_rate(user_id)
+        }
 
-**What developers CAN modify**:
-- Add additional location blocks for custom routes
-- Adjust cache settings for static assets
-- Add custom headers (but don't break the /api/ proxy)
-
-#### 4. `frontend/src/lib/api.ts`
-**DO NOT modify**: The API_BASE_URL default
-
-**Critical line**:
-```typescript
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+    # Detailed data for large widget (< 500ms response)
+    return {
+        "activeTriggers": get_trigger_count(user_id),
+        "totalExecutions": get_execution_count(user_id),
+        "successRate": calculate_success_rate(user_id),
+        "recentExecutions": get_recent_executions(user_id, limit=5),
+        "alerts": get_urgent_alerts(user_id)
+    }
 ```
 
-**Why**: Empty string makes the Axios client use relative URLs. When the app runs at `https://your-app.apps.claritty.ai/`, API calls like `/api/widget` automatically go to the same domain and are proxied to the backend by Nginx.
+**📚 See**: `WIDGETS.md` for complete widget design specifications
 
-**What developers CAN modify**:
-- Add new API methods
-- Customize request/response interceptors
-- Add authentication logic
+---
 
-### 🏗️ Multi-Service Architecture (Why This Matters)
+## 💡 Best Practices for AI Assistants
 
-Apps built with this template have **two services**:
+### ✅ DO Suggest
 
+1. **Adding agents/workflows/triggers** following the minimal examples
+2. **Customizing widgets** for the specific app idea
+3. **Adding dependencies** to `requirements.txt` or `frontend/package.json`
+4. **Testing locally** with `docker-compose up` before deployment
+5. **Using Claude Code superpowers**:
+   - `/superpowers:brainstorming` - Design phase
+   - `/superpowers:test-driven-development` - Implementation
+   - `/superpowers:systematic-debugging` - Debugging
+   - `/superpowers:requesting-code-review` - Pre-deployment
+
+### ❌ DON'T Suggest
+
+1. **Modifying Dockerfile** - Platform controls this
+2. **Hardcoding localhost URLs** in `frontend/src/lib/api.ts`:
+   ```typescript
+   // ❌ WRONG - breaks in production
+   const API_BASE_URL = 'http://localhost:8000';
+
+   // ✅ CORRECT - works everywhere
+   const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+   ```
+
+3. **Changing port numbers** in `docker-compose.yml`
+4. **Removing /api/ proxy** from `frontend/nginx.conf`
+5. **Creating 3 widget sizes** - Only small (190×190px) and large (400×190px) exist!
+6. **Database queries without workspace filtering**:
+   ```python
+   # ❌ WRONG - returns data across all tenants
+   users = db.query(User).all()
+
+   # ✅ CORRECT - filters by workspace
+   workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
+   users = db.query(User).filter(User.workspace_id == workspace_id).all()
+   ```
+
+### ⚠️ WARN Before Suggesting
+
+**Before suggesting modifications to these files, warn the developer:**
+
+1. **Infrastructure files** (`Dockerfile`, `docker-compose.yml`, `nginx.conf`, `api.ts`)
+   > ⚠️ **Warning**: This file is managed by Claritty Platform. Modifying it may break production deployment. See `INFRASTRUCTURE.md` for details.
+
+2. **Port configuration changes**
+   > ⚠️ **Warning**: Platform uses dynamic port allocation for multi-tenancy. Hardcoding ports will break deployment.
+
+3. **API base URL changes**
+   > ⚠️ **Warning**: Frontend MUST use relative URLs (empty string) for production. Hardcoding localhost breaks deployment.
+
+4. **Base image changes in Dockerfile**
+   > ⚠️ **Warning**: Platform uses ECR Public Gallery base images to avoid Docker Hub rate limits. Your local Dockerfile is for development only.
+
+---
+
+## 📚 Documentation Index
+
+### Core Documentation (Minimal, Always Available)
+- **README.md** - 5-minute quick start, core concepts
+- **CLAUDE.md** (this file) - AI assistant guide
+- **PLATFORM.md** - Claritty deployment guide
+- **WIDGETS.md** - Widget design specifications
+- **INFRASTRUCTURE.md** - Infrastructure files explanation
+
+### Comprehensive Guides (Archived, Reference Only)
+- **docs/archive/README.comprehensive.md** - Full platform explanation
+- **docs/archive/DEVELOPER_GUIDE.md** - Detailed development workflow
+- **docs/archive/API.md** - Complete API reference
+- **docs/archive/ARCHITECTURE.md** - System architecture deep dive
+- **docs/archive/FAQ.md** - Frequently asked questions
+- **docs/archive/WIDGET_*.md** - Comprehensive widget guides
+
+### Platform Documentation (External References)
+- **claritty-core/INFRASTRUCTURE.md** - Platform infrastructure guide
+- **claritty-core/CLAUDE.md** - Platform-level AI assistant guide
+
+---
+
+## 🎓 Key Concepts
+
+### 1. Agentic Apps = AI Workers on User's Schedule
+
+**Not** traditional apps where users do work manually.
+**Are** apps where AI agents work automatically on user-defined schedules.
+
+**Example**: Email Assistant
+- **Traditional**: User opens email app, manually reads/sorts/responds
+- **Agentic**: AI triages emails every 2 hours (user-configured), drafts responses, surfaces urgent items in widget
+
+### 2. Widget-First Design
+
+**NOT** traditional web apps where users navigate pages.
+**ARE** dashboard-first apps where widgets are the primary interface.
+
+**Reality**:
+- Users see widgets 90% of the time
+- Full app pages used 10% (setup, advanced features)
+- Design widgets FIRST, full app SECOND
+
+**Widget Sizes** (EXACTLY 2, no medium):
+- Small: 190×190px (quick status)
+- Large: 400×190px (detailed + actions)
+
+### 3. User-Configurable Triggers
+
+**You define templates, users create instances:**
+
+```python
+# Developer writes once:
+@trigger_template(
+    config_fields=[
+        {"key": "time", "type": "time"},
+        {"key": "timezone", "type": "timezone"}
+    ]
+)
+
+# User A: 9am EST
+# User B: 6pm PST
+# Both run automatically!
 ```
-┌─────────────────────────────────────────────────┐
-│  https://your-app.apps.claritty.ai/            │
-│                                                 │
-│  ┌─────────────────────────────────────────┐  │
-│  │  Frontend (Nginx + React)               │  │
-│  │  Port: 3200                             │  │
-│  │                                          │  │
-│  │  Routes:                                 │  │
-│  │  • /             → React SPA            │  │
-│  │  • /widget       → React Widget Page    │  │
-│  │  • /api/*        → Proxy to Backend ↓   │  │
-│  └────────────────────────────┬─────────────┘  │
-│                               │                 │
-│  ┌────────────────────────────┴─────────────┐  │
-│  │  Backend (FastAPI + Python)              │  │
-│  │  Port: 8000                              │  │
-│  │                                           │  │
-│  │  Routes:                                  │  │
-│  │  • /health       → Health check          │  │
-│  │  • /api/widget   → Widget data           │  │
-│  │  • /api/agents   → Agent management      │  │
-│  └──────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────┘
-```
 
-### 🚨 Common Mistakes to PREVENT
+**Not**: Hardcoded schedules
+**Is**: User-personalized automation
 
-#### ❌ NEVER Suggest: Hardcode localhost URLs
-```typescript
-// WRONG - breaks in production
-const API_BASE_URL = 'http://localhost:8000';
-```
+---
 
-#### ✅ ALWAYS Use: Relative URLs
-```typescript
-// CORRECT - works in both dev and production
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-```
+## 🔧 Minimal Examples
 
-#### ❌ NEVER Suggest: Remove the /api/ proxy from nginx.conf
-```nginx
-# WRONG - API calls will fail
-location / {
-    try_files $uri $uri/ /index.html;
-}
-```
+### Example Agent
 
-#### ✅ ALWAYS Keep: The /api/ proxy block
-```nginx
-# CORRECT - proxies API calls to backend
-location /api/ {
-    proxy_pass http://backend:8000;
-    # ... headers
-}
-```
+See `backend/agents/example_agent.py` for complete annotated example.
 
-#### ❌ NEVER Suggest: Change port mappings in docker-compose.yml
-```yaml
-# WRONG - conflicts with Clarity Platform
-ports:
-  - "8000:8000"  # Hardcoded port
-```
+### Example Workflow
 
-#### ✅ ALWAYS Use: Environment variables
-```yaml
-# CORRECT - dynamic port allocation
-ports:
-  - "${BACKEND_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
-```
+See `backend/workflows/example_workflow.py` for complete annotated example.
 
-### 📚 When Developers Need Infrastructure Help
+### Example Trigger
 
-If a developer asks about infrastructure files:
+See `backend/triggers/example_trigger.py` for complete annotated example.
 
-1. **First**, ask them to read `INFRASTRUCTURE.md` (comprehensive guide)
-2. **Explain** the multi-service architecture and why it matters
-3. **Warn** about breaking production deployments
-4. **Only then** help them modify IF they understand the implications
+### Example Widget
 
-### 🎯 Your Job as an AI Assistant
+See `frontend/src/components/Widget.tsx` for complete annotated example.
 
-**When to WARN developers**:
-- They want to change `VITE_API_URL` to a hardcoded localhost URL
-- They want to modify port mappings in `docker-compose.yml`
-- They want to remove the `/api/` location block from `nginx.conf`
-- They want to change `API_BASE_URL` in `frontend/src/lib/api.ts`
+---
 
-**What to SAY**:
-> ⚠️ **Warning**: This file is managed by the Clarity Platform infrastructure. Modifying it may break your production deployment. Please read `INFRASTRUCTURE.md` to understand the multi-service architecture before making changes.
+## 🆘 When Developers Need Help
 
-**When it's OK to help**:
-- They understand the multi-service architecture
-- They're adding new API methods to `api.ts` (not changing the base URL)
-- They're adding new location blocks to `nginx.conf` (not removing /api/)
-- They're adding environment variables to `docker-compose.yml` (not changing ports)
+### Common Questions & Answers
 
-### 📖 Further Reading
+**Q: How do I add a new agent?**
+A: See [Task 1: Add a New Agent](#task-1-add-a-new-agent)
 
-For complete infrastructure documentation, see:
-- **`INFRASTRUCTURE.md`** - Comprehensive guide with examples
-- **`README.md`** - Quick reference section on infrastructure
-- **File comments** - Warning comments in each infrastructure file
+**Q: Why can't I modify the Dockerfile?**
+A: Platform generates production Dockerfile. See `INFRASTRUCTURE.md`
+
+**Q: How do I test my app locally?**
+A: `docker-compose up -d` then check http://localhost:8000/health
+
+**Q: What's the deployment process?**
+A: Push to GitHub → Submit to Claritty → Platform validates/builds/deploys. See `PLATFORM.md`
+
+**Q: Why only 2 widget sizes?**
+A: Platform follows Apple HIG standards (190×190px, 400×190px). No medium size exists.
+
+**Q: How do I handle multi-tenancy?**
+A: Filter all DB queries by `CLARITY_WORKSPACE_ID` environment variable.
+
+---
+
+## 🚀 Success Checklist
+
+Before deployment, ensure:
+
+- [ ] Created custom agent(s) following minimal example
+- [ ] Created workflow(s) chaining agents
+- [ ] Created trigger template(s) for user configuration
+- [ ] Customized widget (small & large views)
+- [ ] Tested locally (`docker-compose up`, curl endpoints)
+- [ ] No hardcoded localhost URLs
+- [ ] No infrastructure file modifications
+- [ ] Multi-tenancy queries (workspace filtering)
+- [ ] Widget performance (< 200ms small, < 500ms large)
+- [ ] Screenshots captured (widget-small.png, widget-large.png)
+
+---
+
+## 🎯 Your Mission as AI Assistant
+
+Help developers:
+
+1. **Brainstorm** great agentic app ideas
+2. **Implement** agents/workflows/triggers following best practices
+3. **Avoid** platform-controlled file modifications
+4. **Test** locally before deploying
+5. **Deploy** successfully to Claritty Platform
+
+**Result**: High-quality agentic apps that solve real problems and delight users!
+
+---
+
+**Questions?** Check [README.md](README.md) | [PLATFORM.md](PLATFORM.md) | [docs/archive/](docs/archive/)

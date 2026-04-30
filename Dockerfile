@@ -14,15 +14,27 @@
 # ============================================================================
 # Stage 1: Build Frontend (React + Vite)
 # ============================================================================
-FROM node:20-alpine AS frontend-builder
+# ⚠️ PLATFORM NOTE: This Dockerfile is for LOCAL DEVELOPMENT ONLY
+# In production, Claritty Platform auto-generates an optimized Dockerfile with:
+# - ECR Public Gallery base images (no Docker Hub rate limits)
+# - Resilient package installation (handles lockfile mismatches)
+# - Platform environment variables (DATABASE_URL, PORT, CLARITY_WORKSPACE_ID)
+# - Health endpoint injection
+#
+# This local Dockerfile mirrors production behavior for testing.
+
+FROM public.ecr.aws/docker/library/node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
 # Copy frontend package files
 COPY frontend/package.json frontend/package-lock.json* ./
 
-# Install frontend dependencies
-RUN npm install
+# Install frontend dependencies (resilient mode)
+# --no-audit: Skip security audit (faster builds)
+# --no-fund: Skip funding messages (cleaner output)
+# --prefer-offline: Use npm cache when available (resilient to network issues)
+RUN npm install --no-audit --no-fund --prefer-offline
 
 # Copy frontend source
 COPY frontend/ ./
@@ -36,7 +48,7 @@ RUN npm run build
 # ============================================================================
 # Stage 2: Final Image (Nginx + Python + FastAPI)
 # ============================================================================
-FROM python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \

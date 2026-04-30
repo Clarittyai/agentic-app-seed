@@ -1,0 +1,52 @@
+{
+  "name": "Agentic App Seed - Claritty Platform Template",
+  "description": "Minimal template for building agentic apps that deploy to Claritty Platform. Optimized for Claude Code brainstorming and implementation workflow.",
+  "version": "1.0.0",
+  "context": {
+    "files": [
+      "README.md",
+      "CLAUDE.md",
+      "PLATFORM.md",
+      "WIDGETS.md",
+      "INFRASTRUCTURE.md",
+      "backend/agents/example_agent.py",
+      "backend/workflows/example_workflow.py",
+      "backend/triggers/example_trigger.py",
+      "frontend/src/components/Widget.tsx"
+    ],
+    "ignore": [
+      "docs/archive/**",
+      "node_modules/**",
+      "__pycache__/**",
+      ".git/**",
+      "*.pyc",
+      ".env",
+      ".venv/**",
+      "venv/**",
+      "dist/**",
+      "build/**"
+    ]
+  },
+  "metadata": {
+    "stack": "Python FastAPI + React TypeScript",
+    "platform": "Claritty Platform",
+    "deployment": "AWS ECS (platform-managed)",
+    "widget_sizes": ["190×190px", "400×190px"],
+    "reserved_env_vars": [
+      "DATABASE_URL",
+      "PORT",
+      "CLARITY_APP_ID",
+      "CLARITY_WORKSPACE_ID",
+      "JWT_SECRET",
+      "REDIS_URL"
+    ]
+  },
+  "guidelines": {
+    "start_with_brainstorming": "Always run /superpowers:brainstorming before implementing",
+    "widget_first_design": "Design widgets before full app pages - widgets are primary interface",
+    "platform_controlled_infrastructure": "DO NOT modify Dockerfile, docker-compose.yml, nginx.conf, or api.ts",
+    "multi_tenancy_required": "All database queries MUST filter by CLARITY_WORKSPACE_ID",
+    "exactly_2_widget_sizes": "Small (190×190px) and Large (400×190px) only - NO MEDIUM",
+    "performance_targets": "Small widget < 200ms, Large widget < 500ms"
+  }
+}

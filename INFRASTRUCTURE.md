@@ -1,6 +1,25 @@
 # Infrastructure Files - Do Not Modify
 
-This document explains which infrastructure files are managed by the Clarity Platform and **should NOT be modified** unless you fully understand the implications.
+**This document explains which infrastructure files are managed by the Claritty Platform.**
+
+## 🏗️ Platform-Controlled Infrastructure
+
+**Philosophy:** You write code. We handle infrastructure.
+
+Claritty Platform follows a **platform-controlled infrastructure** approach:
+- ✅ **You focus on**: Application code (backend, frontend, business logic)
+- ✅ **Platform handles**: Docker, nginx, deployment, health checks, multi-tenancy, databases
+
+**In Production:**
+- Platform auto-generates optimized Dockerfile with ECR Public Gallery base images
+- Platform injects environment variables (DATABASE_URL, PORT, CLARITY_WORKSPACE_ID)
+- Platform configures health endpoints and load balancing
+
+**📚 See**: `claritty-core/INFRASTRUCTURE.md` for complete platform infrastructure guide
+
+---
+
+This document explains which **local development** files mirror production behavior and should NOT be modified unless you fully understand the implications.
 
 ## ⚠️ Critical Infrastructure Files
 
@@ -22,17 +41,22 @@ This document explains which infrastructure files are managed by the Clarity Pla
 - Database credentials (though defaults work fine)
 
 ### 2. Root `Dockerfile`
-**DO NOT MODIFY:** Monolithic container build configuration
+**DO NOT MODIFY IN PRODUCTION:** Platform auto-generates production Dockerfile
 
-**Why:** The Clarity Platform deploys ONLY ONE container per app. The root Dockerfile combines both frontend and backend into a single container using supervisord to manage both Nginx and FastAPI processes.
+**Why:** The Claritty Platform auto-generates an optimized production Dockerfile during validation with:
+- ✅ ECR Public Gallery base images (`public.ecr.aws/docker/library/*`) - no Docker Hub rate limits
+- ✅ Resilient package installation (`npm install --no-audit --no-fund --prefer-offline`)
+- ✅ Health endpoint injection
+- ✅ Platform environment variables (DATABASE_URL, PORT, etc.)
 
-**Critical pattern:**
+**Local Development Dockerfile:**
+This repository's Dockerfile mirrors production behavior for local testing. It uses:
 ```dockerfile
-# Multi-stage build
-FROM node:20-alpine AS frontend-builder
-# ... build frontend
+# Multi-stage build with ECR Public Gallery images
+FROM public.ecr.aws/docker/library/node:20-alpine AS frontend-builder
+# ... build frontend with resilient npm install
 
-FROM python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.11-slim
 # ... install nginx, supervisor, python deps
 # ... copy frontend build from stage 1
 # ... configure supervisord to run both services
@@ -40,10 +64,14 @@ FROM python:3.11-slim
 
 **Why monolithic?** The platform's ECS deployment architecture expects a single container per app. Separating into multiple containers would break deployment.
 
-**What you CAN modify:**
-- Node version (if needed)
-- Build optimizations
-- Additional dependencies
+**📚 See**: `claritty-core/INFRASTRUCTURE.md` (lines 74-141) for complete Dockerfile generation details
+
+**What you CAN modify locally:**
+- Test different dependency versions
+- Add build-time optimizations
+- Debug container build issues
+
+**Note**: Platform-generated Dockerfile will override this in production!
 
 ### 3. `frontend/nginx.conf`
 **DO NOT REMOVE:** The `/api/` location block
@@ -177,10 +205,22 @@ ports:
 
 ## 📚 Further Reading
 
-- **Multi-Service Architecture:** See `docker-compose.yml` header comments
-- **Nginx Reverse Proxy:** See `frontend/nginx.conf` comments
-- **Build Configuration:** See `frontend/Dockerfile` comments
-- **Deployment Guide:** Check the main README.md
+**Core Documentation:**
+- **PLATFORM.md** - Deployment guide for Claritty Platform
+- **WIDGETS.md** - Widget design specifications
+- **CLAUDE.md** - AI assistant guide
+- **README.md** - Quick start and core concepts
+
+**Platform Infrastructure:**
+- **claritty-core/INFRASTRUCTURE.md** - Complete platform infrastructure guide
+  - Lines 74-141: Dockerfile generation (ECR Public Gallery, resilient npm install)
+  - Lines 142-220: nginx configuration (auto-generated for fullstack apps)
+  - Lines 360-382: Reserved environment variables (platform-injected)
+
+**Local Files:**
+- `docker-compose.yml` - Port configuration and service orchestration
+- `frontend/nginx.conf` - API proxy configuration
+- `Dockerfile` - Monolithic container build (mirrors production)
 
 ## 🆘 Need Help?
 
