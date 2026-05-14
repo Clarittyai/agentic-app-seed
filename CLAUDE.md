@@ -182,6 +182,31 @@ backend/
    - Large: **400×190px** (2.1:1 wide rectangle) - detailed view + actions
    - **NO MEDIUM SIZE EXISTS**
 
+#### 🚫 Widget Must Be Window-Size Invariant (Hard Rule)
+
+The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (190×190 or 400×190). Its appearance is controlled **only by the `size` prop** (small / large), never by the browser window.
+
+**Forbidden inside `Widget.tsx` and `WidgetPage.tsx`:**
+- Tailwind responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
+- CSS `@media` rules targeting widget classes
+- `useBreakpoint()`, `useMediaQuery()`, `window.innerWidth`, `window.matchMedia`, `ResizeObserver`
+- Any conditional that swaps the `size` prop based on viewport
+
+**Allowed:** the `size === 'small'` vs `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
+
+**Scope:** this rule applies **only to the Widget surface**. Full app pages (Dashboard, settings, modals, etc.) remain free to use breakpoints for their own layouts.
+
+**Why:** the widget is rendered inside the Clarity marketplace host, which gives it a fixed frame. Window-dependent styling would make the widget render differently on a mobile-hosted dashboard vs. a desktop-hosted one, breaking the Apple-HIG fixed-frame contract and failing marketplace validation.
+
+**Verification:** this grep MUST return no matches:
+```bash
+grep -nE '\b(sm|md|lg|xl|2xl):|@media|useBreakpoint|window\.innerWidth|matchMedia|ResizeObserver' \
+  frontend/src/components/Widget.tsx \
+  frontend/src/pages/WidgetPage.tsx
+```
+
+**📚 See**: `WIDGETS.md` → "Window-Size Invariance (Hard Rule)" for the full design rationale.
+
 5. **Multi-Tenancy**
    - All database queries MUST filter by `CLARITY_WORKSPACE_ID`
    - User isolation enforced at platform level
@@ -413,7 +438,8 @@ async def get_widget_data(
 3. **Changing port numbers** in `docker-compose.yml`
 4. **Removing /api/ proxy** from `frontend/nginx.conf`
 5. **Creating 3 widget sizes** - Only small (190×190px) and large (400×190px) exist!
-6. **Database queries without workspace filtering**:
+6. **Adding window-size media queries to the Widget** - The widget must look identical at every viewport (mobile, tablet, desktop, iframe). No `sm:`/`md:`/`lg:` prefixes, no `useBreakpoint`, no `window.innerWidth`, no `@media` rules inside `Widget.tsx` or `WidgetPage.tsx`. Responsive prefixes and breakpoint hooks belong in full app pages, not in the widget surface. See "🚫 Widget Must Be Window-Size Invariant" above.
+7. **Database queries without workspace filtering**:
    ```python
    # ❌ WRONG - returns data across all tenants
    users = db.query(User).all()

@@ -64,6 +64,75 @@ Widgets are the **primary interface** for agentic apps on Claritty Platform:
 
 ---
 
+## 🚫 Window-Size Invariance (Hard Rule)
+
+The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (190×190 or 400×190). Its appearance is controlled **only by the `size` prop** (small / large), never by the browser window.
+
+### Forbidden inside `Widget.tsx` and `WidgetPage.tsx`
+
+- Tailwind responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
+- CSS `@media` rules targeting widget classes
+- `useBreakpoint()`, `useMediaQuery()`, `window.innerWidth`, `window.matchMedia`, `ResizeObserver`
+- Any conditional that swaps the `size` prop based on viewport (e.g. `size={isMobile ? 'small' : 'large'}`)
+
+### Allowed
+
+- The `size === 'small'` vs `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
+- Fixed pixel values (`w-[190px]`, `h-[190px]`, `w-[400px]`).
+
+### Scope
+
+This rule applies **only to the Widget surface** (`Widget.tsx` + `WidgetPage.tsx`). Full app pages (Dashboard, settings, modals, etc.) remain free to use breakpoints and `useBreakpoint` for their own layouts. The widget is special.
+
+### Wrong vs. Right
+
+❌ **WRONG** — viewport-dependent styling inside the widget:
+```tsx
+// Widget.tsx
+<div className="w-[190px] sm:w-[240px] md:w-[300px]">  // ❌ size changes with browser window
+  ...
+</div>
+```
+
+❌ **WRONG** — conditional `size` prop based on viewport:
+```tsx
+// WidgetPage.tsx
+const breakpoint = useBreakpoint();                     // ❌ widget surface must not branch on viewport
+return <Widget size={breakpoint === 'mobile' ? 'small' : 'large'} />;
+```
+
+✅ **RIGHT** — fixed dimensions, host-controlled size:
+```tsx
+// Widget.tsx
+<div className="w-[190px] h-[190px]">                   // ✅ identical on every viewport
+  ...
+</div>
+```
+
+```tsx
+// WidgetPage.tsx
+const size = (searchParams.get('size') || 'large') as 'small' | 'large';  // ✅ size from host
+return <Widget size={size} />;
+```
+
+### Why
+
+The widget is rendered inside the Clarity marketplace host, which gives it a fixed frame. Window-dependent styling would make the widget render differently on a mobile-hosted dashboard vs. a desktop-hosted one, breaking the Apple-HIG fixed-frame contract and failing marketplace validation. The host owns layout; the widget owns content.
+
+### Verification
+
+This grep MUST return no matches:
+
+```bash
+grep -nE '\b(sm|md|lg|xl|2xl):|@media|useBreakpoint|window\.innerWidth|matchMedia|ResizeObserver' \
+  frontend/src/components/Widget.tsx \
+  frontend/src/pages/WidgetPage.tsx
+```
+
+Manual check: open `/widget?size=small` and `/widget?size=large`. Resize the browser from 320px to 1920px and toggle Chrome DevTools mobile emulation. The widget frame and its contents must not change a single pixel.
+
+---
+
 ## 🍎 Apple HIG Compliance
 
 ### Touch Target Sizes
