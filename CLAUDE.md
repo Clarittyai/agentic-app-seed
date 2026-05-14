@@ -192,6 +192,15 @@ The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages
 - `useBreakpoint()`, `useMediaQuery()`, `window.innerWidth`, `window.matchMedia`, `ResizeObserver`
 - Any conditional that swaps the `size` prop based on viewport
 
+**⚠️ Also watch out — global CSS leaks:** any `@media` block in `index.css` (or any global stylesheet) that uses a **bare element selector** (`a`, `button`, `*`, `html`, `body`, `input`, …) silently applies to the widget too, because those selectors match elements *inside* the widget root. Real example: `@media (max-width: 920px) { button { min-height: 44px } }` inflates the widget's small signal buttons at narrow viewports and breaks the fixed frame. If such a global rule is needed for the rest of the app, **scope it away from the widget** — the widget root carries `data-widget-size="small"` or `data-widget-size="large"`, so add a reset:
+
+```css
+[data-widget-size] a, [data-widget-size] button {
+  min-height: 0;
+  min-width: 0;
+}
+```
+
 **Allowed:** the `size === 'small'` vs `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
 
 **Scope:** this rule applies **only to the Widget surface**. Full app pages (Dashboard, settings, modals, etc.) remain free to use breakpoints for their own layouts.

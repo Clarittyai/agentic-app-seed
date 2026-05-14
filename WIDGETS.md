@@ -75,6 +75,36 @@ The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages
 - `useBreakpoint()`, `useMediaQuery()`, `window.innerWidth`, `window.matchMedia`, `ResizeObserver`
 - Any conditional that swaps the `size` prop based on viewport (e.g. `size={isMobile ? 'small' : 'large'}`)
 
+### ⚠️ Watch out — global CSS leaks (the silent killer)
+
+Static grep of `Widget.tsx` and `WidgetPage.tsx` is **not enough**. Any `@media` block in `index.css` (or any global stylesheet) that uses a **bare element selector** (`a`, `button`, `*`, `html`, `body`, `input`, …) silently applies to the widget too, because those selectors match elements *inside* the widget root.
+
+**Real example we hit:**
+
+```css
+/* index.css — looks harmless, looks like a mobile-touch-target rule */
+@media (max-width: 920px) {
+  a, button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+```
+
+The widget has 18px signal-badge buttons and a 32px VIEW ALL button. At any viewport ≤ 920px (including the marketplace iframe), the rule above forces those to 44px and **the fixed 190×190 / 400×190 widget layout breaks**. Static grep of widget files reports "clean" — yet the widget visibly changes with window size.
+
+**Fix:** scope the global rule away from the widget. The widget root carries `data-widget-size="small"` or `data-widget-size="large"`, so add a reset right after the global rule:
+
+```css
+[data-widget-size] a,
+[data-widget-size] button {
+  min-height: 0;
+  min-width: 0;
+}
+```
+
+Apply the same pattern for any other global rule that uses bare element selectors inside a `@media` query — `body`, `html`, `input`, `*` are equally dangerous.
+
 ### Allowed
 
 - The `size === 'small'` vs `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
