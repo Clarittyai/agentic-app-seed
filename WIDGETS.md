@@ -228,25 +228,31 @@ import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
 
 ✅ **Pure UI state** (modals inside the widget, expanded rows, etc.) doesn't need either action — keep it as plain React state. The contract is for crossing the iframe boundary or touching the backend.
 
-### Context menu (right-click)
+### Right-click and background-click — handled by the platform, not by you
 
-Right-clicks inside the widget iframe must surface the marketplace's app menu (Edit Mode / Open App / Delete) — NOT the browser's default iframe menu (which shows useless options like "Show this frame" / "Reload frame"). Install the bridge once on mount:
+You do NOT need to write any code for these. The marketplace deployment pipeline injects a small bridge script into every served HTML response (via the platform's nginx `sub_filter`, served from the reserved path `/__claritty/widget-bridge.js`). The bridge runs inside every widget iframe automatically.
+
+**What the platform bridge does:**
+
+| Event | What fires | Host reaction |
+|---|---|---|
+| Right-click anywhere on the widget | `WIDGET_ACTION/context_menu` postMessage | Host opens the app OptionsMenu (Edit Mode / Open App / Delete) at the cursor. Browser's default iframe menu is suppressed. |
+| Click on widget background (NOT on a `<button>`, `<a>`, `<input>`, `[role="button"]`, or `[data-widget-button="true"]`) | `WIDGET_ACTION/background_click` postMessage | Host opens the full app modal — same UX the old click-capture overlay provided, without an overlay. |
+| Click on an interactive element (button/link/etc.) | nothing extra | Your widget's own click handler runs normally (use `triggerDeepLink` / `runQuickAction` from `@/lib/widget-actions` to call the host or your API). |
+
+**Why this is platform-controlled:**
+- The script is injected by nginx into every HTML response, not from your source — you can't accidentally remove it.
+- Served from `/__claritty/widget-bridge.js`, a path nginx owns; your `dist/` can't shadow it.
+- All listeners attach with `{ capture: true }` so app-level `stopPropagation` runs too late to suppress them.
+- The bridge no-ops when not embedded (`window.parent === window`), so local dev at `http://localhost:3000/widget` keeps the normal browser context menu — handy for inspecting the page.
+
+**Opting buttons out of background-click**: if you have a click target that's NOT a standard interactive element (e.g. a `<div>` you've made clickable), mark it with `data-widget-button="true"` so the bridge doesn't treat clicks on it as background clicks:
 
 ```tsx
-import { installContextMenuBridge } from '@/lib/widget-actions';
-
-export default function Widget() {
-  useEffect(() => installContextMenuBridge(), []);
-  // ...
-}
+<div data-widget-button="true" onClick={...}>...</div>
 ```
 
-How it works:
-1. The bridge attaches a `contextmenu` listener to `document` and calls `preventDefault()` so the browser menu is suppressed.
-2. It posts a `WIDGET_ACTION` with `actionType: 'context_menu'` and the click coordinates relative to the iframe viewport.
-3. The host translates those to host-viewport coordinates and pops its existing `OptionsMenu` at the cursor.
-
-No setup beyond the import. The bridge no-ops when the widget runs standalone (`window.parent === window`), so the normal browser menu still shows during local dev at `/widget` — useful for inspecting the page.
+**Diagnostic ping**: the bridge posts a `WIDGET_BRIDGE_READY` message once on load. If you're debugging "menu doesn't work", check the marketplace host's DevTools console for `[widget-bridge] ready on ...` — if it's missing, your nginx config or image is stale.
 
 ---
 
