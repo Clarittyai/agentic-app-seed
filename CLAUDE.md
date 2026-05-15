@@ -216,6 +216,15 @@ grep -nE '\b(sm|md|lg|xl|2xl):|@media|useBreakpoint|window\.innerWidth|matchMedi
 
 **📚 See**: `WIDGETS.md` → "Window-Size Invariance (Hard Rule)" for the full design rationale.
 
+#### 🎬 Widget Button Actions (Hard Rule)
+
+Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `runQuickAction({ actionId, run })` from `frontend/src/lib/widget-actions.ts`. Never call `useNavigate()`, `router.push()`, or `window.parent.location` from inside the widget — the widget renders in an iframe, so router navigation only changes the iframe (confusing the user), and `window.parent.location` is blocked by the sandbox.
+
+- **Quick action**: calls the app's own API directly, widget updates in place, host gets an analytics ping.
+- **Deep link**: posts a message to the host; the host opens the app modal with the iframe pointed at the given path.
+
+**📚 See**: `WIDGETS.md` → "Widget Action Patterns" for the contract, helpers, and examples.
+
 5. **Multi-Tenancy**
    - All database queries MUST filter by `CLARITY_WORKSPACE_ID`
    - User isolation enforced at platform level
@@ -448,7 +457,8 @@ async def get_widget_data(
 4. **Removing /api/ proxy** from `frontend/nginx.conf`
 5. **Creating 3 widget sizes** - Only small (190×190px) and large (400×190px) exist!
 6. **Adding window-size media queries to the Widget** - The widget must look identical at every viewport (mobile, tablet, desktop, iframe). No `sm:`/`md:`/`lg:` prefixes, no `useBreakpoint`, no `window.innerWidth`, no `@media` rules inside `Widget.tsx` or `WidgetPage.tsx`. Responsive prefixes and breakpoint hooks belong in full app pages, not in the widget surface. See "🚫 Widget Must Be Window-Size Invariant" above.
-7. **Database queries without workspace filtering**:
+7. **Direct router navigation from widget buttons** - Never call `useNavigate()`, `router.push()`, `window.location.href = ...`, or `window.parent.location` from inside `Widget.tsx`. The widget runs in an iframe; router calls only navigate the iframe, and `window.parent.location` is sandbox-blocked. Use `triggerDeepLink({ path })` from `frontend/src/lib/widget-actions.ts` — the host catches the message and opens its app modal at the deep-link path. See "🎬 Widget Button Actions" above and `WIDGETS.md` → "Widget Action Patterns".
+8. **Database queries without workspace filtering**:
    ```python
    # ❌ WRONG - returns data across all tenants
    users = db.query(User).all()

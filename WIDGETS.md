@@ -163,6 +163,73 @@ Manual check: open `/widget?size=small` and `/widget?size=large`. Resize the bro
 
 ---
 
+## 🎬 Widget Action Patterns
+
+Widgets are interactive — buttons inside the iframe receive clicks (the host runs `sandbox="allow-scripts allow-same-origin"` and the click-capture overlay was removed). Two standard action types cover everything a widget button can do:
+
+| Type | What happens | When to use |
+|------|--------------|-------------|
+| **Quick action** | Calls the app's own backend API directly. Widget updates in place. No host modal. | "Refresh", "Mark read", "Toggle", "Increment counter" — anything the user expects to happen *inside* the widget. |
+| **Deep link** | Posts a message to the host. Host opens the app modal (`AppDialog`) with the iframe loaded at the given path. | "View details", "Open chart for BTC", "Settings" — anything that should show the full app at a specific route. |
+
+### The contract
+
+Both actions use one `postMessage` type:
+
+```ts
+// Sent by: widget (inside the iframe)
+// Received by: marketplace host (parent window)
+type WidgetActionMessage =
+  | { type: 'WIDGET_ACTION'; actionType: 'quick_action'; actionId: string; source: string; timestamp: number }
+  | { type: 'WIDGET_ACTION'; actionType: 'deep_link';    path: string;     source: string; timestamp: number };
+```
+
+`source` is your app slug (set `VITE_APP_SLUG` in env, or it falls back to `document.title`). The host uses it for analytics.
+
+### Use the helpers — never call `window.parent.postMessage` directly
+
+Import from `@/lib/widget-actions`:
+
+```tsx
+import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
+
+// Deep link — host opens modal at the path:
+<button onClick={() => triggerDeepLink({ path: '/?view=chart&coin=BTC' })}>
+  Open BTC chart
+</button>
+
+// Quick action — runs API inside the iframe, refreshes widget state:
+<button
+  onClick={async () => {
+    await runQuickAction({
+      actionId: 'mark-read',
+      run: () => markEmailsAsRead(),
+    });
+    await fetchData(); // refresh widget
+  }}
+>
+  Mark Read
+</button>
+```
+
+### Sandbox / origin notes
+
+- Iframe sandbox is `allow-scripts allow-same-origin`. `window.parent.postMessage` is permitted; `window.parent.location = ...` is NOT and will throw.
+- The helpers no-op when the widget runs standalone (`window.parent === window`) — local dev at `/widget` works without errors.
+- The host verifies `event.origin` matches the widget iframe's origin before acting on the message. Don't try to post from a different origin or the host will drop the message.
+
+### Rules
+
+❌ **Never** call `useNavigate()` / `router.push()` / `window.location.href = ...` from inside a widget button. The widget is in an iframe — those calls only change the iframe URL, not the host page, and the user sees a confusing in-place navigation. Use `triggerDeepLink({ path })` instead.
+
+❌ **Never** call `window.parent.location` or `top.window`. Sandbox blocks it.
+
+✅ **Always** use the helpers — they handle the embedded-vs-standalone check and the analytics ping for free.
+
+✅ **Pure UI state** (modals inside the widget, expanded rows, etc.) doesn't need either action — keep it as plain React state. The contract is for crossing the iframe boundary or touching the backend.
+
+---
+
 ## 🍎 Apple HIG Compliance
 
 ### Touch Target Sizes

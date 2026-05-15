@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getWidgetData, markEmailsAsRead, type WidgetData } from '@/lib/api';
+import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
 import { cn } from '@/lib/utils';
 
 interface WidgetProps {
@@ -9,7 +9,6 @@ interface WidgetProps {
 }
 
 export default function Widget({ size = 'large', className }: WidgetProps) {
-  const navigate = useNavigate();
   const [data, setData] = useState<WidgetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,20 +34,22 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
     }
   };
 
+  // Deep link — host opens the full app modal at the dashboard route.
   const handleOpenDashboard = () => {
-    navigate('/dashboard');
+    triggerDeepLink({ path: '/dashboard' });
   };
 
+  // Quick action — runs the API directly inside the widget iframe; the
+  // host gets an analytics ping but no UI change.
   const handleMarkAsRead = async () => {
     if (actionLoading) return;
-
     setActionLoading(true);
     try {
-      // Call API to mark urgent emails as read
-      const result = await markEmailsAsRead();
+      const result = await runQuickAction({
+        actionId: 'mark-emails-read',
+        run: () => markEmailsAsRead(),
+      });
       console.log(result.message);
-
-      // Refresh widget data after marking as read
       await fetchData();
     } catch (err) {
       console.error('Failed to mark emails as read:', err);
