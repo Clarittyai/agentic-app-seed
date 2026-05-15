@@ -30,6 +30,14 @@ export type WidgetActionMessage =
       path: string;
       source: string;
       timestamp: number;
+    }
+  | {
+      type: 'WIDGET_ACTION';
+      actionType: 'context_menu';
+      x: number; // iframe-local viewport coordinate
+      y: number;
+      source: string;
+      timestamp: number;
     };
 
 export interface QuickActionConfig<T> {
@@ -86,6 +94,35 @@ export function triggerDeepLink({ path, source }: DeepLinkConfig): void {
  * Errors propagate to the caller; the analytics message fires either
  * way so success/failure rates can be measured.
  */
+/**
+ * Forward right-clicks inside the widget iframe to the host so the user
+ * sees the marketplace app menu (Edit Mode / Open App / Delete) instead
+ * of the browser's default iframe menu. Returns a cleanup function; install
+ * once on mount inside a `useEffect`.
+ *
+ * No-ops when the widget runs standalone (`window.parent === window`), so
+ * local dev at `/widget` keeps the normal browser context menu — useful for
+ * inspecting the page.
+ */
+export function installContextMenuBridge(): () => void {
+  if (typeof window === 'undefined' || window.parent === window) {
+    return () => {};
+  }
+  const handler = (e: MouseEvent) => {
+    e.preventDefault();
+    postWidgetAction({
+      type: 'WIDGET_ACTION',
+      actionType: 'context_menu',
+      x: e.clientX,
+      y: e.clientY,
+      source: getWidgetSource(),
+      timestamp: Date.now(),
+    });
+  };
+  document.addEventListener('contextmenu', handler);
+  return () => document.removeEventListener('contextmenu', handler);
+}
+
 export async function runQuickAction<T>({
   actionId,
   run,

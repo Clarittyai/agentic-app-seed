@@ -228,6 +228,26 @@ import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
 
 ✅ **Pure UI state** (modals inside the widget, expanded rows, etc.) doesn't need either action — keep it as plain React state. The contract is for crossing the iframe boundary or touching the backend.
 
+### Context menu (right-click)
+
+Right-clicks inside the widget iframe must surface the marketplace's app menu (Edit Mode / Open App / Delete) — NOT the browser's default iframe menu (which shows useless options like "Show this frame" / "Reload frame"). Install the bridge once on mount:
+
+```tsx
+import { installContextMenuBridge } from '@/lib/widget-actions';
+
+export default function Widget() {
+  useEffect(() => installContextMenuBridge(), []);
+  // ...
+}
+```
+
+How it works:
+1. The bridge attaches a `contextmenu` listener to `document` and calls `preventDefault()` so the browser menu is suppressed.
+2. It posts a `WIDGET_ACTION` with `actionType: 'context_menu'` and the click coordinates relative to the iframe viewport.
+3. The host translates those to host-viewport coordinates and pops its existing `OptionsMenu` at the cursor.
+
+No setup beyond the import. The bridge no-ops when the widget runs standalone (`window.parent === window`), so the normal browser menu still shows during local dev at `/widget` — useful for inspecting the page.
+
 ---
 
 ## 🍎 Apple HIG Compliance

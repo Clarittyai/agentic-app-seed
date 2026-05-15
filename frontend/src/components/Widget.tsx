@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getWidgetData, markEmailsAsRead, type WidgetData } from '@/lib/api';
-import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
+import { triggerDeepLink, runQuickAction, installContextMenuBridge } from '@/lib/widget-actions';
 import { cn } from '@/lib/utils';
 
 interface WidgetProps {
@@ -20,6 +20,10 @@ export default function Widget({ size = 'large', className }: WidgetProps) {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [size]);
+
+  // Forward right-clicks to the host so the marketplace shows its app menu
+  // (Edit Mode / Open App / Delete) instead of the browser's iframe menu.
+  useEffect(() => installContextMenuBridge(), []);
 
   const fetchData = async () => {
     try {
