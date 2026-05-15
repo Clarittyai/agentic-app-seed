@@ -254,6 +254,28 @@ You do NOT need to write any code for these. The marketplace deployment pipeline
 
 **Diagnostic ping**: the bridge posts a `WIDGET_BRIDGE_READY` message once on load. If you're debugging "menu doesn't work", check the marketplace host's DevTools console for `[widget-bridge] ready on ...` — if it's missing, your nginx config or image is stale.
 
+### Notifying the host that your widget should refresh
+
+When the full app (rendered in the AppDialog modal) mutates state that the widget should reflect, call `notifyWidgetStateChanged()` from `@/lib/widget-actions` after the mutation succeeds. The host triggers a refresh for THIS widget only — other widgets on the dashboard stay put.
+
+```tsx
+import { notifyWidgetStateChanged } from '@/lib/widget-actions';
+
+async function handleMarkAllRead() {
+  await api.markAllAsRead();
+  notifyWidgetStateChanged(); // widget will reload with fresh counts
+}
+```
+
+**When to call it**: only when the user did something that meaningfully changes data surfaced by the widget. The widget already polls every 30s on its own, so this is the optimisation to avoid up-to-30s staleness after a deliberate user action.
+
+**When NOT to call it**:
+- On every click / scroll / keypress — that would re-trigger the skeleton overlay constantly.
+- After read-only operations (filtering, searching, viewing details) — nothing changed.
+- From inside the widget itself — the widget already has the latest data; only the embedded full-app pages need this.
+
+**Historical context**: closing the AppDialog used to unconditionally refresh every widget on the page, which caused a ~2-second skeleton overlay flicker after every modal close. That behaviour was dropped in favour of this opt-in signal so view-only modal opens cause zero widget animation.
+
 ---
 
 ## 🍎 Apple HIG Compliance

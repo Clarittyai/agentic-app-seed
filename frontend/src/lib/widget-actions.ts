@@ -38,6 +38,12 @@ export type WidgetActionMessage =
       y: number;
       source: string;
       timestamp: number;
+    }
+  | {
+      type: 'WIDGET_ACTION';
+      actionType: 'state_changed';
+      source: string;
+      timestamp: number;
     };
 
 export interface QuickActionConfig<T> {
@@ -94,6 +100,31 @@ export function triggerDeepLink({ path, source }: DeepLinkConfig): void {
  * Errors propagate to the caller; the analytics message fires either
  * way so success/failure rates can be measured.
  */
+/**
+ * Notify the host that data surfaced by this widget changed and the widget
+ * should refresh. Call this from your full-app pages (rendered inside the
+ * AppDialog modal) AFTER a successful mutation — e.g. user marked items as
+ * read, edited a setting, deleted a watched item.
+ *
+ * The host bumps the widget's internal refresh counter, which triggers a
+ * normal iframe reload + brief skeleton crossfade. Only THIS widget
+ * refreshes; other widgets on the page are untouched.
+ *
+ * Don't call this for every user click — widgets already poll every 30s
+ * on their own schedule. Use it when the user's action would otherwise
+ * leave them looking at stale data on the widget for up to 30 seconds.
+ *
+ * No-op when not embedded (window.parent === window).
+ */
+export function notifyWidgetStateChanged(source?: string): void {
+  postWidgetAction({
+    type: 'WIDGET_ACTION',
+    actionType: 'state_changed',
+    source: source ?? getWidgetSource(),
+    timestamp: Date.now(),
+  });
+}
+
 /**
  * Forward right-clicks inside the widget iframe to the host so the user
  * sees the marketplace app menu (Edit Mode / Open App / Delete) instead
