@@ -40,6 +40,19 @@ export type WidgetActionMessage =
       timestamp: number;
     }
   | {
+      // Posted by the platform widget-bridge after a 500ms touch-and-hold
+      // (cancelled if the finger moves >10px or lifts early). Apps never
+      // post this themselves — the bridge owns the gesture so a widget can
+      // remain fully interactive AND still let the user long-press to open
+      // the host's context menu.
+      type: 'WIDGET_ACTION';
+      actionType: 'long_press';
+      x: number; // iframe-local viewport coordinate
+      y: number;
+      source: string;
+      timestamp: number;
+    }
+  | {
       type: 'WIDGET_ACTION';
       actionType: 'state_changed';
       source: string;
