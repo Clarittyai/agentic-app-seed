@@ -95,7 +95,7 @@ frontend/
 ### Platform Integration
 - ✅ **Dockerfile** (ECR Public Gallery, resilient builds)
 - ✅ **Environment variables** (DATABASE_URL, PORT auto-injected)
-- ✅ **Widget specifications** (190×190px, 400×190px)
+- ✅ **Widget specifications** (Apple HIG: 170×170px, 360×170px, 360×376px)
 - ✅ **Multi-tenancy** (user isolation built-in)
 - ✅ **Health checks** (ALB-compatible)
 
@@ -119,9 +119,10 @@ class EmailAnalyzer(BaseAgent):
 
 ### 2. Widgets = Primary Interface
 
-Users interact mainly through dashboard widgets:
-- **Small (190×190px)**: Quick status check
-- **Large (400×190px)**: Detailed view + actions
+Users interact mainly through dashboard widgets (Apple HIG 3-size standard):
+- **Small (170×170px)**: Single quick info
+- **Medium (360×170px)**: List view, calendar, detailed + actions
+- **Large (360×376px)**: Complex multi-row content
 
 **NOT a traditional web app** - widgets come first!
 

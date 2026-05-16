@@ -63,9 +63,9 @@ Platform runs these checks:
    - ✅ Proper workspace isolation
 
 2. **Widget Validator**
-   - ✅ Exactly 2 widget sizes (190×190px, 400×190px)
+   - ✅ Apple HIG 3-size set (170×170px small, 360×170px medium, 360×376px large)
    - ✅ Apple HIG compliance (44px touch targets, 12px min font)
-   - ✅ Performance (< 200ms small, < 500ms large)
+   - ✅ Performance (< 200ms small, < 400ms medium, < 500ms large)
 
 3. **Security Scanner**
    - ✅ No OWASP vulnerabilities
@@ -191,8 +191,8 @@ Before submitting to Claritty Platform, verify:
 
 ### Widgets
 
-- [ ] Exactly 2 widget sizes implemented (small: 190×190px, large: 400×190px)
-- [ ] Widget endpoint responds in < 200ms (small), < 500ms (large)
+- [ ] Apple HIG 3-size set implemented (small: 170×170px, medium: 360×170px, large: 360×376px)
+- [ ] Widget endpoint responds in < 200ms (small), < 400ms (medium), < 500ms (large)
 - [ ] Widgets follow Apple HIG guidelines (44px touch targets, 12px min font)
 
 ### Infrastructure Files
@@ -206,6 +206,7 @@ Before submitting to Claritty Platform, verify:
 
 - [ ] `/health` endpoint returns `200 OK`
 - [ ] `/api/widget?size=small` works locally
+- [ ] `/api/widget?size=medium` works locally
 - [ ] `/api/widget?size=large` works locally
 
 ---
@@ -235,13 +236,14 @@ users = db.query(User).filter(User.workspace_id == workspace_id).all()
 
 **Error**:
 ```
-Widget validation failed: Found 3 widget sizes (expected 2)
+Widget validation failed: Found widget at off-spec dimensions
 ```
 
 **Solution**:
-Remove medium widget size. Platform only supports:
-- Small: 190×190px
-- Large: 400×190px
+Use only the Apple HIG sizes:
+- Small: 170×170px
+- Medium: 360×170px
+- Large: 360×376px
 
 ### Issue 3: Build Fails - Missing Dependencies
 

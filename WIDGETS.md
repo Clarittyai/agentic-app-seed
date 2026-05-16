@@ -18,37 +18,43 @@ Widgets are the **primary interface** for agentic apps on Claritty Platform:
 
 ## 📐 Widget Specifications (CRITICAL)
 
-### Exactly 2 Widget Sizes
+### Apple HIG 3-Size Standard
 
-**IMPORTANT**: Platform supports ONLY 2 sizes. No medium size exists.
+Platform supports 3 widget sizes matching Apple's Human Interface Guidelines.
 
-| Size | Dimensions | Aspect Ratio | Use Case | Max Per Row (Desktop) | Max Per Row (Mobile) |
-|------|------------|--------------|----------|----------------------|---------------------|
-| **Small** | `190×190px` | 1:1 (square) | Quick status, single metric | 4 | 2 |
-| **Large** | `400×190px` | 2.1:1 (wide) | Detailed view, multiple metrics | 2 | 1 |
+| Size | Dimensions | Grid Footprint | Aspect Ratio | Use Case |
+|------|------------|----------------|--------------|----------|
+| **Small** | `170×170px` | 2×2 icons | 1:1 (square) | Single quick info (battery, weather, next alarm) |
+| **Medium** | `360×170px` | 4×2 icons | 2.1:1 (wide) | List views, calendar events, multi-day forecasts |
+| **Large** | `360×376px` | 4×4 icons | ~1:1 (tall) | Complex graphs, large photos, multi-step reminders |
 
-**Key Constraint**: Both sizes have the **same 190px height** for perfect grid alignment!
+**Key Constraint**: Small and medium share the same 170px height; large is a true 4×4 cell occupying 2 columns × 2 rows.
 
 **Mathematical Alignment**:
 ```
-2 small widgets + gap = 1 large widget width
-190px + 20px + 190px = 400px ✅
+Column pitch 170px + gap 20px:
+1 col + gap + 1 col = 170 + 20 + 170 = 360px  ← medium / large width ✅
 ```
 
 ### Grid Layout
 
 **CSS Grid Implementation**:
 ```tsx
-// Container with explicit column sizing
-<div className="grid grid-cols-[repeat(2,190px)] md:grid-cols-[repeat(4,190px)] gap-[20px] w-full max-w-7xl mx-auto justify-center">
+// Container with 170px pitch and dense flow so medium/large widgets fit cleanly
+<div className="grid grid-cols-[repeat(2,170px)] md:grid-cols-[repeat(4,170px)] auto-rows-[170px] grid-flow-row-dense gap-[20px] w-full max-w-7xl mx-auto justify-center">
 
-  {/* Small widget - spans 1 column */}
-  <div style={{ width: '190px', height: '190px' }}>
+  {/* Small widget - 1 col × 1 row */}
+  <div style={{ width: '170px', height: '170px' }}>
     <YourSmallWidget />
   </div>
 
-  {/* Large widget - spans 2 columns */}
-  <div style={{ width: '400px', height: '190px', gridColumn: 'span 2' }}>
+  {/* Medium widget - 2 cols × 1 row */}
+  <div style={{ width: '360px', height: '170px', gridColumn: 'span 2' }}>
+    <YourMediumWidget />
+  </div>
+
+  {/* Large widget - 2 cols × 2 rows */}
+  <div style={{ width: '360px', height: '376px', gridColumn: 'span 2', gridRow: 'span 2' }}>
     <YourLargeWidget />
   </div>
 
@@ -57,7 +63,7 @@ Widgets are the **primary interface** for agentic apps on Claritty Platform:
 
 **CRITICAL RULES**:
 - ✅ ALWAYS use strict pixel dimensions via inline `style` prop
-- ✅ ALWAYS set `gridColumn: 'span 2'` for large widgets
+- ✅ ALWAYS set `gridColumn: 'span 2'` for medium and large; ALSO `gridRow: 'span 2'` for large
 - ❌ NEVER use responsive classes (`w-full`, `h-full`, `w-screen`, `aspect-*`)
 - ✅ ALWAYS set `overflow: hidden` on widget root containers
 - ✅ Gap MUST be `gap-[20px]` (20px) for mathematical alignment
@@ -66,7 +72,7 @@ Widgets are the **primary interface** for agentic apps on Claritty Platform:
 
 ## 🚫 Window-Size Invariance (Hard Rule)
 
-The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (190×190 or 400×190). Its appearance is controlled **only by the `size` prop** (small / large), never by the browser window.
+The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (170×170, 360×170, or 360×376). Its appearance is controlled **only by the `size` prop** (small / medium / large), never by the browser window.
 
 ### Forbidden inside `Widget.tsx` and `WidgetPage.tsx`
 
@@ -91,7 +97,7 @@ Static grep of `Widget.tsx` and `WidgetPage.tsx` is **not enough**. Any `@media`
 }
 ```
 
-The widget has 18px signal-badge buttons and a 32px VIEW ALL button. At any viewport ≤ 920px (including the marketplace iframe), the rule above forces those to 44px and **the fixed 190×190 / 400×190 widget layout breaks**. Static grep of widget files reports "clean" — yet the widget visibly changes with window size.
+The widget has 18px signal-badge buttons and a 32px VIEW ALL button. At any viewport ≤ 920px (including the marketplace iframe), the rule above forces those to 44px and **the fixed 170×170 / 360×170 / 360×376 widget layout breaks**. Static grep of widget files reports "clean" — yet the widget visibly changes with window size.
 
 **Fix:** scope the global rule away from the widget. The widget root carries `data-widget-size="small"` or `data-widget-size="large"`, so add a reset right after the global rule:
 
@@ -108,7 +114,7 @@ Apply the same pattern for any other global rule that uses bare element selector
 ### Allowed
 
 - The `size === 'small'` vs `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
-- Fixed pixel values (`w-[190px]`, `h-[190px]`, `w-[400px]`).
+- Fixed pixel values (`w-[170px]`, `h-[170px]`, `w-[360px]`, `h-[376px]`).
 
 ### Scope
 
@@ -119,7 +125,7 @@ This rule applies **only to the Widget surface** (`Widget.tsx` + `WidgetPage.tsx
 ❌ **WRONG** — viewport-dependent styling inside the widget:
 ```tsx
 // Widget.tsx
-<div className="w-[190px] sm:w-[240px] md:w-[300px]">  // ❌ size changes with browser window
+<div className="w-[170px] sm:w-[240px] md:w-[300px]">  // ❌ size changes with browser window
   ...
 </div>
 ```
@@ -134,7 +140,7 @@ return <Widget size={breakpoint === 'mobile' ? 'small' : 'large'} />;
 ✅ **RIGHT** — fixed dimensions, host-controlled size:
 ```tsx
 // Widget.tsx
-<div className="w-[190px] h-[190px]">                   // ✅ identical on every viewport
+<div className="w-[170px] h-[170px]">                   // ✅ identical on every viewport
   ...
 </div>
 ```
@@ -319,7 +325,7 @@ async function handleMarkAllRead() {
 
 ```tsx
 // ✅ CORRECT - Consistent padding
-<div className="w-[190px] h-[190px] p-3 overflow-hidden">
+<div className="w-[170px] h-[170px] p-3 overflow-hidden">
   <WidgetContent />
 </div>
 ```
@@ -404,7 +410,7 @@ async function handleMarkAllRead() {
 
 ## 🎨 Widget Design Patterns
 
-### Small Widget (190×190px)
+### Small Widget (170×170px)
 
 **Use cases**:
 - Single metric display
@@ -417,7 +423,7 @@ async function handleMarkAllRead() {
 export function SmallWidget({ data }) {
   return (
     <div
-      style={{ width: '190px', height: '190px' }}
+      style={{ width: '170px', height: '170px' }}
       className="bg-white rounded-lg shadow-sm p-3 overflow-hidden"
     >
       <div className="flex flex-col gap-2 h-full">
@@ -448,20 +454,20 @@ export function SmallWidget({ data }) {
 }
 ```
 
-### Large Widget (400×190px)
+### Medium Widget (360×170px)
 
 **Use cases**:
 - Multiple metrics
-- Recent activity list
+- Recent activity list (2-3 rows)
 - Charts/graphs
 - Multiple actions
 
 **Example**:
 ```tsx
-export function LargeWidget({ data }) {
+export function MediumWidget({ data }) {
   return (
     <div
-      style={{ width: '400px', height: '190px', gridColumn: 'span 2' }}
+      style={{ width: '360px', height: '170px', gridColumn: 'span 2' }}
       className="bg-white rounded-lg shadow-sm p-3 overflow-hidden"
     >
       <div className="flex gap-4 h-full">
@@ -676,7 +682,7 @@ lighthouse http://localhost:3000 --only-categories=performance
 # You can test locally with:
 
 # Check widget dimensions
-grep -r "190px\|400px" frontend/src/components/Widget.tsx
+grep -r "170px\|360px\|376px" frontend/src/components/Widget.tsx
 
 # Check touch target sizes
 grep -r "w-11\|h-11\|min-w-\[44px\]\|min-h-\[44px\]" frontend/src/components/
@@ -692,8 +698,9 @@ grep -r "text-xs\|text-sm\|text-base" frontend/src/components/Widget.tsx
 Before submitting to Claritty Platform, verify:
 
 ### Dimensions
-- [ ] Small widget: Exactly `190×190px` (no responsive width/height)
-- [ ] Large widget: Exactly `400×190px` + `gridColumn: 'span 2'`
+- [ ] Small widget: Exactly `170×170px` (no responsive width/height)
+- [ ] Medium widget: Exactly `360×170px` + `gridColumn: 'span 2'`
+- [ ] Large widget: Exactly `360×376px` + `gridColumn: 'span 2'` + `gridRow: 'span 2'`
 - [ ] No medium size implemented (platform doesn't support it)
 - [ ] All widgets use `overflow: hidden` to prevent overflow
 
@@ -785,8 +792,8 @@ function WidgetSkeleton({ size }) {
   return (
     <div className="animate-pulse bg-gray-200 rounded-lg"
          style={{
-           width: size === 'small' ? '190px' : '400px',
-           height: '190px'
+           width: size === 'small' ? '170px' : '360px',
+           height: size === 'large' ? '376px' : '170px'
          }}>
       {/* Skeleton content */}
     </div>
@@ -800,8 +807,8 @@ function WidgetError({ size }) {
   return (
     <div className="bg-red-50 border border-red-200 rounded-lg p-3"
          style={{
-           width: size === 'small' ? '190px' : '400px',
-           height: '190px'
+           width: size === 'small' ? '170px' : '360px',
+           height: size === 'large' ? '376px' : '170px'
          }}>
       <div className="text-sm text-red-600">
         Failed to load widget
@@ -820,8 +827,8 @@ function WidgetEmpty({ size }) {
   return (
     <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-center"
          style={{
-           width: size === 'small' ? '190px' : '400px',
-           height: '190px'
+           width: size === 'small' ? '170px' : '360px',
+           height: size === 'large' ? '376px' : '170px'
          }}>
       <div className="text-center">
         <div className="text-sm text-gray-500">No data yet</div>
@@ -848,16 +855,14 @@ function WidgetEmpty({ size }) {
 
 ## 🆘 Common Widget Mistakes
 
-### ❌ Mistake 1: Creating 3 Widget Sizes
+### ❌ Mistake 1: Inventing Off-Spec Widget Sizes
 
 ```tsx
-// ❌ WRONG - Platform only supports 2 sizes
-if (size === 'small') return <SmallWidget />;
-if (size === 'medium') return <MediumWidget />;  // NO MEDIUM!
-if (size === 'large') return <LargeWidget />;
+// ❌ WRONG - off-spec dimensions don't pass marketplace validation
+<div style={{ width: '200px', height: '200px' }} />
 ```
 
-**Solution**: Remove medium size. Only small (190×190px) and large (400×190px).
+**Solution**: Use only the Apple HIG sizes — small (170×170px), medium (360×170px), large (360×376px).
 
 ### ❌ Mistake 2: Using Responsive Width/Height
 
@@ -868,21 +873,26 @@ if (size === 'large') return <LargeWidget />;
 </div>
 
 // ✅ CORRECT - Fixed pixel dimensions
-<div style={{ width: '190px', height: '190px' }}>
+<div style={{ width: '170px', height: '170px' }}>
   <Widget />
 </div>
 ```
 
-### ❌ Mistake 3: Forgetting gridColumn for Large Widgets
+### ❌ Mistake 3: Forgetting gridColumn / gridRow for Wider/Taller Widgets
 
 ```tsx
-// ❌ WRONG - Large widget doesn't span 2 columns
-<div style={{ width: '400px', height: '190px' }}>
-  <LargeWidget />
+// ❌ WRONG - Medium widget doesn't span 2 columns
+<div style={{ width: '360px', height: '170px' }}>
+  <MediumWidget />
 </div>
 
-// ✅ CORRECT - Spans 2 columns
-<div style={{ width: '400px', height: '190px', gridColumn: 'span 2' }}>
+// ✅ CORRECT - Medium spans 2 columns
+<div style={{ width: '360px', height: '170px', gridColumn: 'span 2' }}>
+  <MediumWidget />
+</div>
+
+// ✅ CORRECT - Large spans 2 columns × 2 rows
+<div style={{ width: '360px', height: '376px', gridColumn: 'span 2', gridRow: 'span 2' }}>
   <LargeWidget />
 </div>
 ```

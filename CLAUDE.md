@@ -52,7 +52,7 @@ Let's brainstorm your agentic app idea! Run:
 2. **Users**: Who will use this app?
 3. **Automation**: What tasks should agents handle automatically?
 4. **Schedule**: When/how often should it run? (user-configurable triggers)
-5. **Widgets**: What should users see at a glance? (small: 190×190px, large: 400×190px)
+5. **Widgets**: What should users see at a glance? (small: 170×170px, medium: 360×170px, large: 360×376px)
 
 **Output**: Clear design for agents, workflows, triggers, and widgets.
 
@@ -80,7 +80,7 @@ Phase 3: Triggers
 
 Phase 4: Widgets
 - Update `frontend/src/components/Widget.tsx`
-- Implement small (190×190px) and large (400×190px) views
+- Implement small (170×170px), medium (360×170px), and large (360×376px) views
 - Test widget endpoint performance
 
 Phase 5: Testing & Deployment
@@ -177,14 +177,14 @@ backend/
    - `OPENAI_API_KEY` - OpenAI API key (if needed)
    - App-specific secrets (Slack webhook, Stripe key, etc.)
 
-4. **Widget Specifications** (EXACTLY 2 sizes, no medium!)
-   - Small: **190×190px** (1:1 square) - quick status check
-   - Large: **400×190px** (2.1:1 wide rectangle) - detailed view + actions
-   - **NO MEDIUM SIZE EXISTS**
+4. **Widget Specifications** — Apple HIG 3-size standard
+   - Small: **170×170px** (1:1 square) - single quick info (battery, status indicator)
+   - Medium: **360×170px** (2.1:1 wide rectangle) - list views, calendar, multi-day forecast
+   - Large: **360×376px** (4×4 footprint) - complex graphs, large photos, multi-step reminders
 
 #### 🚫 Widget Must Be Window-Size Invariant (Hard Rule)
 
-The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (190×190 or 400×190). Its appearance is controlled **only by the `size` prop** (small / large), never by the browser window.
+The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (170×170, 360×170, or 360×376). Its appearance is controlled **only by the `size` prop** (small / medium / large), never by the browser window.
 
 **Forbidden inside `Widget.tsx` and `WidgetPage.tsx`:**
 - Tailwind responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
@@ -201,7 +201,7 @@ The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages
 }
 ```
 
-**Allowed:** the `size === 'small'` vs `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
+**Allowed:** the `size === 'small'` / `size === 'medium'` / `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
 
 **Scope:** this rule applies **only to the Widget surface**. Full app pages (Dashboard, settings, modals, etc.) remain free to use breakpoints for their own layouts.
 
@@ -358,34 +358,55 @@ class MyTrigger:
 **Steps:**
 1. Update `frontend/src/components/Widget.tsx`:
 ```typescript
+// Apple HIG 3-size standard
+type WidgetSize = 'small' | 'medium' | 'large';
+
 interface WidgetProps {
-  size?: 'small' | 'large';  // ONLY 2 sizes, no 'medium'
+  size?: WidgetSize;
 }
 
-export default function Widget({ size = 'large' }: WidgetProps) {
+export default function Widget({ size = 'medium' }: WidgetProps) {
   const { data } = useQuery(['widget', size], () =>
     api.getWidgetData(size)
   );
 
   if (size === 'small') {
-    // Small widget: 190×190px - quick status check
+    // Small widget: 170×170px — single quick info
     return (
       <div className="widget-small">
         <h3>{data.appName}</h3>
         <div className="metrics">
           <span>Active: {data.activeTriggers}</span>
-          <span>Success: {data.successRate}%</span>
         </div>
       </div>
     );
   }
 
-  // Large widget: 400×190px - detailed view + actions
+  if (size === 'medium') {
+    // Medium widget: 360×170px — list view + quick actions
+    return (
+      <div className="widget-medium">
+        <h3>{data.appName}</h3>
+        <div className="recent-activity">
+          {data.recentExecutions.slice(0, 2).map(exec => (
+            <ExecutionItem key={exec.id} {...exec} />
+          ))}
+        </div>
+        <div className="quick-actions">
+          <button onClick={() => handleAction('add-trigger')}>
+            Add Trigger
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Large widget: 360×376px — complex multi-row view
   return (
     <div className="widget-large">
       <h3>{data.appName}</h3>
       <div className="recent-activity">
-        {data.recentExecutions.map(exec => (
+        {data.recentExecutions.slice(0, 5).map(exec => (
           <ExecutionItem key={exec.id} {...exec} />
         ))}
       </div>
@@ -403,7 +424,7 @@ export default function Widget({ size = 'large' }: WidgetProps) {
 ```python
 @app.get("/api/widget")
 async def get_widget_data(
-    size: str = "large",  # 'small' or 'large' only
+    size: str = "medium",  # 'small' | 'medium' | 'large'
     user_id: str = Depends(get_current_user)
 ):
     if size == "small":
@@ -413,7 +434,15 @@ async def get_widget_data(
             "successRate": calculate_success_rate(user_id)
         }
 
-    # Detailed data for large widget (< 500ms response)
+    if size == "medium":
+        # Medium widget: list view (< 400ms response)
+        return {
+            "activeTriggers": get_trigger_count(user_id),
+            "successRate": calculate_success_rate(user_id),
+            "recentExecutions": get_recent_executions(user_id, limit=2),
+        }
+
+    # Large widget: full detail (< 500ms response)
     return {
         "activeTriggers": get_trigger_count(user_id),
         "totalExecutions": get_execution_count(user_id),
@@ -455,7 +484,7 @@ async def get_widget_data(
 
 3. **Changing port numbers** in `docker-compose.yml`
 4. **Removing /api/ proxy** from `frontend/nginx.conf`
-5. **Creating 3 widget sizes** - Only small (190×190px) and large (400×190px) exist!
+5. **Creating widgets at non-Apple dimensions** — only small (170×170px), medium (360×170px), and large (360×376px) exist!
 6. **Adding window-size media queries to the Widget** - The widget must look identical at every viewport (mobile, tablet, desktop, iframe). No `sm:`/`md:`/`lg:` prefixes, no `useBreakpoint`, no `window.innerWidth`, no `@media` rules inside `Widget.tsx` or `WidgetPage.tsx`. Responsive prefixes and breakpoint hooks belong in full app pages, not in the widget surface. See "🚫 Widget Must Be Window-Size Invariant" above.
 7. **Direct router navigation from widget buttons** - Never call `useNavigate()`, `router.push()`, `window.location.href = ...`, or `window.parent.location` from inside `Widget.tsx`. The widget runs in an iframe; router calls only navigate the iframe, and `window.parent.location` is sandbox-blocked. Use `triggerDeepLink({ path })` from `frontend/src/lib/widget-actions.ts` — the host catches the message and opens its app modal at the deep-link path. See "🎬 Widget Button Actions" above and `WIDGETS.md` → "Widget Action Patterns".
 8. **Database queries without workspace filtering**:
@@ -530,9 +559,10 @@ async def get_widget_data(
 - Full app pages used 10% (setup, advanced features)
 - Design widgets FIRST, full app SECOND
 
-**Widget Sizes** (EXACTLY 2, no medium):
-- Small: 190×190px (quick status)
-- Large: 400×190px (detailed + actions)
+**Widget Sizes** — Apple HIG 3-size standard:
+- Small: 170×170px (quick status)
+- Medium: 360×170px (list views, detailed + actions)
+- Large: 360×376px (complex multi-row content)
 
 ### 3. User-Configurable Triggers
 
@@ -593,8 +623,8 @@ A: `docker-compose up -d` then check http://localhost:8000/health
 **Q: What's the deployment process?**
 A: Push to GitHub → Submit to Claritty → Platform validates/builds/deploys. See `PLATFORM.md`
 
-**Q: Why only 2 widget sizes?**
-A: Platform follows Apple HIG standards (190×190px, 400×190px). No medium size exists.
+**Q: What widget sizes are available?**
+A: Platform follows Apple HIG standards: small (170×170px), medium (360×170px), and large (360×376px).
 
 **Q: How do I handle multi-tenancy?**
 A: Filter all DB queries by `CLARITY_WORKSPACE_ID` environment variable.
@@ -608,13 +638,13 @@ Before deployment, ensure:
 - [ ] Created custom agent(s) following minimal example
 - [ ] Created workflow(s) chaining agents
 - [ ] Created trigger template(s) for user configuration
-- [ ] Customized widget (small & large views)
+- [ ] Customized widget (small, medium & large views)
 - [ ] Tested locally (`docker-compose up`, curl endpoints)
 - [ ] No hardcoded localhost URLs
 - [ ] No infrastructure file modifications
 - [ ] Multi-tenancy queries (workspace filtering)
 - [ ] Widget performance (< 200ms small, < 500ms large)
-- [ ] Screenshots captured (widget-small.png, widget-large.png)
+- [ ] Screenshots captured (widget-small.png, widget-medium.png, widget-large.png)
 
 ---
 
