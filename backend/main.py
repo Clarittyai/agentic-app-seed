@@ -46,6 +46,33 @@ app = FastAPI(
 from backend.infrastructure import health_router
 app.include_router(health_router)
 
+# Auto-include app-specific routers from backend/routes/*.py (each exposes a
+# module-level `router = APIRouter()`). Registered HERE — before the inline
+# example endpoints further down — so a generated backend/routes/app.py can
+# OVERRIDE them: FastAPI dispatches to the FIRST route registered for a given
+# path+method. Generated apps overwrite backend/routes/app.py with their own
+# data endpoints; the inline examples below remain as shadowed fallbacks.
+import importlib as _importlib
+import pkgutil as _pkgutil
+from fastapi import APIRouter as _APIRouter
+
+try:
+    from backend import routes as _routes_pkg
+
+    for _m in _pkgutil.iter_modules(_routes_pkg.__path__):
+        try:
+            _mod = _importlib.import_module(f"backend.routes.{_m.name}")
+            _router = getattr(_mod, "router", None)
+            if isinstance(_router, _APIRouter):
+                app.include_router(_router)
+                logger.info(f"Included app router: backend.routes.{_m.name}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(
+                f"Failed to include app router backend.routes.{_m.name}: {_e}"
+            )
+except Exception as _e:  # noqa: BLE001
+    logger.warning(f"No app routers package to include: {_e}")
+
 # Global trigger manager (initialized on startup)
 trigger_manager: Optional[DynamicTriggerManager] = None
 
