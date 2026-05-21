@@ -22,6 +22,13 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* Brand tokens (HSL channels) — neutral defaults; each generated app
+       overrides these in src/theme.css to get a unique, on-theme look. */
+    --brand-primary: 0 0% 0%;
+    --brand-accent: 227 100% 68%;
+    --brand-accent-600: 244 76% 59%;
+    --brand-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
   }
 
   .dark {
@@ -57,7 +64,7 @@
 }
 
 @layer components {
-  /* Claritty Buttons - Apple Style (Minimal, Bold) */
+  /* Buttons - Apple Style (Minimal, Bold) */
   .btn-primary {
     @apply bg-primary text-white font-medium px-8 py-3.5 sm:px-10 sm:py-4 lg:px-12 lg:py-4 rounded-full transition-all touch-manipulation;
     @apply hover:bg-primary-800 hover:shadow-lg active:scale-[0.98];

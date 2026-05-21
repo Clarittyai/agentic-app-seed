@@ -15,9 +15,12 @@ export default {
     },
     extend: {
       colors: {
-        // Claritty Brand Colors - From Website
+        // Brand colors — driven by CSS variables so each generated app gets a
+        // unique theme (defaults live in src/index.css :root; per-app values
+        // are injected into src/theme.css at generation time). HSL channels +
+        // <alpha-value> so opacity utilities (bg-primary/10) keep working.
         primary: {
-          DEFAULT: '#000000',
+          DEFAULT: 'hsl(var(--brand-primary) / <alpha-value>)',
           50: '#F9FAFB',
           100: '#F3F4F6',
           200: '#E5E7EB',
@@ -31,16 +34,16 @@ export default {
           950: '#000000',
           foreground: '#FFFFFF',
         },
-        // Accent: Electric Blue (from Claritty logo)
+        // Accent — the app's primary brand color (theme-driven).
         accent: {
-          DEFAULT: '#5B7FFF',
+          DEFAULT: 'hsl(var(--brand-accent) / <alpha-value>)',
           50: '#EEF2FF',
           100: '#E0E7FF',
           200: '#C7D2FE',
           300: '#A5B4FC',
           400: '#818CF8',
           500: '#5B7FFF',
-          600: '#4F46E5',
+          600: 'hsl(var(--brand-accent-600) / <alpha-value>)',
           700: '#4338CA',
           800: '#3730A3',
           900: '#312E81',
@@ -162,7 +165,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
+        // Theme-driven: --brand-font holds the full stack (default in index.css).
+        sans: ['var(--brand-font)'],
         mono: ['SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'monospace'],
       },
       backgroundImage: {

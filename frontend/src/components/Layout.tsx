@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Moon, Sun, Home, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { appName } from '@/lib/app-meta';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,24 +28,13 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-20">
-            {/* Logo */}
+            {/* Logo — the app's own name (no platform branding) */}
             <Link to="/" className="flex items-center gap-3 group">
-              <img
-                src="https://www.claritty.ai/logo.svg"
-                alt="Claritty"
-                className="h-6 lg:h-7 w-auto"
-                onError={(e) => {
-                  // Fallback to emoji if logo fails
-                  e.currentTarget.style.display = 'none';
-                  const fallback = e.currentTarget.parentElement?.querySelector('.logo-fallback');
-                  if (fallback) {
-                    fallback.classList.remove('hidden');
-                  }
-                }}
-              />
-              <span className="text-2xl logo-fallback hidden">⚡</span>
-              <span className="hidden sm:inline-block text-lg lg:text-xl font-bold text-gray-900 dark:text-white group-hover:text-accent transition-colors">
-                Clarity
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-foreground text-sm font-bold">
+                {appName.charAt(0).toUpperCase()}
+              </span>
+              <span className="inline-block text-lg lg:text-xl font-bold text-gray-900 dark:text-white group-hover:text-accent transition-colors">
+                {appName}
               </span>
             </Link>
 
@@ -121,28 +111,11 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
       <footer className="border-t border-gray-200 dark:border-gray-800 py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-400">
-            <p className="text-center sm:text-left">
-              Powered by{' '}
-              <a
-                href="https://www.claritty.ai"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-accent hover:underline underline-offset-4 transition-colors"
-              >
-                Claritty
-              </a>
-              {' '}• Built with{' '}
-              <a
-                href="https://www.anthropic.com/claude"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-accent hover:underline underline-offset-4 transition-colors"
-              >
-                Claude AI
-              </a>
+            <p className="text-center sm:text-left font-medium text-gray-900 dark:text-white">
+              {appName}
             </p>
             <p className="text-center sm:text-right text-xs text-gray-500 dark:text-gray-500">
-              © 2025 Claritty. All rights reserved.
+              © {new Date().getFullYear()} {appName}
             </p>
           </div>
         </div>

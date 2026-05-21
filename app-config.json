@@ -1,8 +1,8 @@
 {
   "$schema": "https://clarity.ai/schemas/app-config-v1.json",
-  "appName": "Clarity Starter Template",
+  "appName": "App",
   "appVersion": "1.0.0",
-  "description": "Official starter template for building AI-powered agentic apps on Clarity Platform. Includes a working Smart Email Filter example to demonstrate agents, workflows, and triggers. Clone, customize, and deploy your own agentic application.",
+  "description": "An AI-powered agentic app.",
   "configSchema": {
     "version": "1.0",
     "sections": [

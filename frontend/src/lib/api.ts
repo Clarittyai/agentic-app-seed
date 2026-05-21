@@ -125,7 +125,9 @@ export const healthCheck = async () => {
   return response.data;
 };
 
-export const getWidgetData = async (size: 'small' | 'large' = 'large'): Promise<WidgetData> => {
+export const getWidgetData = async (
+  size: 'small' | 'medium' | 'large' = 'medium',
+): Promise<WidgetData> => {
   const response = await api.get(`/api/widget?size=${size}`);
   return response.data;
 };

@@ -156,9 +156,6 @@ export default function Widget({ size = 'medium', className }: WidgetProps) {
           >
             Open Inbox
           </button>
-          <div className="text-[10px] text-center text-gray-500 dark:text-gray-500">
-            Powered by Claritty
-          </div>
         </div>
       </div>
     );
@@ -274,9 +271,6 @@ export default function Widget({ size = 'medium', className }: WidgetProps) {
           >
             View All
           </button>
-        </div>
-        <div className="text-[10px] text-gray-500 dark:text-gray-500 whitespace-nowrap">
-          Powered by Claritty
         </div>
       </div>
     </div>
