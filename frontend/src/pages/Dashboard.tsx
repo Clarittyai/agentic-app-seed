@@ -1,207 +1,140 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Sparkles, RefreshCw, AlertCircle, Activity } from 'lucide-react';
 import Widget from '@/components/Widget';
-import { Mail, Clock, TrendingUp, Sparkles } from 'lucide-react';
+import { appName, appDescription } from '@/lib/app-meta';
+import { getWidgetData, type WidgetData } from '@/lib/api';
 
+/**
+ * Generic, on-brand dashboard reference. Generation customizes this per app —
+ * keep it branded to {appName} (never a hardcoded product name), themed via the
+ * app's tokens (text-accent / bg-card / text-muted-foreground / border, NOT
+ * hardcoded hex), mobile-first, and with real loading / empty / error states.
+ */
 export default function Dashboard() {
+  const [data, setData] = useState<WidgetData | null>(null);
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>(
+    'loading',
+  );
+
+  const load = async () => {
+    setStatus('loading');
+    try {
+      setData(await getWidgetData('large'));
+      setStatus('ready');
+    } catch {
+      setStatus('error');
+    }
+  };
+  useEffect(() => {
+    void load();
+  }, []);
+
   return (
-    <div className="space-y-12">
-      {/* Hero Section with Widget */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
+    <div className="mx-auto max-w-5xl space-y-10 sm:space-y-14">
+      {/* Hero — branded to the app's own name + description */}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
         className="text-center"
       >
-        <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-1.5 mb-6">
-          <Sparkles className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium text-accent">
-            Smart Email Filtering
+        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 shadow-sm">
+          <Sparkles className="h-4 w-4 text-accent" />
+          <span className="text-sm font-medium text-muted-foreground">
+            {appName}
           </span>
         </div>
-
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
-          Your Inbox,{' '}
-          <span className="text-gradient">Simplified</span>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+          {appName}
         </h1>
-
-        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-12">
-          AI-powered email filtering that learns what's important to you.
-          Stay focused on what matters.
-        </p>
-
-        {/* Widget - Hero Element */}
-        <div className="flex justify-center mb-8">
-          <Widget size="large" className="hover-lift" />
+        {appDescription && (
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            {appDescription}
+          </p>
+        )}
+        <div className="mt-8 flex justify-center sm:mt-10">
+          <Widget size="large" />
         </div>
+      </motion.section>
 
-        <p className="text-sm text-gray-500 dark:text-gray-500">
-          Updates automatically every 30 seconds
-        </p>
-      </motion.div>
-
-      {/* Stats Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
+      {/* Overview — demonstrates the mandatory loading / error / ready states */}
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <StatsCard
-          icon={<Mail className="w-6 h-6 text-accent" />}
-          label="Filtered Today"
-          value="24"
-          change="+12%"
-          changeType="positive"
-        />
-        <StatsCard
-          icon={<TrendingUp className="w-6 h-6 text-green" />}
-          label="Time Saved"
-          value="18 min"
-          change="+5 min"
-          changeType="positive"
-        />
-        <StatsCard
-          icon={<Clock className="w-6 h-6 text-purple" />}
-          label="Last Check"
-          value="Just now"
-          change="Active"
-          changeType="neutral"
-        />
-      </motion.div>
-
-      {/* Recent Activity */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Recent Activity
-          </h2>
-          <button className="text-sm font-medium text-accent hover:text-accent-600 transition-colors">
-            View All
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Overview</h2>
+          <button
+            onClick={() => void load()}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted active:scale-95"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
           </button>
         </div>
 
-        <div className="space-y-3">
-          <ActivityItem
-            time="2 minutes ago"
-            action="3 emails filtered as high priority"
-            icon={<Mail className="w-4 h-4 text-orange" />}
-          />
-          <ActivityItem
-            time="15 minutes ago"
-            action="Inbox checked and organized"
-            icon={<Clock className="w-4 h-4 text-accent" />}
-          />
-          <ActivityItem
-            time="1 hour ago"
-            action="12 emails sorted successfully"
-            icon={<TrendingUp className="w-4 h-4 text-green" />}
-          />
-        </div>
-      </motion.div>
+        {status === 'loading' && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-28 animate-pulse rounded-2xl border border-border bg-card"
+              />
+            ))}
+          </div>
+        )}
 
-      {/* How It Works (Optional - can be removed if too much info) */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.6 }}
-        className="bg-gradient-to-br from-accent/5 to-purple/5 rounded-2xl p-8 border border-gray-200 dark:border-gray-800"
-      >
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          How It Works
-        </h3>
-        <div className="grid sm:grid-cols-3 gap-6 text-sm">
-          <div>
-            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mb-3">
-              <span className="font-bold text-accent">1</span>
-            </div>
-            <p className="text-gray-700 dark:text-gray-300">
-              <strong>Monitor</strong> - Automatically checks your inbox every 15 minutes
+        {status === 'error' && (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center shadow-sm">
+            <AlertCircle className="h-6 w-6 text-accent" />
+            <p className="text-sm text-muted-foreground">
+              We couldn&apos;t load your data right now.
             </p>
+            <button
+              onClick={() => void load()}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-transform active:scale-95"
+            >
+              Try again
+            </button>
           </div>
-          <div>
-            <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center mb-3">
-              <span className="font-bold text-purple">2</span>
-            </div>
-            <p className="text-gray-700 dark:text-gray-300">
-              <strong>Analyze</strong> - AI determines urgency and importance using Claude
-            </p>
+        )}
+
+        {status === 'ready' && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard label="Active" value={String(data?.active_triggers ?? 0)} />
+            <StatCard
+              label="Total runs"
+              value={String(data?.total_executions ?? 0)}
+            />
+            <StatCard
+              label="Success rate"
+              value={
+                data?.success_rate != null
+                  ? `${Math.round(data.success_rate)}%`
+                  : '—'
+              }
+            />
           </div>
-          <div>
-            <div className="w-10 h-10 rounded-full bg-green/10 flex items-center justify-center mb-3">
-              <span className="font-bold text-green">3</span>
-            </div>
-            <p className="text-gray-700 dark:text-gray-300">
-              <strong>Organize</strong> - Priority emails highlighted for quick action
-            </p>
-          </div>
-        </div>
-      </motion.div>
+        )}
+      </motion.section>
     </div>
   );
 }
 
-// Stats Card Component
-interface StatsCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  change: string;
-  changeType: 'positive' | 'negative' | 'neutral';
-}
-
-function StatsCard({ icon, label, value, change, changeType }: StatsCardProps) {
-  const changeColor =
-    changeType === 'positive' ? 'text-green' :
-    changeType === 'negative' ? 'text-red-500' :
-    'text-gray-500';
-
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover-lift">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          {icon}
-        </div>
-        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Activity className="h-4 w-4 text-accent" />
+        <span className="text-xs font-medium uppercase tracking-wide">
           {label}
         </span>
       </div>
-      <div className="flex items-end justify-between">
-        <span className="text-3xl font-bold text-gray-900 dark:text-white">
-          {value}
-        </span>
-        <span className={`text-sm font-medium ${changeColor}`}>
-          {change}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// Activity Item Component
-interface ActivityItemProps {
-  time: string;
-  action: string;
-  icon: React.ReactNode;
-}
-
-function ActivityItem({ time, action, icon }: ActivityItemProps) {
-  return (
-    <div className="flex items-start gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-      <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-white">
-          {action}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          {time}
-        </p>
-      </div>
+      <p className="mt-3 text-3xl font-bold tabular-nums text-foreground">
+        {value}
+      </p>
     </div>
   );
 }
