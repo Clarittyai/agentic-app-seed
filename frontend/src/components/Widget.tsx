@@ -3,10 +3,10 @@ import { getWidgetData, markEmailsAsRead, type WidgetData } from '@/lib/api';
 import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
 import { cn } from '@/lib/utils';
 
-// Apple HIG widget sizes:
+// Apple HIG widget sizes (heights match the platform's 170px grid):
 //   small  170×170 — single quick info
 //   medium 360×170 — list view, quick actions
-//   large  360×376 — multi-row complex view
+//   large  360×360 — multi-row complex view (2 rows + 20px gap = 360)
 export type WidgetSize = 'small' | 'medium' | 'large';
 
 interface WidgetProps {
@@ -18,7 +18,7 @@ interface WidgetProps {
 const SIZE_CLASSES: Record<WidgetSize, string> = {
   small: 'w-[170px] h-[170px]',
   medium: 'w-[360px] h-[170px]',
-  large: 'w-[360px] h-[376px]',
+  large: 'w-[360px] h-[360px]',
 };
 
 export default function Widget({ size = 'medium', className }: WidgetProps) {
@@ -162,7 +162,7 @@ export default function Widget({ size = 'medium', className }: WidgetProps) {
   }
 
   // Medium / Large widgets share the same status header and quick actions but
-  // the large variant adds a second preview row to fill 360×376.
+  // the large variant adds a second preview row to fill 360×360.
   const urgentEmails = data.recent_important_emails || [];
   const criticalCount = urgentEmails.filter(e => e.urgency_level === 'critical').length;
   const highCount = urgentEmails.filter(e => e.urgency_level === 'high').length;
@@ -219,7 +219,7 @@ export default function Widget({ size = 'medium', className }: WidgetProps) {
         </div>
       )}
 
-      {/* Large-only: extra email rows to fill the 360×376 footprint */}
+      {/* Large-only: extra email rows to fill the 360×360 footprint */}
       {size === 'large' && (
         <div className="flex flex-col gap-2 mb-2">
           {secondUrgentEmail && (

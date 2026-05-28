@@ -63,7 +63,7 @@ Platform runs these checks:
    - ✅ Proper workspace isolation
 
 2. **Widget Validator**
-   - ✅ Apple HIG 3-size set (170×170px small, 360×170px medium, 360×376px large)
+   - ✅ Apple HIG 3-size set (170×170px small, 360×170px medium, 360×360px large)
    - ✅ Apple HIG compliance (44px touch targets, 12px min font)
    - ✅ Performance (< 200ms small, < 400ms medium, < 500ms large)
 
@@ -191,7 +191,7 @@ Before submitting to Claritty Platform, verify:
 
 ### Widgets
 
-- [ ] Apple HIG 3-size set implemented (small: 170×170px, medium: 360×170px, large: 360×376px)
+- [ ] Apple HIG 3-size set implemented (small: 170×170px, medium: 360×170px, large: 360×360px)
 - [ ] Widget endpoint responds in < 200ms (small), < 400ms (medium), < 500ms (large)
 - [ ] Widgets follow Apple HIG guidelines (44px touch targets, 12px min font)
 
@@ -243,7 +243,7 @@ Widget validation failed: Found widget at off-spec dimensions
 Use only the Apple HIG sizes:
 - Small: 170×170px
 - Medium: 360×170px
-- Large: 360×376px
+- Large: 360×360px
 
 ### Issue 3: Build Fails - Missing Dependencies
 

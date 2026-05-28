@@ -26,7 +26,7 @@ Platform supports 3 widget sizes matching Apple's Human Interface Guidelines.
 |------|------------|----------------|--------------|----------|
 | **Small** | `170×170px` | 2×2 icons | 1:1 (square) | Single quick info (battery, weather, next alarm) |
 | **Medium** | `360×170px` | 4×2 icons | 2.1:1 (wide) | List views, calendar events, multi-day forecasts |
-| **Large** | `360×376px` | 4×4 icons | ~1:1 (tall) | Complex graphs, large photos, multi-step reminders |
+| **Large** | `360×360px` | 4×4 icons | 1:1 (square) | Complex graphs, large photos, multi-step reminders |
 
 **Key Constraint**: Small and medium share the same 170px height; large is a true 4×4 cell occupying 2 columns × 2 rows.
 
@@ -54,7 +54,7 @@ Column pitch 170px + gap 20px:
   </div>
 
   {/* Large widget - 2 cols × 2 rows */}
-  <div style={{ width: '360px', height: '376px', gridColumn: 'span 2', gridRow: 'span 2' }}>
+  <div style={{ width: '360px', height: '360px', gridColumn: 'span 2', gridRow: 'span 2' }}>
     <YourLargeWidget />
   </div>
 
@@ -72,7 +72,7 @@ Column pitch 170px + gap 20px:
 
 ## 🚫 Window-Size Invariance (Hard Rule)
 
-The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (170×170, 360×170, or 360×376). Its appearance is controlled **only by the `size` prop** (small / medium / large), never by the browser window.
+The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (170×170, 360×170, or 360×360). Its appearance is controlled **only by the `size` prop** (small / medium / large), never by the browser window.
 
 ### Forbidden inside `Widget.tsx` and `WidgetPage.tsx`
 
@@ -97,7 +97,7 @@ Static grep of `Widget.tsx` and `WidgetPage.tsx` is **not enough**. Any `@media`
 }
 ```
 
-The widget has 18px signal-badge buttons and a 32px VIEW ALL button. At any viewport ≤ 920px (including the marketplace iframe), the rule above forces those to 44px and **the fixed 170×170 / 360×170 / 360×376 widget layout breaks**. Static grep of widget files reports "clean" — yet the widget visibly changes with window size.
+The widget has 18px signal-badge buttons and a 32px VIEW ALL button. At any viewport ≤ 920px (including the marketplace iframe), the rule above forces those to 44px and **the fixed 170×170 / 360×170 / 360×360 widget layout breaks**. Static grep of widget files reports "clean" — yet the widget visibly changes with window size.
 
 **Fix:** scope the global rule away from the widget. The widget root carries `data-widget-size="small"` or `data-widget-size="large"`, so add a reset right after the global rule:
 
@@ -114,7 +114,7 @@ Apply the same pattern for any other global rule that uses bare element selector
 ### Allowed
 
 - The `size === 'small'` vs `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
-- Fixed pixel values (`w-[170px]`, `h-[170px]`, `w-[360px]`, `h-[376px]`).
+- Fixed pixel values (`w-[170px]`, `h-[170px]`, `w-[360px]`, `h-[360px]`).
 
 ### Scope
 
@@ -682,7 +682,7 @@ lighthouse http://localhost:3000 --only-categories=performance
 # You can test locally with:
 
 # Check widget dimensions
-grep -r "170px\|360px\|376px" frontend/src/components/Widget.tsx
+grep -r "170px\|360px\|360px" frontend/src/components/Widget.tsx
 
 # Check touch target sizes
 grep -r "w-11\|h-11\|min-w-\[44px\]\|min-h-\[44px\]" frontend/src/components/
@@ -700,7 +700,7 @@ Before submitting to Claritty Platform, verify:
 ### Dimensions
 - [ ] Small widget: Exactly `170×170px` (no responsive width/height)
 - [ ] Medium widget: Exactly `360×170px` + `gridColumn: 'span 2'`
-- [ ] Large widget: Exactly `360×376px` + `gridColumn: 'span 2'` + `gridRow: 'span 2'`
+- [ ] Large widget: Exactly `360×360px` + `gridColumn: 'span 2'` + `gridRow: 'span 2'`
 - [ ] No medium size implemented (platform doesn't support it)
 - [ ] All widgets use `overflow: hidden` to prevent overflow
 
@@ -793,7 +793,7 @@ function WidgetSkeleton({ size }) {
     <div className="animate-pulse bg-gray-200 rounded-lg"
          style={{
            width: size === 'small' ? '170px' : '360px',
-           height: size === 'large' ? '376px' : '170px'
+           height: size === 'large' ? '360px' : '170px'
          }}>
       {/* Skeleton content */}
     </div>
@@ -808,7 +808,7 @@ function WidgetError({ size }) {
     <div className="bg-red-50 border border-red-200 rounded-lg p-3"
          style={{
            width: size === 'small' ? '170px' : '360px',
-           height: size === 'large' ? '376px' : '170px'
+           height: size === 'large' ? '360px' : '170px'
          }}>
       <div className="text-sm text-red-600">
         Failed to load widget
@@ -828,7 +828,7 @@ function WidgetEmpty({ size }) {
     <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-center"
          style={{
            width: size === 'small' ? '170px' : '360px',
-           height: size === 'large' ? '376px' : '170px'
+           height: size === 'large' ? '360px' : '170px'
          }}>
       <div className="text-center">
         <div className="text-sm text-gray-500">No data yet</div>
@@ -862,7 +862,7 @@ function WidgetEmpty({ size }) {
 <div style={{ width: '200px', height: '200px' }} />
 ```
 
-**Solution**: Use only the Apple HIG sizes — small (170×170px), medium (360×170px), large (360×376px).
+**Solution**: Use only the Apple HIG sizes — small (170×170px), medium (360×170px), large (360×360px).
 
 ### ❌ Mistake 2: Using Responsive Width/Height
 
@@ -892,7 +892,7 @@ function WidgetEmpty({ size }) {
 </div>
 
 // ✅ CORRECT - Large spans 2 columns × 2 rows
-<div style={{ width: '360px', height: '376px', gridColumn: 'span 2', gridRow: 'span 2' }}>
+<div style={{ width: '360px', height: '360px', gridColumn: 'span 2', gridRow: 'span 2' }}>
   <LargeWidget />
 </div>
 ```

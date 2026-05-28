@@ -1,7 +1,7 @@
 {
   "id": "dashboard",
   "name": "Dashboard",
-  "description": "Widget-first dashboard surface with Apple HIG 3-size widgets (170×170 / 360×170 / 360×376). The base seed ships with the widget runtime + a default Dashboard page; this capability is the contract that says 'this app uses the dashboard surface'.",
+  "description": "Widget-first dashboard surface with Apple HIG 3-size widgets (170×170 / 360×170 / 360×360). The base seed ships with the widget runtime + a default Dashboard page; this capability is the contract that says 'this app uses the dashboard surface'.",
   "version": "0.1.0",
   "dependsOn": [],
   "requires": {
