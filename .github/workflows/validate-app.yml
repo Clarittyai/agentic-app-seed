@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "Waiting for backend to be healthy..."
           for i in {1..30}; do
-            if curl -f http://localhost:8000/health; then
+            if curl -f http://localhost:3200/health; then
               echo "Backend is healthy!"
               exit 0
             fi
@@ -57,22 +57,20 @@ jobs:
             sleep 2
           done
           echo "Backend health check failed after 60 seconds"
-          docker compose logs backend
+          docker compose logs app
           exit 1
 
       - name: Run validation script
         run: |
           python scripts/validate-app.py
         env:
-          BACKEND_URL: http://localhost:8000
+          BACKEND_URL: http://localhost:3200
 
       - name: Check logs for errors
         if: failure()
         run: |
-          echo "=== Backend Logs ==="
-          docker compose logs backend
-          echo "=== Frontend Logs ==="
-          docker compose logs frontend
+          echo "=== App Logs (nginx + FastAPI) ==="
+          docker compose logs app
           echo "=== Database Logs ==="
           docker compose logs postgres
 
@@ -177,7 +175,7 @@ jobs:
 
       - name: Run backend tests
         run: |
-          docker compose exec -T backend pytest -v
+          docker compose exec -T app sh -c "pip install -q pytest && python -m pytest -v"
         continue-on-error: true
 
       - name: Stop services
@@ -203,13 +201,9 @@ jobs:
           cp .env.example .env
           echo "ANTHROPIC_API_KEY=sk-ant-test-key" >> .env
 
-      - name: Build backend
+      - name: Build app image
         run: |
-          docker compose build backend
-
-      - name: Build frontend
-        run: |
-          docker compose build frontend
+          docker compose build app
 
       - name: Build summary
         run: |

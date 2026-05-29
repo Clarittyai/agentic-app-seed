@@ -217,4 +217,79 @@ export const markEmailsAsRead = async () => {
   return { message: 'Emails marked as read', success: true };
 };
 
+// Integrations (Settings → Integrations). Mirrors backend/integrations/routes.py.
+
+export interface IntegrationSetupStep {
+  step: string;
+  detail?: string;
+  url?: string;
+}
+
+export interface IntegrationCredentialField {
+  key: string;
+  label: string;
+  help?: string;
+  secret?: boolean;
+  howToObtain?: IntegrationSetupStep[];
+}
+
+export interface Integration {
+  id: string;
+  name: string;
+  icon?: string;
+  authKind: 'byo-oauth' | 'apikey' | 'basic' | 'webhook' | string;
+  summary?: string;
+  capabilities?: string[];
+  credentialFields: IntegrationCredentialField[];
+  setupGuide?: IntegrationSetupStep[];
+  status: { connected: boolean; account?: string };
+  redirectUri?: string;
+}
+
+export const listIntegrations = async (): Promise<Integration[]> => {
+  const response = await api.get('/api/integrations');
+  return response.data.integrations;
+};
+
+export const saveIntegrationCredentials = async (
+  integrationId: string,
+  credentials: Record<string, string>,
+): Promise<Integration> => {
+  const response = await api.post(
+    `/api/integrations/${integrationId}/credentials`,
+    { credentials },
+  );
+  return response.data;
+};
+
+export const getIntegrationOAuthUrl = async (
+  integrationId: string,
+): Promise<{ authUrl: string; redirectUri: string }> => {
+  const response = await api.post(`/api/integrations/${integrationId}/oauth/auth-url`);
+  return response.data;
+};
+
+export const completeIntegrationOAuth = async (
+  integrationId: string,
+  code: string,
+  state: string,
+): Promise<Integration> => {
+  const response = await api.post(
+    `/api/integrations/${integrationId}/oauth/callback`,
+    { code, state },
+  );
+  return response.data;
+};
+
+export const testIntegration = async (
+  integrationId: string,
+): Promise<{ ok: boolean; account?: string; detail?: string }> => {
+  const response = await api.post(`/api/integrations/${integrationId}/test`);
+  return response.data;
+};
+
+export const disconnectIntegration = async (integrationId: string): Promise<void> => {
+  await api.delete(`/api/integrations/${integrationId}`);
+};
+
 export default api;

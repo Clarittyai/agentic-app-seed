@@ -30,18 +30,18 @@ jobs:
       - name: Build all services
         run: |
           echo "Building all Docker images..."
-          docker-compose build --parallel
+          docker compose build
 
       - name: Start all services
         run: |
           echo "Starting all services..."
-          docker-compose up -d
+          docker compose up -d
 
       - name: Wait for PostgreSQL
         run: |
           echo "Waiting for PostgreSQL to be ready..."
           for i in {1..30}; do
-            if docker-compose exec -T postgres pg_isready -U clarity_user; then
+            if docker compose exec -T postgres pg_isready -U clarity_user; then
               echo "PostgreSQL is ready!"
               exit 0
             fi
@@ -49,14 +49,14 @@ jobs:
             sleep 2
           done
           echo "PostgreSQL failed to start"
-          docker-compose logs postgres
+          docker compose logs postgres
           exit 1
 
       - name: Wait for backend
         run: |
           echo "Waiting for backend to be healthy..."
           for i in {1..60}; do
-            if curl -f http://localhost:8000/health; then
+            if curl -f http://localhost:3200/health; then
               echo "Backend is healthy!"
               exit 0
             fi
@@ -64,7 +64,7 @@ jobs:
             sleep 2
           done
           echo "Backend failed to start"
-          docker-compose logs backend
+          docker compose logs app
           exit 1
 
       - name: Wait for frontend
@@ -79,15 +79,15 @@ jobs:
             sleep 2
           done
           echo "Frontend failed to start"
-          docker-compose logs frontend
+          docker compose logs app
           exit 1
 
       - name: Test health endpoint
         run: |
           echo "Testing /health endpoint..."
-          response=$(curl -s http://localhost:8000/health)
+          response=$(curl -s http://localhost:3200/health)
           echo "Response: $response"
-          if echo "$response" | grep -q "healthy"; then
+          if echo "$response" | grep -qiE "healthy|ok"; then
             echo "✅ Health check passed"
           else
             echo "❌ Health check failed"
@@ -97,7 +97,7 @@ jobs:
       - name: Test widget endpoint (small)
         run: |
           echo "Testing /api/widget?size=small..."
-          response=$(curl -s -w "\n%{http_code}" http://localhost:8000/api/widget?size=small -H "X-User-ID: test-user")
+          response=$(curl -s -w "\n%{http_code}" http://localhost:3200/api/widget?size=small -H "X-User-ID: test-user")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
 
@@ -114,7 +114,7 @@ jobs:
       - name: Test widget endpoint (large)
         run: |
           echo "Testing /api/widget?size=large..."
-          response=$(curl -s -w "\n%{http_code}" http://localhost:8000/api/widget?size=large -H "X-User-ID: test-user")
+          response=$(curl -s -w "\n%{http_code}" http://localhost:3200/api/widget?size=large -H "X-User-ID: test-user")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
 
@@ -131,7 +131,7 @@ jobs:
       - name: Test agents endpoint
         run: |
           echo "Testing /api/agents..."
-          response=$(curl -s http://localhost:8000/api/agents)
+          response=$(curl -s http://localhost:3200/api/agents)
           echo "Response: $response"
 
           agent_count=$(echo "$response" | jq '.agents | length')
@@ -147,7 +147,7 @@ jobs:
       - name: Test workflows endpoint
         run: |
           echo "Testing /api/workflows..."
-          response=$(curl -s http://localhost:8000/api/workflows)
+          response=$(curl -s http://localhost:3200/api/workflows)
           echo "Response: $response"
 
           workflow_count=$(echo "$response" | jq '.workflows | length')
@@ -163,7 +163,7 @@ jobs:
       - name: Test database connection
         run: |
           echo "Testing database connection..."
-          if docker-compose exec -T postgres psql -U clarity_user -d clarity_agentic_app -c "SELECT 1;"; then
+          if docker compose exec -T postgres psql -U clarity_user -d clarity_agentic_app -c "SELECT 1;"; then
             echo "✅ Database connection successful"
           else
             echo "❌ Database connection failed"
@@ -173,7 +173,7 @@ jobs:
       - name: Check database tables
         run: |
           echo "Checking database tables..."
-          tables=$(docker-compose exec -T postgres psql -U clarity_user -d clarity_agentic_app -c "\dt" | grep -c "table")
+          tables=$(docker compose exec -T postgres psql -U clarity_user -d clarity_agentic_app -c "\dt" | grep -c "table")
           echo "Tables found: $tables"
 
           if [ "$tables" -gt 0 ]; then
@@ -202,28 +202,25 @@ jobs:
         run: |
           echo "Running integration tests..."
           # Add your integration tests here
-          # docker-compose exec -T backend pytest tests/integration/
+          # docker compose exec -T app pytest tests/integration/
 
       - name: Collect logs on failure
         if: failure()
         run: |
           echo "=== Docker Compose Status ==="
-          docker-compose ps
+          docker compose ps
 
           echo "=== PostgreSQL Logs ==="
-          docker-compose logs postgres
+          docker compose logs postgres
 
-          echo "=== Backend Logs ==="
-          docker-compose logs backend
-
-          echo "=== Frontend Logs ==="
-          docker-compose logs frontend
+          echo "=== App Logs (nginx + FastAPI) ==="
+          docker compose logs app
 
       - name: Stop services
         if: always()
         run: |
           echo "Stopping all services..."
-          docker-compose down -v
+          docker compose down -v
 
       - name: Deployment test summary
         if: success()
@@ -263,13 +260,13 @@ jobs:
 
       - name: Start services
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 30
 
       - name: Wait for backend
         run: |
           for i in {1..30}; do
-            if curl -f http://localhost:8000/health; then
+            if curl -f http://localhost:3200/health; then
               exit 0
             fi
             sleep 2
@@ -280,7 +277,7 @@ jobs:
         run: |
           echo "Testing health endpoint response time..."
           for i in {1..10}; do
-            time=$(curl -w "%{time_total}" -o /dev/null -s http://localhost:8000/health)
+            time=$(curl -w "%{time_total}" -o /dev/null -s http://localhost:3200/health)
             echo "Request $i: ${time}s"
           done
 
@@ -288,11 +285,11 @@ jobs:
         run: |
           echo "Testing widget endpoint response time..."
           for i in {1..10}; do
-            time=$(curl -w "%{time_total}" -o /dev/null -s "http://localhost:8000/api/widget?size=large" -H "X-User-ID: test-user")
+            time=$(curl -w "%{time_total}" -o /dev/null -s "http://localhost:3200/api/widget?size=large" -H "X-User-ID: test-user")
             echo "Request $i: ${time}s"
           done
 
       - name: Stop services
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
