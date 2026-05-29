@@ -122,4 +122,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-Dockerfile
+
+# NOTE: the canonical app Dockerfile IS committed so the seed is self-buildable
+# (docker compose build in CI + local dev). It's the platform-generated
+# template; at deploy the platform reuses it (DockerfileGenerator detects an
+# existing Dockerfile) or regenerates with forceRegenerate.
