@@ -3,6 +3,10 @@
 # Web Framework
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
+# Pin websockets to a range uvicorn 0.27 supports — unpinned it resolves to a
+# 14+/16 release whose API uvicorn 0.27 can't use, logging "No supported
+# WebSocket library detected" on every upgrade request.
+websockets>=10.4,<12
 python-multipart==0.0.9
 
 # Clarity SDK (from PyPI)
