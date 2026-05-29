@@ -15,8 +15,6 @@
 # - VITE_API_URL must be empty string (relative URLs) for production
 # - Compatible with Clarity Platform's single-container ECS deployment
 
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -31,7 +29,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clarity_user}"]
+      # -d targets the real DB; without it pg_isready defaults dbname to the
+      # username and Postgres logs noisy "database clarity_user does not exist".
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clarity_user} -d ${POSTGRES_DB:-clarity_agentic_app}"]
       interval: 10s
       timeout: 5s
       retries: 5
