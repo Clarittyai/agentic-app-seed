@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Home, Settings } from 'lucide-react';
+import { Moon, Sun, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
@@ -15,7 +15,6 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   return (

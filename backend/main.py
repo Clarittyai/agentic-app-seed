@@ -27,7 +27,6 @@ from claritty_sdk import (
     build_graph,
     use_user_context,
 )
-from claritty_sdk.trigger_manager import DynamicTriggerManager
 from claritty_sdk.executor import WorkflowExecutor
 
 # Configure logging
@@ -75,8 +74,8 @@ try:
 except Exception as _e:  # noqa: BLE001
     logger.warning(f"No app routers package to include: {_e}")
 
-# Global trigger manager (initialized on startup)
-trigger_manager: Optional[DynamicTriggerManager] = None
+# Triggers are managed by the Claritty platform; the app only exposes the
+# /internal dispatch endpoints below (no in-app scheduler).
 
 # Configure CORS
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3200")
@@ -414,206 +413,6 @@ async def get_graph():
     trigger→entry-agent). Single source of truth — identical for manual and
     generated apps, served live from the SDK registries."""
     return build_graph()
-
-
-# ============================================================================
-# TRIGGER MANAGEMENT ENDPOINTS
-# ============================================================================
-
-@app.get("/api/my/triggers")
-async def list_user_triggers(
-    user_id: str = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    List current user's trigger instances.
-    """
-    triggers = db.query(models.UserTriggerInstance).filter(
-        models.UserTriggerInstance.user_id == user_id
-    ).order_by(
-        models.UserTriggerInstance.created_at.desc()
-    ).all()
-
-    return {
-        "triggers": [
-            {
-                "id": trigger.id,
-                "template_id": trigger.template_id,
-                "name": trigger.name,
-                "config": trigger.config,
-                "enabled": trigger.enabled,
-                "created_at": trigger.created_at.isoformat(),
-                "last_triggered_at": trigger.last_triggered_at.isoformat() if trigger.last_triggered_at else None,
-                "total_executions": trigger.total_executions,
-                "total_failures": trigger.total_failures
-            }
-            for trigger in triggers
-        ]
-    }
-
-
-@app.post("/api/my/triggers")
-async def create_trigger_instance(
-    template_id: str,
-    name: str,
-    config: Dict[str, Any],
-    user_id: str = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Create a new trigger instance from a template.
-
-    User provides:
-    - template_id: Which template to use
-    - name: Custom name for this trigger
-    - config: User's configured values (e.g., {"time": "09:00", "timezone": "America/New_York"})
-    """
-    # Validate template exists
-    template = TriggerTemplateRegistry.get_template(template_id)
-    if not template:
-        raise HTTPException(status_code=404, detail="Trigger template not found")
-
-    # Check max instances limit
-    if template.max_instances_per_user:
-        existing_count = db.query(models.UserTriggerInstance).filter(
-            models.UserTriggerInstance.user_id == user_id,
-            models.UserTriggerInstance.template_id == template_id
-        ).count()
-
-        if existing_count >= template.max_instances_per_user:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Maximum {template.max_instances_per_user} instances allowed per user"
-            )
-
-    # TODO: Validate config against template.config_fields
-
-    # Create trigger instance
-    trigger = models.UserTriggerInstance(
-        user_id=user_id,
-        template_id=template_id,
-        name=name,
-        config=config,
-        enabled=True
-    )
-
-    db.add(trigger)
-    db.commit()
-    db.refresh(trigger)
-
-    logger.info(f"Created trigger instance {trigger.id} for user {user_id}")
-
-    # Register trigger with DynamicTriggerManager
-    if trigger_manager:
-        try:
-            await trigger_manager.register_trigger(
-                trigger_instance_id=trigger.id,
-                user_id=user_id,
-                template_id=template_id,
-                config=config
-            )
-        except Exception as e:
-            logger.error(f"Failed to schedule trigger {trigger.id}: {e}")
-            # Continue anyway - trigger is created in DB
-
-    return {
-        "id": trigger.id,
-        "template_id": trigger.template_id,
-        "name": trigger.name,
-        "config": trigger.config,
-        "enabled": trigger.enabled,
-        "created_at": trigger.created_at.isoformat()
-    }
-
-
-@app.patch("/api/my/triggers/{trigger_id}")
-async def update_trigger_instance(
-    trigger_id: str,
-    name: Optional[str] = None,
-    config: Optional[Dict[str, Any]] = None,
-    enabled: Optional[bool] = None,
-    user_id: str = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Update a trigger instance.
-    User can update name, config, or enabled status.
-    """
-    trigger = db.query(models.UserTriggerInstance).filter(
-        models.UserTriggerInstance.id == trigger_id,
-        models.UserTriggerInstance.user_id == user_id
-    ).first()
-
-    if not trigger:
-        raise HTTPException(status_code=404, detail="Trigger not found")
-
-    # Update fields
-    if name is not None:
-        trigger.name = name
-    if config is not None:
-        trigger.config = config
-    if enabled is not None:
-        trigger.enabled = enabled
-
-    trigger.updated_at = datetime.utcnow()
-
-    db.commit()
-    db.refresh(trigger)
-
-    logger.info(f"Updated trigger instance {trigger_id}")
-
-    # Update trigger with DynamicTriggerManager
-    if trigger_manager:
-        try:
-            await trigger_manager.update_trigger(
-                trigger_instance_id=trigger_id,
-                user_id=user_id,
-                template_id=trigger.template_id,
-                config=trigger.config,
-                enabled=trigger.enabled
-            )
-        except Exception as e:
-            logger.error(f"Failed to update scheduled trigger {trigger_id}: {e}")
-
-    return {
-        "id": trigger.id,
-        "name": trigger.name,
-        "config": trigger.config,
-        "enabled": trigger.enabled,
-        "updated_at": trigger.updated_at.isoformat()
-    }
-
-
-@app.delete("/api/my/triggers/{trigger_id}")
-async def delete_trigger_instance(
-    trigger_id: str,
-    user_id: str = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Delete a trigger instance.
-    """
-    trigger = db.query(models.UserTriggerInstance).filter(
-        models.UserTriggerInstance.id == trigger_id,
-        models.UserTriggerInstance.user_id == user_id
-    ).first()
-
-    if not trigger:
-        raise HTTPException(status_code=404, detail="Trigger not found")
-
-    db.delete(trigger)
-    db.commit()
-
-    logger.info(f"Deleted trigger instance {trigger_id}")
-
-    # Unregister trigger with DynamicTriggerManager
-    if trigger_manager:
-        try:
-            await trigger_manager.unregister_trigger(trigger_id)
-        except Exception as e:
-            logger.error(f"Failed to unschedule trigger {trigger_id}: {e}")
-
-    return {"message": "Trigger deleted successfully"}
 
 
 # ============================================================================
@@ -966,17 +765,9 @@ async def startup_event():
     except Exception as _e:
         logger.warning(f"⚠️  Failed to write graph cache: {_e}")
 
-    # Initialize DynamicTriggerManager
-    logger.info("🔄 Initializing DynamicTriggerManager...")
-    global trigger_manager
-    from backend.database import SessionLocal
-    trigger_manager = DynamicTriggerManager(
-        db_session_factory=SessionLocal,
-        workflow_executor=WorkflowExecutor()
-    )
-    await trigger_manager.start()
-    logger.info(f"✅ DynamicTriggerManager initialized ({trigger_manager.get_active_trigger_count()} triggers active)")
-
+    # Triggers are owned by the Claritty platform: it stores instances, computes
+    # schedules, and dispatches due work to the /internal endpoints below. No
+    # in-process scheduler runs here (it wouldn't survive on Lambda anyway).
     logger.info("✅ Clarity Agentic App ready!")
 
 
@@ -986,11 +777,6 @@ async def shutdown_event():
     Cleanup on shutdown.
     """
     logger.info("👋 Shutting down Clarity Agentic App...")
-
-    # Stop DynamicTriggerManager
-    if trigger_manager:
-        await trigger_manager.stop()
-
     logger.info("✅ Shutdown complete")
 
 

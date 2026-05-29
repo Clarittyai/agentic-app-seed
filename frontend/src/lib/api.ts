@@ -66,37 +66,6 @@ export interface Workflow {
   }>;
 }
 
-export interface TriggerTemplate {
-  id: string;
-  name: string;
-  description: string;
-  template_type: string;
-  workflow_id: string;
-  category: string;
-  config_fields: Array<{
-    key: string;
-    label: string;
-    type: string;
-    required: boolean;
-    default?: any;
-    options?: Array<{ value: any; label: string }>;
-    validation?: Record<string, any>;
-  }>;
-  max_instances_per_user?: number;
-}
-
-export interface TriggerInstance {
-  id: string;
-  template_id: string;
-  name: string;
-  config: Record<string, any>;
-  enabled: boolean;
-  created_at: string;
-  last_triggered_at?: string;
-  total_executions: number;
-  total_failures: number;
-}
-
 export interface WidgetData {
   active_triggers: number;
   total_executions?: number;
@@ -162,55 +131,11 @@ export const getWorkflowExecution = async (executionId: string) => {
   return response.data;
 };
 
-export const listTriggerTemplates = async (): Promise<TriggerTemplate[]> => {
-  const response = await api.get('/api/trigger-templates');
-  return response.data.templates;
-};
-
-export const listMyTriggers = async (): Promise<TriggerInstance[]> => {
-  const response = await api.get('/api/my/triggers');
-  return response.data.triggers;
-};
-
-export const createTrigger = async (
-  templateId: string,
-  name: string,
-  config: Record<string, any>
-): Promise<TriggerInstance> => {
-  const response = await api.post('/api/my/triggers', {
-    template_id: templateId,
-    name,
-    config,
-  });
-  return response.data;
-};
-
-export const updateTrigger = async (
-  triggerId: string,
-  updates: {
-    name?: string;
-    config?: Record<string, any>;
-    enabled?: boolean;
-  }
-): Promise<TriggerInstance> => {
-  const response = await api.patch(`/api/my/triggers/${triggerId}`, updates);
-  return response.data;
-};
-
-export const deleteTrigger = async (triggerId: string): Promise<void> => {
-  await api.delete(`/api/my/triggers/${triggerId}`);
-};
+// Trigger management lives on the Claritty platform now (not in-app).
 
 // Helper functions / aliases for convenience (wrapped format for Dashboard compatibility)
 export const getAgents = async () => ({ agents: await listAgents() });
 export const getWorkflows = async () => ({ workflows: await listWorkflows() });
-export const getTriggerTemplates = async () => ({ templates: await listTriggerTemplates() });
-export const getUserTriggers = async () => ({ triggers: await listMyTriggers() });
-export const createUserTrigger = async (params: { template_id: string; name: string; config: Record<string, any> }) =>
-  createTrigger(params.template_id, params.name, params.config);
-export const updateUserTrigger = updateTrigger;
-export const deleteUserTrigger = deleteTrigger;
-export type UserTrigger = TriggerInstance;
 
 // For mark emails as read functionality
 export const markEmailsAsRead = async () => {

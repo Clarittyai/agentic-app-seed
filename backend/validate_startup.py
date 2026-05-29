@@ -67,9 +67,6 @@ def validate_imports():
         from claritty_sdk.executor import WorkflowExecutor
         print("  ✅ WorkflowExecutor")
 
-        from claritty_sdk.trigger_manager import DynamicTriggerManager
-        print("  ✅ DynamicTriggerManager")
-
         print("✅ All imports successful\n")
         return True
 

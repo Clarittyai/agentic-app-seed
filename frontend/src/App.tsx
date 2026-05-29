@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
-import Settings from './pages/Settings';
 import WidgetPage from './pages/WidgetPage';
 import Layout from './components/Layout';
 
@@ -38,11 +37,6 @@ function App() {
         <Route path="/" element={
           <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
             <Dashboard />
-          </Layout>
-        } />
-        <Route path="/settings" element={
-          <Layout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
-            <Settings />
           </Layout>
         } />
       </Routes>

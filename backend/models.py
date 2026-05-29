@@ -2,10 +2,11 @@
 Database models for Clarity backend
 
 Models:
-- UserTriggerInstance: User-configured trigger instances
-- TriggerExecution: Audit trail of trigger executions
 - UserIntegration: User-connected integrations
 - WorkflowExecution: Workflow execution history
+
+Note: trigger instances + their execution audit are owned by the Claritty
+platform now (not the app); see /internal/* dispatch endpoints in main.py.
 """
 
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, JSON, ForeignKey, Text
@@ -13,62 +14,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from backend.database import Base
-
-
-class UserTriggerInstance(Base):
-    """
-    User-configured trigger instances.
-
-    Users create instances from trigger templates with their own configuration.
-    Example: User A creates "Daily Review" at 9am EST, User B at 6pm PST
-    """
-    __tablename__ = "user_trigger_instances"
-
-    # Identity
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, nullable=False, index=True)
-    template_id = Column(String, nullable=False, index=True)  # References TriggerTemplate
-
-    # User configuration
-    name = Column(String, nullable=False)  # User's custom name for this instance
-    config = Column(JSON, nullable=False)  # User's configured values
-
-    # State
-    enabled = Column(Boolean, default=True, index=True)
-
-    # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Statistics
-    last_triggered_at = Column(DateTime)
-    total_executions = Column(Integer, default=0)
-    total_failures = Column(Integer, default=0)
-
-    # Relationships
-    executions = relationship("TriggerExecution", back_populates="trigger_instance", cascade="all, delete-orphan")
-
-
-class TriggerExecution(Base):
-    """
-    Audit trail of trigger executions.
-
-    Records every time a trigger fires (success or failure).
-    """
-    __tablename__ = "trigger_executions"
-
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    trigger_instance_id = Column(String, ForeignKey('user_trigger_instances.id'), index=True)
-    user_id = Column(String, index=True)
-    workflow_execution_id = Column(String, index=True)  # Links to workflow execution
-
-    triggered_at = Column(DateTime, default=datetime.utcnow, index=True)
-    success = Column(Boolean)
-    error_message = Column(Text)
-    trigger_data = Column(JSON)  # Data at time of trigger
-
-    # Relationships
-    trigger_instance = relationship("UserTriggerInstance", back_populates="executions")
 
 
 class UserIntegration(Base):
