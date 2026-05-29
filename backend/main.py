@@ -675,6 +675,127 @@ async def execute_agent(
         raise HTTPException(status_code=500, detail=f"Agent execution failed: {str(e)}")
 
 
+# ============================================================================
+# INTERNAL TRIGGER DISPATCH (platform → app)
+# ============================================================================
+# The Claritty platform owns trigger instances + scheduling and dispatches due
+# work here (see clarity-api/src/modules/triggers/SEED_CONTRACT.md). Auth is the
+# platform↔app shared secret (X-Claritty-Internal); the ALB also gates these on
+# X-Claritty-Auth at the edge. Never reachable by end users directly.
+
+
+def verify_internal_dispatch(
+    x_claritty_internal: Optional[str] = Header(None, alias="X-Claritty-Internal"),
+) -> None:
+    """Reject unless the platform's shared internal secret matches. When no
+    secret is configured (local dev) we allow, since the platform always sets
+    it in production."""
+    expected = os.getenv("CLARITY_INTERNAL_SECRET")
+    if expected and x_claritty_internal != expected:
+        raise HTTPException(status_code=401, detail="Invalid internal dispatch secret")
+
+
+def _load_user_integrations(db: Session, user_id: str) -> Dict[str, Any]:
+    integrations: Dict[str, Any] = {}
+    rows = db.query(models.UserIntegration).filter(
+        models.UserIntegration.user_id == user_id,
+        models.UserIntegration.is_active == True,
+    ).all()
+    for row in rows:
+        integrations[row.service] = row.credentials
+    return integrations
+
+
+async def _run_workflow_for_trigger(
+    db: Session, *, workflow_id: str, user_id: str, trigger_data: Dict[str, Any]
+) -> Dict[str, Any]:
+    if not WorkflowRegistry.get_metadata(workflow_id):
+        raise HTTPException(
+            status_code=404, detail=f"Workflow '{workflow_id}' not found"
+        )
+    integrations = _load_user_integrations(db, user_id)
+    body = dict(trigger_data or {})
+    agent_context = body.pop("agent_context", {}) or {}
+    executor = WorkflowExecutor()
+    return await executor.execute_workflow(
+        workflow_id=workflow_id,
+        trigger_data=body,
+        user_id=user_id,
+        integrations=integrations,
+        agent_context=agent_context,
+    )
+
+
+@app.post("/internal/run-due-triggers")
+async def run_due_triggers(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_internal_dispatch),
+):
+    """Run a platform-dispatched batch of due SCHEDULE instances.
+
+    The dispatcher records the HTTP status as the batch outcome, so we only
+    fail (500) when EVERY instance errored; otherwise we report per-instance.
+    """
+    instances = payload.get("instances") or []
+    results = []
+    any_ok = False
+    for inst in instances:
+        instance_id = inst.get("instanceId")
+        try:
+            r = await _run_workflow_for_trigger(
+                db,
+                workflow_id=inst.get("workflowId"),
+                user_id=inst.get("userId"),
+                trigger_data=inst.get("config") or {},
+            )
+            ok = bool(r.get("success"))
+            any_ok = any_ok or ok
+            results.append(
+                {"instanceId": instance_id, "success": ok, "error": r.get("error")}
+            )
+        except Exception as e:
+            logger.error(f"run-due-triggers: instance {instance_id} failed: {e}")
+            results.append(
+                {"instanceId": instance_id, "success": False, "error": str(e)}
+            )
+    if instances and not any_ok:
+        raise HTTPException(status_code=500, detail="all due triggers failed")
+    return {"ok": True, "results": results}
+
+
+@app.post("/internal/trigger-webhook")
+async def run_trigger_webhook(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_internal_dispatch),
+):
+    """Run the workflow mapped to a webhook trigger. The inbound webhook
+    headers + body are exposed to the workflow under `trigger_data['webhook']`,
+    alongside the instance's configured fields."""
+    workflow_id = payload.get("workflowId")
+    user_id = payload.get("userId")
+    if not workflow_id or not user_id:
+        raise HTTPException(
+            status_code=400, detail="workflowId and userId are required"
+        )
+    trigger_data = {
+        **(payload.get("config") or {}),
+        "webhook": {
+            "headers": payload.get("headers") or {},
+            "body": payload.get("body"),
+        },
+    }
+    result = await _run_workflow_for_trigger(
+        db, workflow_id=workflow_id, user_id=user_id, trigger_data=trigger_data
+    )
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=500, detail=result.get("error") or "workflow failed"
+        )
+    return {"ok": True, "outputs": result.get("outputs", {})}
+
+
 @app.post("/api/workflows/{workflow_id}/execute")
 async def execute_workflow(
     workflow_id: str,
