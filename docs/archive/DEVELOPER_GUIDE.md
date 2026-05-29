@@ -126,7 +126,7 @@ My First Agent
 Simple example showing agent structure
 """
 
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 from typing import Dict, Any
 import logging
 
@@ -266,7 +266,7 @@ My First Workflow
 Example showing multi-agent orchestration
 """
 
-from clarity_sdk import workflow, WorkflowContext, ExecutionMode
+from claritty_sdk import workflow, WorkflowContext, ExecutionMode
 import logging
 
 logger = logging.getLogger(__name__)
@@ -296,7 +296,7 @@ async def my_first_workflow(context: WorkflowContext):
     # Step 1: Execute first agent
     context.log("info", "Step 1: Processing with MyFirstAgent...")
 
-    from clarity_sdk import AgentRegistry, AgentContext
+    from claritty_sdk import AgentRegistry, AgentContext
 
     agent_a_class = AgentRegistry.get_agent("my-first-agent")
     if not agent_a_class:
@@ -574,7 +574,7 @@ Create `backend/tests/test_my_agent.py`:
 ```python
 import pytest
 from backend.agents.my_agent import MyFirstAgent
-from clarity_sdk import AgentContext
+from claritty_sdk import AgentContext
 
 
 @pytest.mark.asyncio
@@ -622,7 +622,7 @@ async def test_my_agent_missing_input():
 async def test_my_workflow():
     """Test workflow execution"""
     from backend.workflows.my_workflow import my_first_workflow
-    from clarity_sdk import WorkflowContext
+    from claritty_sdk import WorkflowContext
 
     context = WorkflowContext(
         user_id="test-user",

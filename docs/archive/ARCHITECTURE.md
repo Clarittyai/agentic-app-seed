@@ -184,7 +184,7 @@ The architecture you see here is shaped by Clarity's requirements:
 #### `@agent` Decorator
 
 ```python
-# clarity_sdk/agent.py
+# claritty_sdk/agent.py
 def agent(**metadata):
     """
     Decorator that:
@@ -209,7 +209,7 @@ def agent(**metadata):
 #### `@workflow` Decorator
 
 ```python
-# clarity_sdk/workflow.py
+# claritty_sdk/workflow.py
 def workflow(**metadata):
     """
     Creates a WorkflowBuilder that collects @uses_agent decorators
@@ -235,7 +235,7 @@ The decorators execute bottom-up, so `@uses_agent` decorators accumulate steps o
 ### Registry Pattern
 
 ```python
-# clarity_sdk/registry.py
+# claritty_sdk/registry.py
 class AgentRegistry:
     _agents: Dict[str, AgentMetadata] = {}
 
@@ -513,7 +513,7 @@ async def startup_event():
 ### DynamicTriggerManager
 
 ```python
-# clarity_sdk/trigger_manager.py
+# claritty_sdk/trigger_manager.py
 class DynamicTriggerManager:
     """
     Manages dynamic scheduling of user-configured triggers.

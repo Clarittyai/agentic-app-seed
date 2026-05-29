@@ -18,15 +18,16 @@ import logging
 
 from backend.database import get_db, init_db, engine
 from backend import models
-from clarity_sdk import (
+from claritty_sdk import (
     AgentRegistry,
     WorkflowRegistry,
     TriggerTemplateRegistry,
     AgentContext,
-    WorkflowContext
+    WorkflowContext,
+    build_graph,
 )
-from clarity_sdk.trigger_manager import DynamicTriggerManager
-from clarity_sdk.executor import WorkflowExecutor
+from claritty_sdk.trigger_manager import DynamicTriggerManager
+from claritty_sdk.executor import WorkflowExecutor
 
 # Configure logging
 logging.basicConfig(
@@ -403,6 +404,15 @@ async def list_trigger_templates():
             for template in templates
         ]
     }
+
+
+@app.get("/api/graph")
+async def get_graph():
+    """The app's agent/workflow/trigger graph (v1 contract) for the Claritty
+    canvas: nodes (agents + triggers) + edges (agent→agent from input_from,
+    trigger→entry-agent). Single source of truth — identical for manual and
+    generated apps, served live from the SDK registries."""
+    return build_graph()
 
 
 # ============================================================================
@@ -809,6 +819,18 @@ async def startup_event():
     logger.info(f"✅ Registered {len(agents)} agents")
     logger.info(f"✅ Registered {len(workflows)} workflows")
     logger.info(f"✅ Registered {len(templates)} trigger templates")
+
+    # Cache the graph for the platform's build-time / unreachable fallback
+    # (same build_graph() the /api/graph endpoint serves — one source of truth).
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        _cache_dir = _Path(__file__).parent / ".clarity"
+        _cache_dir.mkdir(exist_ok=True)
+        (_cache_dir / "graph.json").write_text(_json.dumps(build_graph(), indent=2))
+        logger.info("✅ Wrote graph cache to backend/.clarity/graph.json")
+    except Exception as _e:
+        logger.warning(f"⚠️  Failed to write graph cache: {_e}")
 
     # Initialize DynamicTriggerManager
     logger.info("🔄 Initializing DynamicTriggerManager...")

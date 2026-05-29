@@ -50,7 +50,7 @@ def discover_and_register_components() -> Tuple[int, int, int]:
     triggers_discovered = _discover_modules(backend_path / "triggers", "backend.triggers")
 
     # Get registration counts from registries
-    from clarity_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
+    from claritty_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
 
     agent_count = len(AgentRegistry.list_agents())
     workflow_count = len(WorkflowRegistry.list_workflows())
@@ -120,7 +120,7 @@ def get_discovery_summary() -> dict:
     Returns:
         dict: Summary with counts and details
     """
-    from clarity_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
+    from claritty_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
 
     agents = AgentRegistry.list_agents()
     workflows = WorkflowRegistry.list_workflows()

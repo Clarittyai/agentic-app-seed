@@ -145,7 +145,7 @@ Workflow: DailyRedditScan → Orchestrates all 3 agents
 **A**: Use the `@agent` decorator:
 
 ```python
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 
 @agent(
     id="my-agent",
@@ -513,7 +513,7 @@ This checks:
 # backend/tests/test_my_agent.py
 import pytest
 from backend.agents.my_agent import MyAgent
-from clarity_sdk import AgentContext
+from claritty_sdk import AgentContext
 
 @pytest.mark.asyncio
 async def test_my_agent():
@@ -732,7 +732,7 @@ docker-compose logs backend | grep "Registered"
 docker-compose exec backend python -c "
 from backend.infrastructure import discover_and_register_components
 discover_and_register_components()
-from clarity_sdk import AgentRegistry
+from claritty_sdk import AgentRegistry
 print(AgentRegistry.list_agents())
 "
 ```

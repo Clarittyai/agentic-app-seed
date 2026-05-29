@@ -8,7 +8,7 @@ No need to edit this file. Just create your workflow.py files in this directory:
 Example:
     backend/workflows/my_workflow.py
 
-    from clarity_sdk import workflow, uses_agent, ExecutionMode
+    from claritty_sdk import workflow, uses_agent, ExecutionMode
 
     @workflow(id="my-workflow", name="My Workflow", execution_mode=ExecutionMode.SEQUENTIAL)
     @uses_agent("agent-1", output_key="step1")

@@ -163,7 +163,7 @@ class DailyReview:
 ### Add a New Agent
 1. Create `backend/agents/my_agent.py`:
 ```python
-from clarity_sdk import agent, BaseAgent, AgentResult
+from claritty_sdk import agent, BaseAgent, AgentResult
 
 @agent(id="my-agent", name="My Agent")
 class MyAgent(BaseAgent):
@@ -178,7 +178,7 @@ class MyAgent(BaseAgent):
 ### Add a New Workflow
 1. Create `backend/workflows/my_workflow.py`:
 ```python
-from clarity_sdk import workflow, uses_agent
+from claritty_sdk import workflow, uses_agent
 
 @workflow(id="my-workflow")
 @uses_agent("agent-1", output_key="step1")
@@ -193,7 +193,7 @@ async def my_workflow(context):
 ### Add a New Trigger Template
 1. Create `backend/triggers/my_trigger.py`:
 ```python
-from clarity_sdk import trigger_template, TriggerTemplateType
+from claritty_sdk import trigger_template, TriggerTemplateType
 
 @trigger_template(
     id="my-trigger",

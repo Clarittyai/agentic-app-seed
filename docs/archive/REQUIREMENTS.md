@@ -87,7 +87,7 @@ curl "http://localhost:8000/api/widget?size=large" -H "X-User-ID: test-user"
 
 **Implementation** (`backend/agents/my_agent.py`):
 ```python
-from clarity_sdk import agent, BaseAgent
+from claritty_sdk import agent, BaseAgent
 
 @agent(
     id="my-agent",
@@ -119,7 +119,7 @@ curl http://localhost:8000/api/agents
 
 **Implementation** (`backend/workflows/my_workflow.py`):
 ```python
-from clarity_sdk import workflow, WorkflowContext
+from claritty_sdk import workflow, WorkflowContext
 
 @workflow(
     id="my-workflow",
@@ -252,7 +252,7 @@ backend/
 ```python
 import pytest
 from backend.agents.my_agent import MyAgent
-from clarity_sdk import AgentContext
+from claritty_sdk import AgentContext
 
 @pytest.mark.asyncio
 async def test_my_agent():
@@ -347,7 +347,7 @@ Nice-to-have features for advanced apps:
 Define trigger templates for user configuration:
 
 ```python
-from clarity_sdk import trigger_template
+from claritty_sdk import trigger_template
 
 @trigger_template(
     id="daily-scan",

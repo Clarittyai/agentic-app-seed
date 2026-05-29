@@ -10,7 +10,7 @@ This is a MINIMAL example to demonstrate:
 REPLACE THIS with your own workflow!
 """
 
-from clarity_sdk import workflow, uses_agent, WorkflowContext, ExecutionMode
+from claritty_sdk import workflow, uses_agent, WorkflowContext, ExecutionMode
 import logging
 
 logger = logging.getLogger(__name__)

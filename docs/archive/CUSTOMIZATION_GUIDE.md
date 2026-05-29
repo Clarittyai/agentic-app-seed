@@ -124,7 +124,7 @@ Data Fetcher Agent
 Fetches data from external source
 """
 
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 from typing import Dict, Any
 import logging
 
@@ -244,7 +244,7 @@ Main Workflow
 Orchestrates agents to accomplish the app's goal
 """
 
-from clarity_sdk import workflow, WorkflowContext, ExecutionMode
+from claritty_sdk import workflow, WorkflowContext, ExecutionMode
 import logging
 
 logger = logging.getLogger(__name__)
@@ -279,7 +279,7 @@ async def main_workflow(context: WorkflowContext):
     # Step 1: Fetch data
     context.log("info", "Step 1: Fetching data...")
 
-    from clarity_sdk import AgentRegistry, AgentContext as AC
+    from claritty_sdk import AgentRegistry, AgentContext as AC
 
     fetcher_agent_class = AgentRegistry.get_agent("data-fetcher")
     if not fetcher_agent_class:

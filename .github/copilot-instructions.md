@@ -184,7 +184,7 @@ The Clarity Platform deploys ONLY ONE container per app. This template provides:
 
 #### 1. All Agents Use Decorators
 ```python
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 
 @agent(
     id="my-agent",

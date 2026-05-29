@@ -8,7 +8,7 @@ No need to edit this file. Just create your triggers.py files in this directory:
 Example:
     backend/triggers/my_triggers.py
 
-    from clarity_sdk import trigger_template, TriggerTemplateType
+    from claritty_sdk import trigger_template, TriggerTemplateType
 
     @trigger_template(
         id="my-trigger",

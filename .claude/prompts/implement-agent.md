@@ -19,7 +19,7 @@ Create: `backend/agents/{your_agent_name}.py`
 [Brief description of what this agent does]
 """
 
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 from typing import Dict, Any
 import logging
 import os

@@ -61,13 +61,13 @@ def validate_imports():
         print("  ✅ pytz")
 
         # Clarity SDK
-        from clarity_sdk import agent, workflow, trigger_template
+        from claritty_sdk import agent, workflow, trigger_template
         print("  ✅ Clarity SDK decorators")
 
-        from clarity_sdk.executor import WorkflowExecutor
+        from claritty_sdk.executor import WorkflowExecutor
         print("  ✅ WorkflowExecutor")
 
-        from clarity_sdk.trigger_manager import DynamicTriggerManager
+        from claritty_sdk.trigger_manager import DynamicTriggerManager
         print("  ✅ DynamicTriggerManager")
 
         print("✅ All imports successful\n")
@@ -110,7 +110,7 @@ def validate_sdk_registration():
     print("🔍 Validating SDK registration...")
 
     try:
-        from clarity_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
+        from claritty_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
 
         # Import agents, workflows, triggers
         from backend import agents, workflows, triggers

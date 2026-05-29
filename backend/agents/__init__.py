@@ -8,7 +8,7 @@ No need to edit this file. Just create your agent.py files in this directory:
 Example:
     backend/agents/my_agent.py
 
-    from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+    from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 
     @agent(id="my-agent", name="My Agent")
     class MyAgent(BaseAgent):

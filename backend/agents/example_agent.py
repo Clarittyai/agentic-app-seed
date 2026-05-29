@@ -10,7 +10,7 @@ This is a MINIMAL example to demonstrate:
 REPLACE THIS with your own agent!
 """
 
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 from typing import Dict, Any
 import logging
 

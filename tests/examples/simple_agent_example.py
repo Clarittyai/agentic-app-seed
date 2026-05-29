@@ -8,7 +8,7 @@ This example shows:
 """
 
 import asyncio
-from clarity_sdk import (
+from claritty_sdk import (
     agent,
     workflow,
     uses_agent,

@@ -40,7 +40,7 @@ start.bat  # Windows
 Create `backend/agents/greeting_agent.py`:
 
 ```python
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 
 @agent(
     id="greeting-agent",
@@ -91,7 +91,7 @@ curl -X POST http://localhost:8000/api/agents/greeting-agent/execute \
 Create `backend/workflows/greeting_workflow.py`:
 
 ```python
-from clarity_sdk import workflow, uses_agent, ExecutionMode
+from claritty_sdk import workflow, uses_agent, ExecutionMode
 
 @workflow(
     id="greeting-workflow",
@@ -124,7 +124,7 @@ curl -X POST http://localhost:8000/api/workflows/greeting-workflow/execute \
 Create `backend/triggers/daily_greeting.py`:
 
 ```python
-from clarity_sdk import trigger_template, TriggerTemplateType
+from claritty_sdk import trigger_template, TriggerTemplateType
 
 @trigger_template(
     id="daily-greeting",

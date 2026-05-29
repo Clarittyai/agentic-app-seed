@@ -17,7 +17,7 @@ Key Concept:
 Example: You define "daily review", User A sets "9am EST", User B sets "6pm PST"
 """
 
-from clarity_sdk import trigger_template, TriggerTemplateType
+from claritty_sdk import trigger_template, TriggerTemplateType
 import logging
 
 logger = logging.getLogger(__name__)

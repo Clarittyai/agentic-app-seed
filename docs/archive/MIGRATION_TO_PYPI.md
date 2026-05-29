@@ -9,12 +9,12 @@ The Clarity SDK has been published to PyPI as a professional Python package. Thi
 ### Before (Embedded SDK)
 ```
 agentic-app-seed/
-├── clarity_sdk/          # 2,652 lines embedded in every app
+├── claritty_sdk/          # 2,652 lines embedded in every app
 │   ├── agent.py
 │   ├── workflow.py
 │   └── ... (12 files)
 ├── backend/
-│   ├── requirements.txt  # -e ../clarity_sdk
+│   ├── requirements.txt  # -e ../claritty_sdk
 │   └── ...
 ```
 
@@ -40,7 +40,7 @@ If you have an existing app built with the old template:
 **Old:**
 ```txt
 # Clarity SDK (local development)
--e ../clarity_sdk
+-e ../claritty_sdk
 ```
 
 **New:**
@@ -49,11 +49,11 @@ If you have an existing app built with the old template:
 claritty-sdk>=1.0.0,<2.0.0
 ```
 
-### 2. Remove clarity_sdk Directory
+### 2. Remove claritty_sdk Directory
 
 ```bash
 cd your-app
-rm -rf clarity_sdk
+rm -rf claritty_sdk
 ```
 
 ### 3. Install SDK from PyPI
@@ -68,9 +68,9 @@ pip install claritty-sdk
 Your code doesn't need to change - imports remain the same:
 
 ```python
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
-from clarity_sdk import workflow, uses_agent, ExecutionMode
-from clarity_sdk import trigger_template, TriggerTemplateType
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import workflow, uses_agent, ExecutionMode
+from claritty_sdk import trigger_template, TriggerTemplateType
 ```
 
 ### 5. Test Your App
@@ -119,7 +119,7 @@ claritty-sdk==1.0.0
 
 ## Troubleshooting
 
-### Issue: "ModuleNotFoundError: No module named 'clarity_sdk'"
+### Issue: "ModuleNotFoundError: No module named 'claritty_sdk'"
 
 **Cause**: SDK not installed or old editable install interfering
 
@@ -129,7 +129,7 @@ pip uninstall claritty-sdk  # Remove any old version
 pip install claritty-sdk    # Install from PyPI
 ```
 
-### Issue: "Cannot import name 'agent' from 'clarity_sdk'"
+### Issue: "Cannot import name 'agent' from 'claritty_sdk'"
 
 **Cause**: Old cached files or wrong SDK version
 
@@ -188,7 +188,7 @@ pip install git+https://github.com/your-username/claritty-sdk.git@your-branch
 **Q: How do I see the SDK source code?**
 **A**:
 - View on GitHub: https://github.com/Clarittyai/claritty-sdk
-- View locally: `python -c "import clarity_sdk; print(clarity_sdk.__file__)"`
+- View locally: `python -c "import claritty_sdk; print(claritty_sdk.__file__)"`
 
 **Q: Can I still use the old embedded SDK?**
 **A**: Not recommended. The embedded version won't receive updates or security patches.

@@ -173,7 +173,7 @@ For detailed guidance, point developers to:
 ### Decorators Are Required
 All agents, workflows, and triggers MUST use SDK decorators:
 ```python
-from clarity_sdk import agent, workflow, trigger_template
+from claritty_sdk import agent, workflow, trigger_template
 
 @agent(id="my-agent", name="My Agent", ...)
 class MyAgent(BaseAgent):

@@ -329,7 +329,7 @@ cp .env.example .env
 `backend/agents/task_analyzer.py`:
 
 ```python
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 
 @agent(
     id="task-analyzer",

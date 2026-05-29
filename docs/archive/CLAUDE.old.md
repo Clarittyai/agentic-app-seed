@@ -332,7 +332,7 @@ async def execute(self, context: AgentContext) -> AgentResult:  # ✅ Async
 
 1. Create `backend/agents/my_agent.py`:
 ```python
-from clarity_sdk import agent, BaseAgent, AgentResult, AgentContext
+from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
 
 @agent(
     id="my-agent",
@@ -360,7 +360,7 @@ __all__ = ["MyAgent", ...]
 
 1. Create `backend/workflows/my_workflow.py`:
 ```python
-from clarity_sdk import workflow, uses_agent, ExecutionMode
+from claritty_sdk import workflow, uses_agent, ExecutionMode
 
 @workflow(
     id="my-workflow",
@@ -382,7 +382,7 @@ async def my_workflow(context):
 
 1. Create `backend/triggers/my_trigger.py`:
 ```python
-from clarity_sdk import trigger_template, TriggerTemplateType
+from claritty_sdk import trigger_template, TriggerTemplateType
 
 @trigger_template(
     id="my-trigger",
