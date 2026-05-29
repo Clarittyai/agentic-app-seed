@@ -25,6 +25,7 @@ from claritty_sdk import (
     AgentContext,
     WorkflowContext,
     build_graph,
+    use_user_context,
 )
 from claritty_sdk.trigger_manager import DynamicTriggerManager
 from claritty_sdk.executor import WorkflowExecutor
@@ -644,18 +645,24 @@ async def execute_agent(
     for integration in user_integrations:
         integrations[integration.service] = integration.credentials
 
-    # Create context
+    # Per-agent user context (the platform's "how to do your job" instructions)
+    # arrives alongside the inputs; pull it out and bind it so the SDK injects
+    # it into the agent's LLM system prompt.
+    user_context = input_data.pop("user_context", "") if isinstance(input_data, dict) else ""
+
     context = AgentContext(
         user_id=user_id,
         input_data=input_data,
         integrations=integrations,
-        metadata={}
+        metadata={},
+        user_context=user_context,
     )
 
     # Execute agent
     try:
         agent_instance = agent_class()
-        result = await agent_instance.execute(context)
+        with use_user_context(user_context):
+            result = await agent_instance.execute(context)
 
         return {
             "success": result.success,
@@ -698,14 +705,20 @@ async def execute_workflow(
 
     logger.info(f"Starting workflow execution: {workflow_id}")
 
+    # Per-agent user context map (agentId -> instructions) travels in the body
+    # under `agent_context`; the rest of the body is the workflow trigger data.
+    body = dict(input_data or {})
+    agent_context = body.pop("agent_context", {}) or {}
+
     # Execute workflow
     executor = WorkflowExecutor()
     try:
         result = await executor.execute_workflow(
             workflow_id=workflow_id,
-            trigger_data=input_data or {},
+            trigger_data=body,
             user_id=user_id,
-            integrations=integrations
+            integrations=integrations,
+            agent_context=agent_context,
         )
 
         # Create execution record
