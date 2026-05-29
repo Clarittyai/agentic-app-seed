@@ -249,22 +249,23 @@ class AppValidator:
             print(f"  {RED}❌ docker-compose.yml not found{RESET}")
             return
 
-        # Check Dockerfiles
+        # The seed builds a SINGLE multi-stage Dockerfile at the project root
+        # (frontend build stage + Python backend, served by nginx+supervisord).
+        # Older apps used separate backend/ + frontend/ Dockerfiles — accept either.
+        root_dockerfile = self.base_dir / "Dockerfile"
         backend_dockerfile = self.base_dir / "backend" / "Dockerfile"
         frontend_dockerfile = self.base_dir / "frontend" / "Dockerfile"
 
-        missing_dockerfiles = []
-        if not backend_dockerfile.exists():
-            missing_dockerfiles.append("backend/Dockerfile")
-        if not frontend_dockerfile.exists():
-            missing_dockerfiles.append("frontend/Dockerfile")
+        has_root = root_dockerfile.exists()
+        has_split = backend_dockerfile.exists() and frontend_dockerfile.exists()
 
-        if missing_dockerfiles:
+        if not has_root and not has_split:
             self.result.add_critical_fail(
-                f"Missing Dockerfiles: {', '.join(missing_dockerfiles)}",
-                "Create Dockerfiles for backend and frontend"
+                "No Dockerfile found",
+                "Add a root Dockerfile (single multi-stage build) or "
+                "backend/Dockerfile + frontend/Dockerfile",
             )
-            print(f"  {RED}❌ Missing Dockerfiles: {', '.join(missing_dockerfiles)}{RESET}")
+            print(f"  {RED}❌ No Dockerfile found (root, or backend+frontend){RESET}")
             return
 
         # Try building (optional, can be slow)
