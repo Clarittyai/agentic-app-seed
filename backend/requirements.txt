@@ -11,7 +11,10 @@ python-multipart==0.0.9
 
 # Clarity SDK (from PyPI)
 # For local development: pip install -e /path/to/claritty-sdk
-claritty-sdk>=1.0.0,<2.0.0
+# Floor pinned to 1.2.0: only >=1.0.2 ships the `claritty_sdk` (two-t) module —
+# 1.0.0 shipped `clarity_sdk` (one t). A stale pip Docker-build cache that
+# resolved the old version made `import claritty_sdk` fail the boot check.
+claritty-sdk>=1.2.0,<2.0.0
 
 # Database
 sqlalchemy==2.0.25
