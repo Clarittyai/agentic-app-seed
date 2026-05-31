@@ -3,6 +3,9 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    // Include the widget toolkit's compiled output so its (liquid-glass)
+    // className strings aren't purged when an app imports its components.
+    "./node_modules/@clarittyai/widget-toolkit/dist/**/*.js",
   ],
   darkMode: 'class',
   theme: {

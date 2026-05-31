@@ -47,8 +47,9 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
     container_name: ${CONTAINER_PREFIX:-clarity-agentic}-app
     environment:
-      # Database
-      DATABASE_URL: postgresql://${POSTGRES_USER:-clarity_user}:${POSTGRES_PASSWORD:-clarity_password}@postgres:5432/${POSTGRES_DB:-clarity_agentic_app}
+      # Database — defaults to the local postgres service. Override DATABASE_URL
+      # in .env to point the local app at the prod RDS instead.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://clarity_user:clarity_password@postgres:5432/clarity_agentic_app}
 
       # Server
       PORT: 8000  # Internal FastAPI port
@@ -58,8 +59,13 @@ services:
       # CORS
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3200}
 
-      # AI (Required)
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # AI: NO provider API key in the app. The published SDK reaches Claude
+      # through the Claritty platform LLM proxy. Set these in .env to connect the
+      # LOCAL app to the PROD platform service for real model output; leave them
+      # empty and agents fall back to the built-in heuristic.
+      CLARITTY_PLATFORM_URL: ${CLARITTY_PLATFORM_URL:-}
+      CLARITTY_AUTH_TOKEN: ${CLARITTY_AUTH_TOKEN:-}
+      CLARITTY_LLM_PROXY_URL: ${CLARITTY_LLM_PROXY_URL:-}
 
       # Logging
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

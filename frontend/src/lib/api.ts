@@ -66,25 +66,76 @@ export interface Workflow {
   }>;
 }
 
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface Task {
+  id: string;
+  title: string;
+  notes?: string | null;
+  priority: TaskPriority;
+  suggested_action?: string | null;
+  done: boolean;
+  created_at?: string | null;
+}
+
+export interface WidgetTask {
+  id: string;
+  title: string;
+  priority: TaskPriority;
+  done: boolean;
+  suggested_action?: string | null;
+}
+
+// Agent/workflow/trigger graph — the v1 contract served at GET /api/graph
+// (see claritty_sdk/graph.py → build_graph). Node ids are prefixed `agent:` /
+// `trigger:`; edges connect those ids.
+export interface GraphNode {
+  id: string;
+  type: 'agent' | 'trigger';
+  name: string;
+  data?: {
+    agentId?: string;
+    triggerId?: string;
+    category?: string;
+    description?: string;
+    templateType?: string;
+    workflowId?: string;
+    inputs?: Record<string, any>;
+    outputs?: Record<string, any>;
+  };
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  data?: { workflowId?: string; trigger?: boolean };
+}
+
+export interface GraphWorkflow {
+  id: string;
+  name: string;
+  executionMode?: string;
+  steps?: Array<{ agentId: string; outputKey?: string; inputFrom?: string }>;
+}
+
+export interface GraphData {
+  version: number;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  workflows: GraphWorkflow[];
+  source?: string;
+}
+
+// Shape returned by GET /api/widget (see backend/routes/app.py).
 export interface WidgetData {
-  active_triggers: number;
-  total_executions?: number;
-  success_rate?: number;
-  last_execution?: string;
-  recent_executions?: Array<{
-    workflow_id: string;
-    status: string;
-    started_at: string;
-    duration_seconds?: number;
-  }>;
-  // Email-specific fields (for Smart Email Filter example)
-  important_emails_today?: number;
-  last_checked?: string;
-  recent_important_emails?: Array<{
-    sender: string;
-    subject: string;
-    urgency_level: 'critical' | 'high' | 'medium' | 'low';
-  }>;
+  open_count: number;
+  done_today?: number;
+  top_priority?: TaskPriority | null;
+  top_task?: string | null;
+  top_task_id?: string | null;
+  tasks?: WidgetTask[];
+  last_updated: string;
 }
 
 // API Methods
@@ -98,6 +149,33 @@ export const getWidgetData = async (
   size: 'small' | 'medium' | 'large' = 'medium',
 ): Promise<WidgetData> => {
   const response = await api.get(`/api/widget?size=${size}`);
+  return response.data;
+};
+
+// Tasks CRUD — mirrors backend/routes/app.py.
+export const getTasks = async (): Promise<Task[]> => {
+  const response = await api.get('/api/tasks');
+  return response.data.tasks;
+};
+
+export const createTask = async (title: string, notes?: string): Promise<Task> => {
+  const response = await api.post('/api/tasks', { title, notes });
+  return response.data;
+};
+
+export const toggleTask = async (taskId: string): Promise<Task> => {
+  const response = await api.post(`/api/tasks/${taskId}/toggle`);
+  return response.data;
+};
+
+export const deleteTask = async (taskId: string): Promise<void> => {
+  await api.delete(`/api/tasks/${taskId}`);
+};
+
+// The full agent/workflow/trigger graph (one round-trip), for the template
+// showcase. See claritty_sdk/graph.py for the contract.
+export const getGraph = async (): Promise<GraphData> => {
+  const response = await api.get('/api/graph');
   return response.data;
 };
 
@@ -136,11 +214,6 @@ export const getWorkflowExecution = async (executionId: string) => {
 // Helper functions / aliases for convenience (wrapped format for Dashboard compatibility)
 export const getAgents = async () => ({ agents: await listAgents() });
 export const getWorkflows = async () => ({ workflows: await listWorkflows() });
-
-// For mark emails as read functionality
-export const markEmailsAsRead = async () => {
-  return { message: 'Emails marked as read', success: true };
-};
 
 // Integrations (Settings → Integrations). Mirrors backend/integrations/routes.py.
 

@@ -1,38 +1,36 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Moon, Sun, Home } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Home, ListTodo, Plug } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
 
 interface LayoutProps {
   children: React.ReactNode;
-  darkMode: boolean;
-  toggleDarkMode: () => void;
 }
 
-export default function Layout({ children, darkMode, toggleDarkMode }: LayoutProps) {
+export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
+    { name: 'Tasks', href: '/tasks', icon: ListTodo },
+    { name: 'Integrations', href: '/integrations', icon: Plug },
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Header - Apple-style glass morphism */}
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className="sticky top-0 z-50 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800"
-      >
+    <div className="min-h-screen bg-background">
+      {/* Header — glass morphism over the page (semantic tokens for dark mode) */}
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-20">
-            {/* Logo — the app's own name (no platform branding) */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-foreground text-sm font-bold">
-                {appName.charAt(0).toUpperCase()}
-              </span>
-              <span className="inline-block text-lg lg:text-xl font-bold text-gray-900 dark:text-white group-hover:text-accent transition-colors">
+            {/* Logo — the real Claritty mark + the app's name. Generation
+                overwrites appName per app; the mark works on light & dark. */}
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <img
+                src="/claritty-logo.png"
+                alt="Claritty"
+                className="h-7 w-7 flex-shrink-0 object-contain"
+              />
+              <span className="inline-block text-lg lg:text-xl font-bold text-foreground transition-colors group-hover:text-accent">
                 {appName}
               </span>
             </Link>
@@ -55,7 +53,7 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
                           'text-sm lg:text-base font-medium transition-colors',
                           isActive
                             ? 'text-accent'
-                            : 'text-gray-600 dark:text-gray-300 group-hover:text-accent'
+                            : 'text-muted-foreground group-hover:text-accent'
                         )}
                       >
                         {item.name}
@@ -64,56 +62,32 @@ export default function Layout({ children, darkMode, toggleDarkMode }: LayoutPro
 
                     {/* Active indicator */}
                     {isActive && (
-                      <motion.div
-                        layoutId="activeNav"
-                        className="absolute inset-0 bg-accent/10 rounded-lg -z-10"
-                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                      />
+                      <span className="absolute inset-0 bg-accent/10 rounded-lg -z-10" />
                     )}
 
-                    {/* Hover effect */}
-                    <span className="absolute inset-0 bg-gray-100 dark:bg-gray-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity -z-20" />
+                    {/* Hover effect — background tint (no scale, per brand) */}
+                    <span className="absolute inset-0 bg-muted rounded-lg opacity-0 group-hover:opacity-100 transition-opacity -z-20" />
                   </Link>
                 );
               })}
-
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className="ml-2 p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors touch-manipulation"
-                aria-label="Toggle dark mode"
-              >
-                {darkMode ? (
-                  <Sun className="h-5 w-5 text-yellow-500" />
-                ) : (
-                  <Moon className="h-5 w-5 text-gray-600" />
-                )}
-              </button>
             </nav>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Main Content */}
       <main className="min-h-[calc(100vh-16rem)]">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12"
-        >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           {children}
-        </motion.div>
+        </div>
       </main>
 
       {/* Footer - Minimal Apple style */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 py-8 mt-16">
+      <footer className="border-t border-border py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-400">
-            <p className="text-center sm:text-left font-medium text-gray-900 dark:text-white">
-              {appName}
-            </p>
-            <p className="text-center sm:text-right text-xs text-gray-500 dark:text-gray-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+            <p className="text-center font-medium text-foreground sm:text-left">{appName}</p>
+            <p className="text-center text-xs text-muted-foreground sm:text-right">
               © {new Date().getFullYear()} {appName}
             </p>
           </div>

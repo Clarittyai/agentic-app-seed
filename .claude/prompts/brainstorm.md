@@ -69,22 +69,26 @@ Consider:
 
 Remember:
 - Widgets are the PRIMARY interface (users see them 90% of the time)
-- You get EXACTLY 2 sizes: Small (190×190px), Large (400×190px)
+- There are EXACTLY 3 Apple-HIG sizes (these only): Small 170×170, Medium 360×170, Large 360×360
 - Design for glanceability - they should understand status in < 1 second
+- Widgets are window-size invariant: fixed px, never responsive to the viewport
 
-**Small Widget (190×190px)**:
-- Single most important metric
-- Quick status check
-- One action button
+**Small Widget (170×170px)** — single quick metric:
+- The one most important number
+- An optional status chip + one action button
 
-**Large Widget (400×190px)**:
-- 2-4 key metrics
-- Recent activity list (last 3-5 items)
-- Quick actions
+**Medium Widget (360×170px)** — a compact row / short list:
+- A headline metric + 2-3 list rows (or a calendar/forecast strip)
+- One or two quick actions
+
+**Large Widget (360×360px)** — a rich multi-row view:
+- Headline metric(s) + a fuller list (5-6 rows) that fills the height
+- Quick actions; surface "+N more" rather than scrolling
 
 **Example for Lead Scoring App**:
 - Small: "47 New Leads" + "Score Now" button
-- Large: Hot (12), Warm (24), Cold (11) + List of top 3 leads + "View All" button
+- Medium: "47 New" + top 2-3 leads + "View All"
+- Large: Hot (12) / Warm (24) / Cold (11) + top 5 leads + "View All"
 
 ---
 
@@ -93,20 +97,19 @@ Remember:
 **What data will your app store?**
 
 Every app gets:
-- PostgreSQL database (DATABASE_URL auto-injected)
-- Multi-tenant isolation (CLARITY_WORKSPACE_ID required on all queries)
+- PostgreSQL database (DATABASE_URL)
+- Per-user isolation (filter every user-data query by the X-User-ID caller)
 
 Think about:
 - What entities? (e.g., Leads, Tasks, Reports)
 - What fields? (e.g., title, status, priority, score)
 - Relationships? (e.g., Lead → ContactHistory)
 
-**CRITICAL**: All queries MUST filter by workspace_id!
+**CRITICAL**: Every user-data model has a `user_id` column and EVERY query filters by it!
 
 ```python
-# ✅ CORRECT
-workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
-leads = db.query(Lead).filter(Lead.workspace_id == workspace_id).all()
+# ✅ CORRECT — caller comes from the X-User-ID header (see routes/app.py)
+leads = db.query(Lead).filter(Lead.user_id == user_id).all()
 
 # ❌ WRONG - returns data across all tenants!
 leads = db.query(Lead).all()
@@ -119,7 +122,7 @@ leads = db.query(Lead).all()
 **What APIs/services will you integrate with?**
 
 Common integrations:
-- Claude API (ANTHROPIC_API_KEY) - for AI analysis
+- Claude (built in, via the Claritty LLM proxy — no API key) for AI analysis
 - Email services (SendGrid, Mailgun)
 - CRMs (Salesforce, HubSpot)
 - Communication (Slack, Teams)
@@ -166,7 +169,7 @@ Before implementing, verify:
 - [ ] Triggers allow user customization (time, frequency, filters)
 - [ ] Small widget shows ONE key metric (glanceable)
 - [ ] Large widget shows 2-4 metrics + activity
-- [ ] Database entities have workspace_id field
+- [ ] Database entities have a `user_id` field (filtered on every query)
 - [ ] External API keys identified and added to .env.example
 
 ---
@@ -206,8 +209,8 @@ After brainstorming:
 - **Large**: Hot (12), Warm (24), Cold (11) + Top 3 leads with scores + "View All"
 
 **Database**:
-- **Lead**: id, workspace_id, name, email, score, status, created_at
-- **EmailDraft**: id, workspace_id, lead_id, subject, body, sent_at
+- **Lead**: id, user_id, name, email, score, status, created_at
+- **EmailDraft**: id, user_id, lead_id, subject, body, sent_at
 
 **Integrations**:
 - Claude API (scoring)

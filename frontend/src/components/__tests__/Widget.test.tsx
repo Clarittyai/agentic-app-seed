@@ -3,336 +3,134 @@ import { render, screen, waitFor } from '@testing-library/react';
 import Widget from '../Widget';
 import * as api from '@/lib/api';
 
-// Mock the API module
 vi.mock('@/lib/api', () => ({
   getWidgetData: vi.fn(),
+  toggleTask: vi.fn(),
 }));
 
-describe('Widget Component', () => {
-  const mockSmallData = {
-    active_triggers: 5,
-    success_rate: 95,
-  };
+// Canonical dimensions per size. The widget is built on the UI kit's
+// WidgetContainer, which enforces these via INLINE STYLE (width/height/overflow)
+// + the p-4 / rounded-3xl classes + a data-widget-size attribute.
+const DIMS = {
+  small: { w: '170px', h: '170px' },
+  medium: { w: '360px', h: '170px' },
+  large: { w: '360px', h: '360px' },
+} as const;
 
-  const mockLargeData = {
-    active_triggers: 5,
-    total_executions: 42,
-    success_rate: 95.0,
-    recent_executions: [
-      {
-        workflow_id: 'test-workflow',
-        status: 'completed',
-        started_at: '2026-02-23T10:00:00Z',
-        duration_seconds: 15,
-      },
-    ],
-  };
+const SIZES = ['small', 'medium', 'large'] as const;
 
+const mockSmall = {
+  open_count: 3,
+  top_priority: 'high' as const,
+  top_task: 'Ship the release',
+  top_task_id: 't1',
+  last_updated: 'just now',
+};
+
+const mockList = {
+  open_count: 3,
+  done_today: 1,
+  top_priority: 'urgent' as const,
+  tasks: [
+    { id: 't1', title: 'Ship the release', priority: 'urgent' as const, done: false },
+    { id: 't2', title: 'Review the PR', priority: 'high' as const, done: false },
+    { id: 't3', title: 'Water the plants', priority: 'low' as const, done: false },
+  ],
+  last_updated: 'just now',
+};
+
+const dataFor = (size: (typeof SIZES)[number]) => (size === 'small' ? mockSmall : mockList);
+
+function expectCanonical(el: Element | null, size: keyof typeof DIMS) {
+  expect(el).toBeInTheDocument();
+  const e = el as HTMLElement;
+  expect(e.style.width).toBe(DIMS[size].w);
+  expect(e.style.height).toBe(DIMS[size].h);
+  expect(e.style.overflow).toBe('hidden');
+  expect(e).toHaveClass('p-4');
+  expect(e).toHaveClass('rounded-3xl');
+}
+
+describe('Widget', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Apple Standard Dimensions', () => {
-    it('renders small widget with exact 170×170px dimensions', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      const { container } = render(<Widget size="small" />);
-
+  describe('canonical dimensions + style invariants (all 3 sizes)', () => {
+    it.each(SIZES)('renders %s at exact dims, p-4, rounded-3xl, overflow hidden', async (size) => {
+      vi.mocked(api.getWidgetData).mockResolvedValue(dataFor(size) as any);
+      const { container } = render(<Widget size={size} />);
       await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="small"]');
-        expect(widget).toBeInTheDocument();
-        expect(widget).toHaveClass('w-[170px]');
-        expect(widget).toHaveClass('h-[170px]');
+        expectCanonical(container.querySelector(`[data-widget-size="${size}"]`), size);
       });
     });
 
-    it('renders large widget with exact 360×170px dimensions', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      const { container } = render(<Widget size="large" />);
-
-      await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="large"]');
-        expect(widget).toBeInTheDocument();
-        expect(widget).toHaveClass('w-[360px]');
-        expect(widget).toHaveClass('h-[170px]');
-      });
-    });
-
-    it('small widget has correct padding (16px = p-4)', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      const { container } = render(<Widget size="small" />);
-
-      await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="small"]');
-        expect(widget).toHaveClass('p-4');
-      });
-    });
-
-    it('large widget has correct padding (16px = p-4)', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      const { container } = render(<Widget size="large" />);
-
-      await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="large"]');
-        expect(widget).toHaveClass('p-4');
-      });
-    });
-
-    it('small widget has correct border radius (24px = rounded-3xl)', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      const { container } = render(<Widget size="small" />);
-
-      await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="small"]');
-        expect(widget).toHaveClass('rounded-3xl');
-      });
-    });
-
-    it('large widget has correct border radius (24px = rounded-3xl)', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      const { container } = render(<Widget size="large" />);
-
-      await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="large"]');
-        expect(widget).toHaveClass('rounded-3xl');
-      });
-    });
-
-    it('small widget has overflow-hidden class', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      const { container } = render(<Widget size="small" />);
-
-      await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="small"]');
-        expect(widget).toHaveClass('overflow-hidden');
-      });
-    });
-
-    it('large widget has overflow-hidden class', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      const { container } = render(<Widget size="large" />);
-
-      await waitFor(() => {
-        const widget = container.querySelector('[data-widget-size="large"]');
-        expect(widget).toHaveClass('overflow-hidden');
-      });
+    it.each(SIZES)('loading state keeps %s dimensions', (size) => {
+      vi.mocked(api.getWidgetData).mockImplementation(() => new Promise(() => {}));
+      const { container } = render(<Widget size={size} />);
+      const el = container.querySelector('.animate-pulse') as HTMLElement;
+      expect(el).toBeInTheDocument();
+      expect(el.style.width).toBe(DIMS[size].w);
+      expect(el.style.height).toBe(DIMS[size].h);
     });
   });
 
-  describe('Data Loading', () => {
-    it('displays loading state with correct dimensions for small widget', () => {
-      vi.mocked(api.getWidgetData).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
-
-      const { container } = render(<Widget size="small" />);
-
-      const loadingWidget = container.querySelector('.animate-pulse');
-      expect(loadingWidget).toBeInTheDocument();
-      expect(loadingWidget).toHaveClass('w-[170px]');
-      expect(loadingWidget).toHaveClass('h-[170px]');
+  describe('data loading', () => {
+    it.each(SIZES)('requests data for size=%s', async (size) => {
+      vi.mocked(api.getWidgetData).mockResolvedValue(dataFor(size) as any);
+      render(<Widget size={size} />);
+      await waitFor(() => expect(api.getWidgetData).toHaveBeenCalledWith(size));
     });
 
-    it('displays loading state with correct dimensions for large widget', () => {
-      vi.mocked(api.getWidgetData).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
-
-      const { container } = render(<Widget size="large" />);
-
-      const loadingWidget = container.querySelector('.animate-pulse');
-      expect(loadingWidget).toBeInTheDocument();
-      expect(loadingWidget).toHaveClass('w-[360px]');
-      expect(loadingWidget).toHaveClass('h-[170px]');
-    });
-
-    it('calls getWidgetData with correct size parameter', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      render(<Widget size="small" />);
-
-      await waitFor(() => {
-        expect(api.getWidgetData).toHaveBeenCalledWith('small');
-      });
-    });
-
-    it('defaults to large size when size prop is not provided', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
+    it('defaults to medium when no size prop is given', async () => {
+      vi.mocked(api.getWidgetData).mockResolvedValue(mockList as any);
       render(<Widget />);
-
-      await waitFor(() => {
-        expect(api.getWidgetData).toHaveBeenCalledWith('large');
-      });
+      await waitFor(() => expect(api.getWidgetData).toHaveBeenCalledWith('medium'));
     });
   });
 
-  describe('Error Handling', () => {
-    it('displays error state with correct dimensions for small widget', async () => {
-      vi.mocked(api.getWidgetData).mockRejectedValue(new Error('API Error'));
-
-      const { container } = render(<Widget size="small" />);
-
-      await waitFor(() => {
-        const errorWidget = container.querySelector('.text-destructive');
-        expect(errorWidget).toBeInTheDocument();
-        expect(errorWidget).toHaveClass('w-[170px]');
-        expect(errorWidget).toHaveClass('h-[170px]');
-      });
-    });
-
-    it('displays error state with correct dimensions for large widget', async () => {
-      vi.mocked(api.getWidgetData).mockRejectedValue(new Error('API Error'));
-
-      const { container } = render(<Widget size="large" />);
-
-      await waitFor(() => {
-        const errorWidget = container.querySelector('.text-destructive');
-        expect(errorWidget).toBeInTheDocument();
-        expect(errorWidget).toHaveClass('w-[360px]');
-        expect(errorWidget).toHaveClass('h-[170px]');
-      });
-    });
-
-    it('shows error message when data fetch fails', async () => {
-      vi.mocked(api.getWidgetData).mockRejectedValue(new Error('Network error'));
-
+  describe('content', () => {
+    it('small shows the open-task count', async () => {
+      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmall as any);
       render(<Widget size="small" />);
-
       await waitFor(() => {
-        expect(screen.getByText('Failed to load widget data')).toBeInTheDocument();
+        expect(screen.getByText('3')).toBeInTheDocument();
+        expect(screen.getByText(/open task/)).toBeInTheDocument();
+      });
+    });
+
+    it('large lists task titles', async () => {
+      vi.mocked(api.getWidgetData).mockResolvedValue(mockList as any);
+      render(<Widget size="large" />);
+      await waitFor(() => {
+        expect(screen.getByText('Ship the release')).toBeInTheDocument();
+        expect(screen.getByText('Review the PR')).toBeInTheDocument();
       });
     });
   });
 
-  describe('Data Display - Small Widget', () => {
-    it('displays active triggers count', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      render(<Widget size="small" />);
-
+  describe('error handling', () => {
+    it.each(SIZES)('error state keeps %s dimensions', async (size) => {
+      vi.mocked(api.getWidgetData).mockRejectedValue(new Error('boom'));
+      const { container } = render(<Widget size={size} />);
       await waitFor(() => {
-        expect(screen.getByText('Active Triggers')).toBeInTheDocument();
-        expect(screen.getByText('5')).toBeInTheDocument();
-      });
-    });
-
-    it('displays success rate when provided', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      render(<Widget size="small" />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Success: 95/)).toBeInTheDocument();
+        const el = container.querySelector(`[data-widget-size="${size}"]`) as HTMLElement;
+        expect(el).toBeInTheDocument();
+        expect(el.style.width).toBe(DIMS[size].w);
+        expect(el.style.height).toBe(DIMS[size].h);
       });
     });
   });
 
-  describe('Data Display - Large Widget', () => {
-    it('displays app dashboard header', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      render(<Widget size="large" />);
-
-      await waitFor(() => {
-        expect(screen.getByText('App Dashboard')).toBeInTheDocument();
-      });
-    });
-
-    it('displays active triggers in stats grid', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      render(<Widget size="large" />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Active Triggers')).toBeInTheDocument();
-        expect(screen.getByText('5')).toBeInTheDocument();
-      });
-    });
-
-    it('displays success rate with percentage', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      render(<Widget size="large" />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Success Rate')).toBeInTheDocument();
-        expect(screen.getByText('95.0%')).toBeInTheDocument();
-      });
-    });
-
-    it('displays recent executions when available', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-
-      render(<Widget size="large" />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Recent Executions')).toBeInTheDocument();
-        expect(screen.getByText('test-workflow')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Auto-refresh Behavior', () => {
-    it('sets up 30-second refresh interval', async () => {
+  describe('auto-refresh', () => {
+    it('refetches every 30s', async () => {
       vi.useFakeTimers();
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
+      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmall as any);
       render(<Widget size="small" />);
-
-      await waitFor(() => {
-        expect(api.getWidgetData).toHaveBeenCalledTimes(1);
-      });
-
-      // Fast-forward 30 seconds
+      await vi.waitFor(() => expect(api.getWidgetData).toHaveBeenCalledTimes(1));
       vi.advanceTimersByTime(30000);
-
-      await waitFor(() => {
-        expect(api.getWidgetData).toHaveBeenCalledTimes(2);
-      });
-
+      await vi.waitFor(() => expect(api.getWidgetData).toHaveBeenCalledTimes(2));
       vi.useRealTimers();
-    });
-
-    it('re-fetches data when size prop changes', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-
-      const { rerender } = render(<Widget size="small" />);
-
-      await waitFor(() => {
-        expect(api.getWidgetData).toHaveBeenCalledWith('small');
-      });
-
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockLargeData);
-      rerender(<Widget size="large" />);
-
-      await waitFor(() => {
-        expect(api.getWidgetData).toHaveBeenCalledWith('large');
-      });
-    });
-  });
-
-  describe('TypeScript Type Safety', () => {
-    it('only accepts "small" or "large" as size prop', () => {
-      // This is a compile-time check, but we can verify runtime behavior
-      const validSizes: Array<'small' | 'large'> = ['small', 'large'];
-
-      validSizes.forEach(size => {
-        vi.mocked(api.getWidgetData).mockResolvedValue(mockSmallData);
-        const { unmount } = render(<Widget size={size} />);
-        unmount();
-      });
-
-      // TypeScript should prevent: <Widget size="medium" />
-      // This test verifies the type is correctly enforced
-      expect(validSizes).toHaveLength(2);
     });
   });
 });

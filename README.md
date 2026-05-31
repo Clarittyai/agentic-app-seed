@@ -10,20 +10,23 @@
 
 ## 🎯 What is This?
 
-A **minimal, best-practice template** for building agentic apps that deploy to Claritty Platform.
+A **minimal, best-practice, self-hostable template** for building agentic apps
+(FastAPI + React + Postgres). You host it yourself — anywhere you can run Docker.
+Its only Claritty dependencies are **the LLM (via the `claritty_sdk` proxy)** and
+**the widget UI kit (`@clarittyai/widget-toolkit`)**.
 
 **Perfect for:**
 - Developers with an agentic app idea
 - Anyone wanting to automate tasks with AI
-- Building marketplace-ready apps in hours, not weeks
+- Shipping a real agentic app in hours, not weeks
 
 **Developer workflow:**
 ```bash
 1. Clone this repo
-2. Open in Claude Code
+2. Open in Claude Code or Cursor
 3. Brainstorm your app idea with AI
-4. Implement agents/workflows/triggers
-5. Deploy to Claritty Platform
+4. Implement agents/workflows/triggers + your UI
+5. docker compose up --build  →  host it wherever you like
 ```
 
 ---
@@ -35,7 +38,8 @@ A **minimal, best-practice template** for building agentic apps that deploy to C
 git clone https://github.com/Clarittyai/agentic-app-seed.git my-awesome-app
 cd my-awesome-app
 cp .env.example .env
-# Add your ANTHROPIC_API_KEY to .env
+# No API keys needed — AI runs through the Claritty platform proxy
+# (and falls back to a built-in heuristic when running locally).
 ```
 
 ### 2. Start Development Environment
@@ -87,8 +91,9 @@ backend/
 ```
 frontend/
 ├── src/
-│   ├── components/Widget.tsx   # 2 widget sizes (small/large)
-│   ├── pages/Dashboard.tsx     # Full app interface
+│   ├── components/Widget.tsx   # 3 widget sizes (small/medium/large)
+│   ├── lib/widget-sizes.ts     # canonical widget dimensions
+│   ├── pages/Dashboard.tsx     # Full app interface (Tasks example)
 │   └── lib/api.ts              # API client
 ```
 
@@ -108,12 +113,13 @@ frontend/
 **Traditional apps:** User does the work manually
 **Agentic apps:** AI agents work automatically
 
-**Example:**
+**Example** (the seed's `example-agent`):
 ```python
-@agent(id="email-analyzer")
-class EmailAnalyzer(BaseAgent):
+@agent(id="example-agent")
+class ExampleAgent(BaseAgent):
     async def execute(self, context):
-        # AI analyzes emails, prioritizes, drafts responses
+        # Calls Claude via the SDK proxy to triage a task
+        # → { priority, suggested_action }
         return AgentResult(...)
 ```
 
@@ -149,9 +155,9 @@ class DailyReview:
 ## 📚 Documentation
 
 ### Core Guides (Start Here)
-- **[CLAUDE.md](CLAUDE.md)** - AI assistant guide (for Claude Code)
-- **[PLATFORM.md](PLATFORM.md)** - Claritty deployment guide
-- **[WIDGETS.md](WIDGETS.md)** - Widget design specifications
+- **[CLAUDE.md](CLAUDE.md)** - AI assistant guide (for Claude Code / Cursor)
+- **[WIDGETS.md](WIDGETS.md)** - Widget design specifications (3 sizes, the UI kit)
+- **[LLM_PROXY.md](LLM_PROXY.md)** - calling Claude via the Claritty SDK proxy
 
 ### Detailed Reference (When Needed)
 - **[docs/archive/](docs/archive/)** - Comprehensive guides (not loaded by default)
@@ -211,52 +217,34 @@ class MyTrigger:
 
 ---
 
-## 🚀 Deploy to Claritty Platform
+## 🚀 Host it
 
-### 1. Test Locally
+This is a normal Docker app — run it anywhere you can run a container + Postgres.
+
 ```bash
-# Verify everything works
-curl http://localhost:8000/health
-curl http://localhost:8000/api/widget?size=small
-curl http://localhost:8000/api/widget?size=large
+# Build + run locally (nginx → FastAPI on one container, + Postgres)
+docker compose up --build
+# → app on http://localhost:3200
 ```
 
-### 2. Push to GitHub
-```bash
-git add .
-git commit -m "Initial commit: My Awesome App"
-git push origin main
-```
+**Required env vars** (set in `.env` — don't delete them):
+- `DATABASE_URL` — Postgres connection
+- `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN` — the Claritty LLM proxy
+  (for real AI; without them, agents fall back to a built-in heuristic)
 
-### 3. Submit to Claritty
-1. Go to [Claritty Developer Portal](https://claritty.ai/developers)
-2. Click "Submit App"
-3. Paste your GitHub URL
-4. Platform validates, builds, deploys!
-
-**Platform handles:**
-- ✅ Multi-tenancy validation
-- ✅ Security scanning
-- ✅ Docker image build (ECR Public Gallery)
-- ✅ ECS deployment
-- ✅ Environment variable injection
-- ✅ Health checks & monitoring
-
-**📖 See [PLATFORM.md](PLATFORM.md) for deployment details**
+To deploy, ship the same image to your host of choice (any container platform) and
+point `DATABASE_URL` at your Postgres. The schema is managed by Alembic migrations
+(`backend/alembic.ini`); the app runs `upgrade head` on startup.
 
 ---
 
-## ⚠️ Platform-Controlled Files
+## 🛠 Infrastructure files (yours)
 
-**DO NOT modify these** (managed by Claritty Platform):
-- `Dockerfile` - Platform generates production Dockerfile
-- `docker-compose.yml` - Port allocation
-- `frontend/nginx.conf` - API proxy configuration
-- `frontend/src/lib/api.ts` - API base URL (must use relative URLs)
-
-**Why?** Platform uses dynamic port allocation and ECR Public Gallery base images for multi-tenancy.
-
-**📖 See [INFRASTRUCTURE.md](INFRASTRUCTURE.md) for details**
+You self-host, so `Dockerfile`, `docker-compose.yml`, and `frontend/nginx.conf`
+are yours to change. Two things to keep working:
+- `frontend/src/lib/api.ts` uses **relative** URLs (empty `VITE_API_URL`) so the
+  frontend calls `/api/...` on its own origin.
+- Test with `docker compose up --build` after editing infra.
 
 ---
 
@@ -289,8 +277,8 @@ curl http://localhost:8000/api/widget?size=large  # Should be < 500ms
 1. ✅ **One agent at a time** - Build, test, iterate
 2. ✅ **Chain into workflows** - Compose agents
 3. ✅ **Add trigger templates** - Let users configure
-4. ✅ **Test locally** - docker-compose up
-5. ✅ **Deploy to platform** - Submit to Claritty
+4. ✅ **Test locally** - `docker compose up --build`
+5. ✅ **Host it** - ship the container anywhere (keep the required env vars)
 
 ---
 
@@ -302,8 +290,8 @@ curl http://localhost:8000/api/widget?size=large  # Should be < 500ms
 - Check [CLAUDE.md](CLAUDE.md) for AI assistant guidance
 
 **For developers:**
-- Check [docs/archive/FAQ.md](docs/archive/FAQ.md) for common issues
-- See [PLATFORM.md](PLATFORM.md) for deployment help
+- Check [CLAUDE.md](CLAUDE.md) + [WIDGETS.md](WIDGETS.md)
+- `docker compose up --build` to run it
 - Email support@claritty.ai
 
 ---
@@ -341,4 +329,4 @@ code .  # Open Claude Code and run /superpowers:brainstorming
 
 ---
 
-**Questions?** Check [CLAUDE.md](CLAUDE.md) | [PLATFORM.md](PLATFORM.md) | [docs/archive/](docs/archive/)
+**Questions?** Check [CLAUDE.md](CLAUDE.md) | [WIDGETS.md](WIDGETS.md) | [docs/archive/](docs/archive/)

@@ -23,7 +23,6 @@ jobs:
       - name: Create .env file
         run: |
           cp .env.example .env
-          echo "ANTHROPIC_API_KEY=sk-ant-test-key-for-deployment-test" >> .env
           echo "DEBUG=false" >> .env
           echo "LOG_LEVEL=INFO" >> .env
 
@@ -256,7 +255,6 @@ jobs:
       - name: Create .env file
         run: |
           cp .env.example .env
-          echo "ANTHROPIC_API_KEY=sk-ant-test-key" >> .env
 
       - name: Start services
         run: |

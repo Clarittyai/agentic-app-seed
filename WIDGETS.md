@@ -147,7 +147,7 @@ return <Widget size={breakpoint === 'mobile' ? 'small' : 'large'} />;
 
 ```tsx
 // WidgetPage.tsx
-const size = (searchParams.get('size') || 'large') as 'small' | 'large';  // ✅ size from host
+const size = (searchParams.get('size') || 'large') as 'small' | 'medium' | 'large';  // ✅ size from host
 return <Widget size={size} />;
 ```
 
@@ -360,9 +360,9 @@ async function handleMarkAllRead() {
    from functools import lru_cache
 
    @lru_cache(maxsize=128)
-   def get_widget_metrics(workspace_id: str, size: str):
+   def get_widget_metrics(user_id: str, size: str):
        # Cache expensive calculations
-       return calculate_metrics(workspace_id)
+       return calculate_metrics(user_id)
    ```
 
 2. **Return Only Necessary Data**:
@@ -389,7 +389,7 @@ async function handleMarkAllRead() {
    class Execution(Base):
        __tablename__ = "executions"
 
-       workspace_id = Column(String, index=True)  # ✅ Indexed
+       user_id = Column(String, index=True)  # ✅ Indexed
        created_at = Column(DateTime, index=True)  # ✅ Indexed
    ```
 
@@ -398,7 +398,7 @@ async function handleMarkAllRead() {
    # ✅ CORRECT - Single query with join
    executions = db.query(Execution).options(
        joinedload(Execution.trigger)
-   ).filter(Execution.workspace_id == workspace_id).limit(5).all()
+   ).filter(Execution.user_id == user_id).limit(5).all()
 
    # ❌ WRONG - N+1 queries
    executions = db.query(Execution).all()
@@ -527,33 +527,31 @@ app = FastAPI()
 
 @app.get("/api/widget")
 async def get_widget_data(
-    size: str = "large",  # 'small' or 'large'
+    size: str = "large",  # 'small' | 'medium' | 'large'
     user_id: str = Depends(get_current_user)
 ):
-    workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
-
     if size == "small":
         # Minimal data for quick glance (< 200ms)
         return {
             "appName": "My App",
-            "activeTriggers": get_active_count(workspace_id),
-            "successRate": calculate_success_rate(workspace_id)
+            "activeTriggers": get_active_count(user_id),
+            "successRate": calculate_success_rate(user_id)
         }
 
     # Detailed data for large widget (< 500ms)
     return {
         "appName": "My App",
-        "activeTriggers": get_active_count(workspace_id),
-        "totalExecutions": get_total_count(workspace_id),
-        "successRate": calculate_success_rate(workspace_id),
-        "recentExecutions": get_recent_executions(workspace_id, limit=5),
-        "alerts": get_urgent_alerts(workspace_id)
+        "activeTriggers": get_active_count(user_id),
+        "totalExecutions": get_total_count(user_id),
+        "successRate": calculate_success_rate(user_id),
+        "recentExecutions": get_recent_executions(user_id, limit=5),
+        "alerts": get_urgent_alerts(user_id)
     }
 
-def get_active_count(workspace_id: str) -> int:
+def get_active_count(user_id: str) -> int:
     # Query database with workspace filtering
     return db.query(Trigger).filter(
-        Trigger.workspace_id == workspace_id,
+        Trigger.user_id == user_id,
         Trigger.active == True
     ).count()
 ```
@@ -567,7 +565,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 
 interface WidgetProps {
-  size?: 'small' | 'large';  // ONLY 2 sizes
+  size?: 'small' | 'medium' | 'large';  // three sizes (Apple HIG)
 }
 
 export default function Widget({ size = 'large' }: WidgetProps) {
@@ -601,7 +599,7 @@ Update `frontend/src/lib/api.ts`:
 class API {
   private baseURL = import.meta.env.VITE_API_URL || '';
 
-  async getWidgetData(size: 'small' | 'large') {
+  async getWidgetData(size: 'small' | 'medium' | 'large') {
     const response = await fetch(
       `${this.baseURL}/api/widget?size=${size}`,
       {
@@ -701,7 +699,7 @@ Before submitting to Claritty Platform, verify:
 - [ ] Small widget: Exactly `170×170px` (no responsive width/height)
 - [ ] Medium widget: Exactly `360×170px` + `gridColumn: 'span 2'`
 - [ ] Large widget: Exactly `360×360px` + `gridColumn: 'span 2'` + `gridRow: 'span 2'`
-- [ ] No medium size implemented (platform doesn't support it)
+- [ ] All three sizes (small/medium/large) render distinct layouts
 - [ ] All widgets use `overflow: hidden` to prevent overflow
 
 ### Apple HIG Compliance
@@ -723,9 +721,9 @@ Before submitting to Claritty Platform, verify:
 - [ ] Widgets refresh automatically (polling or real-time)
 
 ### Multi-Tenancy
-- [ ] All widget data filtered by `CLARITY_WORKSPACE_ID`
-- [ ] No cross-tenant data access
-- [ ] Proper workspace isolation
+- [ ] All widget data filtered by the caller's `user_id` (X-User-ID header)
+- [ ] No cross-user data access
+- [ ] Every user-data model has a `user_id` column
 
 ---
 
@@ -847,8 +845,7 @@ function WidgetEmpty({ size }) {
 
 - **README.md** - Quick start and core concepts
 - **CLAUDE.md** - AI assistant guide for implementation
-- **PLATFORM.md** - Deployment guide
-- **INFRASTRUCTURE.md** - Infrastructure files explanation
+- **LLM_PROXY.md** - calling Claude via the Claritty SDK proxy
 - **docs/archive/WIDGET_*.md** - Comprehensive widget guides (archived)
 
 ---
@@ -909,9 +906,7 @@ async def get_widget_data(size: str):
 
 # ✅ CORRECT - Fetches only what's needed
 @app.get("/api/widget")
-async def get_widget_data(size: str):
-    workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
-
+async def get_widget_data(size: str, user_id: str = Depends(get_current_user)):
     if size == "small":
         # Quick count queries (< 200ms)
         return {
@@ -922,13 +917,12 @@ async def get_widget_data(size: str):
 ### ❌ Mistake 5: Missing Multi-Tenancy
 
 ```python
-# ❌ WRONG - Returns data across all tenants
+# ❌ WRONG - Returns data across all users
 active_triggers = db.query(Trigger).filter(Trigger.active == True).all()
 
-# ✅ CORRECT - Filters by workspace
-workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
+# ✅ CORRECT - Filters by the caller (X-User-ID header → user_id)
 active_triggers = db.query(Trigger).filter(
-    Trigger.workspace_id == workspace_id,
+    Trigger.user_id == user_id,
     Trigger.active == True
 ).all()
 ```

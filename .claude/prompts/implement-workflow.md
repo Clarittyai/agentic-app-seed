@@ -175,12 +175,11 @@ from backend.models import WorkflowRun
 import os
 
 async def workflow_with_db(context: WorkflowContext):
-    workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
     db = get_db()
 
-    # Store workflow execution record
+    # Store workflow execution record (scope by the caller's user_id)
     run = WorkflowRun(
-        workspace_id=workspace_id,
+        user_id=context.user_id,
         workflow_id="your-workflow-id",
         status="running",
         started_at=datetime.utcnow()
@@ -242,7 +241,7 @@ Before marking workflow complete:
 - [ ] All `@uses_agent` decorators reference valid agent IDs
 - [ ] `output_key` is unique for each step
 - [ ] `input_from` correctly links steps (if sequential/DAG)
-- [ ] Database operations filter by `CLARITY_WORKSPACE_ID`
+- [ ] Database operations filter by the caller's `user_id` (X-User-ID)
 - [ ] Error handling for failed steps
 - [ ] Logging at key workflow stages
 

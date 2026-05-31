@@ -10,8 +10,9 @@ def validate_environment():
     """Validate environment variables"""
     print("🔍 Validating environment variables...")
 
+    # No provider API key here — LLM access is via the platform proxy
+    # (CLARITTY_AUTH_TOKEN + CLARITTY_PLATFORM_URL, injected by the platform).
     required_vars = {
-        'ANTHROPIC_API_KEY': 'Anthropic API key for AI features',
         'DATABASE_URL': 'PostgreSQL connection string',
     }
 

@@ -21,7 +21,7 @@ Single Container (port 3200):
   Managed by supervisord
 ```
 
-**Key requirement**: MUST use relative URLs (empty VITE_API_URL) for production deployment on the Clarity Platform. Required for single-container ECS deployment.
+**Key requirement**: use relative API URLs (empty `VITE_API_URL`) so the frontend calls `/api/...` on its own origin (nginx proxies to FastAPI). The app is self-hosted (Docker) — you host it yourself.
 
 ## ❌ NEVER Suggest These Patterns
 
@@ -103,24 +103,21 @@ You CAN suggest changes to:
 
 ## 🎯 Widget Development Rules
 
-**CRITICAL**: Platform supports EXACTLY two widget sizes (Apple HIG):
-- **Small**: 190×190px (1:1 square)
-- **Large**: 400×190px (2.1:1 wide rectangle)
-- **NO MEDIUM SIZE**
+**CRITICAL**: Platform supports EXACTLY three widget sizes (Apple HIG) — no others:
+- **Small**: 170×170px (1:1 square)
+- **Medium**: 360×170px (2.1:1 wide)
+- **Large**: 360×360px (2:2 square)
 
 ### Widget Implementation Pattern
 
 ```typescript
-// ✅ CORRECT - only two sizes
-interface WidgetProps {
-  size?: 'small' | 'large';  // Never 'small' | 'medium' | 'large'
-}
+// ✅ CORRECT - three sizes (see src/lib/widget-sizes.ts)
+import type { WidgetSize } from '@/lib/widget-sizes';
 
-export default function Widget({ size = 'large' }: WidgetProps) {
-  if (size === 'small') {
-    return <SmallWidgetView />;  // 190×190px
-  }
-  return <LargeWidgetView />;    // 400×190px
+export default function Widget({ size = 'medium' }: { size?: WidgetSize }) {
+  if (size === 'small') return <SmallView />;   // 170×170px — one metric
+  if (size === 'medium') return <MediumView />; // 360×170px — compact list
+  return <LargeView />;                          // 360×360px — rich list
 }
 ```
 
@@ -129,19 +126,15 @@ export default function Widget({ size = 'large' }: WidgetProps) {
 ```python
 @app.get("/api/widget")
 async def get_widget_data(
-    size: str = "large",  # Only "small" or "large"
-    user_id: str = Depends(get_current_user)
+    size: str = "large",  # "small" | "medium" | "large"
+    x_user_id: str = Header(None, alias="X-User-ID"),
 ):
     if size == "small":
-        # Minimal data for 190×190px widget
-        return {"active_triggers": 5, "success_rate": "95%"}
-    else:  # large (not elif)
-        # Full data for 400×190px widget
-        return {
-            "active_triggers": 5,
-            "total_executions": 42,
-            "recent_executions": [...]
-        }
+        return {"open_count": 3, "top_priority": "high"}  # minimal
+    return {                                              # medium + large
+        "open_count": 3,
+        "tasks": [{"id": "...", "title": "...", "priority": "high"}],
+    }
 ```
 
 ## 🏗️ Project Architecture
@@ -242,12 +235,13 @@ class DailyTaskTrigger:
 
 If developer asks about modifying protected files:
 
-1. **STOP** and warn them:
-   > ⚠️ **Warning**: This file is managed by the Clarity Platform. Modifying it may break production deployment. See `INFRASTRUCTURE.md` for details.
+1. **Be careful** with infra files (`Dockerfile`, `nginx.conf`, `docker-compose.yml`):
+   they're yours to change for self-hosting, but a mistake can stop the app from
+   serving. Test with `docker compose up --build` after editing them.
 
 2. **DIRECT** them to:
-   - `INFRASTRUCTURE.md` - Complete infrastructure guide
-   - `README.md` - Quick reference
+   - `README.md` - quick start + self-hosting
+   - `.cursorrules` / `CLAUDE.md` - editing rules
    - `CLAUDE.md` - Comprehensive AI assistant guide
 
 3. **EXPLAIN** why the file is protected (multi-service architecture, dynamic ports, relative URLs)
@@ -263,7 +257,7 @@ If developer asks about modifying protected files:
 - ✅ New React components in `frontend/src/components/`
 - ✅ New API methods in `frontend/src/lib/api.ts`
 - ✅ Environment variables for app logic
-- ✅ Widget implementations (2 sizes: 190×190px, 400×190px)
+- ✅ Widget implementations (3 sizes: 170×170, 360×170, 360×360)
 
 ### DON'T Suggest:
 - ❌ Hardcoded localhost URLs
@@ -271,7 +265,7 @@ If developer asks about modifying protected files:
 - ❌ Removing `/api/` proxy from `nginx.conf`
 - ❌ Hardcoded ports in `docker-compose.yml`
 - ❌ Setting `VITE_API_URL` to localhost in `Dockerfile`
-- ❌ Three widget sizes (no medium!)
+- ❌ Widget dimensions other than 170×170 / 360×170 / 360×360
 
 ## 🚀 Summary for AI Code Suggestions
 
@@ -279,7 +273,7 @@ If developer asks about modifying protected files:
 - AI agents, workflows, and triggers
 - React components and pages
 - Database models and API endpoints
-- Widget implementations (2 sizes only!)
+- Widget implementations (3 sizes: small/medium/large)
 
 **Protect from modification**:
 - Infrastructure files (docker-compose, Dockerfile, nginx.conf)
@@ -290,8 +284,8 @@ If developer asks about modifying protected files:
 - Use relative URLs (empty VITE_API_URL)
 - Use environment variables for ports
 - Keep /api/ proxy in nginx.conf
-- Only 2 widget sizes: 190×190px (small) and 400×190px (large)
+- Three widget sizes only: 170×170 (small), 360×170 (medium), 360×360 (large)
 - Always use decorators and async patterns
 - Always register new components in __init__.py
 
-**When in doubt**: Direct developer to `INFRASTRUCTURE.md` for detailed explanations.
+**When in doubt**: Direct developer to `README.md` / `CLAUDE.md`.

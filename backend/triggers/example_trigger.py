@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 @trigger_template(
     id="example-trigger",
-    name="Example Daily Trigger",
-    description="Runs your workflow at a scheduled time each day (replace with your trigger)",
+    name="Daily Task Run",
+    description="Runs the capture-and-triage workflow at a scheduled time each day.",
     template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="example-workflow",  # Links to your workflow
+    workflow_id="example-workflow",  # Links to the Capture & Triage workflow
     category="productivity",
     config_fields=[
         {

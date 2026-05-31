@@ -106,8 +106,12 @@ http {\n\
         location /api/ {\n\
             proxy_pass http://127.0.0.1:8000;\n\
             proxy_http_version 1.1;\n\
-            proxy_set_header Upgrade \$http_upgrade;\n\
-            proxy_set_header Connection "upgrade";\n\
+            # NOTE: do NOT send "Connection: upgrade" on /api/. These headers\n\
+            # were emitted unconditionally (the echo writes a literal\n\
+            # "\$http_upgrade", so Upgrade was a constant non-empty string),\n\
+            # which made uvicorn treat every POST as a connection upgrade and\n\
+            # DROP the request body — FastAPI then returned 422 "Field required\n\
+            # (body)". The app has no /api websockets, so plain proxying is right.\n\
             proxy_set_header Host \$host;\n\
             proxy_set_header X-Real-IP \$remote_addr;\n\
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n\

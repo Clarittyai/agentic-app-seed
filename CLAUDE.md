@@ -83,10 +83,10 @@ Phase 4: Widgets
 - Implement small (170×170px), medium (360×170px), and large (360×360px) views
 - Test widget endpoint performance
 
-Phase 5: Testing & Deployment
-- Test locally (docker-compose up)
-- Push to GitHub
-- Submit to Claritty Platform
+Phase 5: Testing & Hosting
+- Test locally (docker compose up --build)
+- Push to your repo
+- Host the container anywhere (keep the required env vars)
 ```
 
 ### Step 3: Iterative Development
@@ -118,10 +118,13 @@ backend/
 │
 frontend/src/
 ├── components/
-│   └── Widget.tsx               # 2 widget sizes (small/large) - customize this
+│   └── Widget.tsx               # 3 widget sizes (small/medium/large) - customize this
+│
+├── lib/
+│   └── widget-sizes.ts          # canonical widget dimensions (source of truth)
 │
 └── pages/
-    └── Dashboard.tsx            # Full app interface (optional)
+    └── Dashboard.tsx            # Full app interface (Tasks example)
 ```
 
 ### ⚠️ Files You SHOULD NOT Modify (Platform-Controlled)
@@ -140,9 +143,7 @@ backend/infrastructure/          # Auto-discovery system (platform-managed)
 - Dynamic port allocation for multi-tenancy
 - Health endpoint injection
 
-**📚 See**: `INFRASTRUCTURE.md` and `claritty-core/INFRASTRUCTURE.md` for details
-
-### 📋 Core Infrastructure Files (Don't Touch Unless You Know Why)
+### 📋 Infrastructure files (yours to change — test after editing)
 
 ```
 backend/
@@ -164,18 +165,17 @@ backend/
    - Resilient package installation (handles lockfile mismatches)
    - Health endpoints baked in
 
-2. **Environment Variables (Auto-Injected)**
-   - `DATABASE_URL` - PostgreSQL connection (platform-configured)
-   - `PORT` - Application port (dynamically assigned)
-   - `CLARITY_APP_ID` - Unique app identifier
-   - `CLARITY_WORKSPACE_ID` - Tenant/workspace ID (for multi-tenancy)
-   - `JWT_SECRET` - JWT signing secret
-   - `REDIS_URL` - Redis connection (if needed)
+2. **Environment Variables (required to run — don't delete these)**
+   - `DATABASE_URL` - PostgreSQL connection (required)
+   - `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN` - the Claritty LLM proxy
+     (required for real AI; unset → agents use the built-in heuristic)
+   - There is NO `CLARITY_WORKSPACE_ID` — tenancy is the `X-User-ID` header.
 
 3. **User-Provided Variables** (Developer sets in `.env.example`)
-   - `ANTHROPIC_API_KEY` - Claude API key
-   - `OPENAI_API_KEY` - OpenAI API key (if needed)
-   - App-specific secrets (Slack webhook, Stripe key, etc.)
+   - NO provider API keys — AI runs through the Claritty LLM proxy
+     (`CLARITTY_AUTH_TOKEN` + `CLARITTY_PLATFORM_URL`, injected by the platform;
+     call models via `claritty_sdk.llm.get_llm_client`).
+   - App-specific integration secrets only (Slack webhook, Stripe key, etc.)
 
 4. **Widget Specifications** — Apple HIG 3-size standard
    - Small: **170×170px** (1:1 square) - single quick info (battery, status indicator)
@@ -201,11 +201,11 @@ The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages
 }
 ```
 
-**Allowed:** the `size === 'small'` / `size === 'medium'` / `size === 'large'` branches — those are driven by the marketplace host, not by the browser window.
+**Allowed:** the `size === 'small'` / `size === 'medium'` / `size === 'large'` branches — those are driven by the `size` prop the host passes, not by the browser window.
 
 **Scope:** this rule applies **only to the Widget surface**. Full app pages (Dashboard, settings, modals, etc.) remain free to use breakpoints for their own layouts.
 
-**Why:** the widget is rendered inside the Clarity marketplace host, which gives it a fixed frame. Window-dependent styling would make the widget render differently on a mobile-hosted dashboard vs. a desktop-hosted one, breaking the Apple-HIG fixed-frame contract and failing marketplace validation.
+**Why:** the widget renders inside a fixed frame at one of the three sizes. Window-dependent styling would make it render differently across host dashboards, breaking the Apple-HIG fixed-frame contract.
 
 **Verification:** this grep MUST return no matches:
 ```bash
@@ -226,9 +226,9 @@ Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `
 **📚 See**: `WIDGETS.md` → "Widget Action Patterns" for the contract, helpers, and examples.
 
 5. **Multi-Tenancy**
-   - All database queries MUST filter by `CLARITY_WORKSPACE_ID`
-   - User isolation enforced at platform level
-   - Never query across workspaces
+   - Read the caller from the `X-User-ID` header (`_resolve_user` in routes/app.py)
+   - Every user-data model has a `user_id` column; filter EVERY query by it
+   - Never query across users (there is no `CLARITY_WORKSPACE_ID`)
 
 ### Your Dockerfile vs Platform Dockerfile
 
@@ -244,9 +244,6 @@ Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `
 
 **Why different?** Platform ensures consistency, avoids Docker Hub rate limits, handles lockfile integrity issues.
 
-**📚 See**: `claritty-core/INFRASTRUCTURE.md` for complete platform infrastructure guide
-
----
 
 ## 🎯 Common Tasks (Quick Reference)
 
@@ -370,52 +367,42 @@ export default function Widget({ size = 'medium' }: WidgetProps) {
     api.getWidgetData(size)
   );
 
+  // Build widgets with the Claritty UI kit — WidgetContainer owns the size,
+  // glass surface, radius, padding + overflow; use WidgetButton / WidgetBadge.
+  // import { WidgetContainer, WidgetButton, WidgetBadge } from '@clarittyai/widget-toolkit';
+
   if (size === 'small') {
-    // Small widget: 170×170px — single quick info
+    // Small 170×170 — one focal metric + (at most) one action
     return (
-      <div className="widget-small">
-        <h3>{data.appName}</h3>
-        <div className="metrics">
-          <span>Active: {data.activeTriggers}</span>
-        </div>
-      </div>
+      <WidgetContainer size="small">
+        <div className="text-4xl font-bold text-foreground">{data.activeTriggers}</div>
+        <div className="text-xs text-muted-foreground">active triggers</div>
+        <WidgetButton variant="primary" onClick={() => handleAction('add-trigger')}>Add</WidgetButton>
+      </WidgetContainer>
     );
   }
 
   if (size === 'medium') {
-    // Medium widget: 360×170px — list view + quick actions
+    // Medium 360×170 — metric + a short peek
     return (
-      <div className="widget-medium">
-        <h3>{data.appName}</h3>
-        <div className="recent-activity">
-          {data.recentExecutions.slice(0, 2).map(exec => (
-            <ExecutionItem key={exec.id} {...exec} />
-          ))}
-        </div>
-        <div className="quick-actions">
-          <button onClick={() => handleAction('add-trigger')}>
-            Add Trigger
-          </button>
-        </div>
-      </div>
+      <WidgetContainer size="medium">
+        {data.recentExecutions.slice(0, 2).map(exec => (
+          <ExecutionItem key={exec.id} {...exec} />
+        ))}
+      </WidgetContainer>
     );
   }
 
-  // Large widget: 360×360px — complex multi-row view
+  // Large 360×360 — header + a short ranked list
   return (
-    <div className="widget-large">
-      <h3>{data.appName}</h3>
-      <div className="recent-activity">
-        {data.recentExecutions.slice(0, 5).map(exec => (
-          <ExecutionItem key={exec.id} {...exec} />
-        ))}
-      </div>
-      <div className="quick-actions">
-        <button onClick={() => handleAction('add-trigger')}>
-          Add Trigger
-        </button>
-      </div>
-    </div>
+    <WidgetContainer size="large">
+      {data.recentExecutions.slice(0, 5).map(exec => (
+        <ExecutionItem key={exec.id} {...exec} />
+      ))}
+      <WidgetButton variant="primary" onClick={() => handleAction('add-trigger')}>
+        Add Trigger
+      </WidgetButton>
+    </WidgetContainer>
   );
 }
 ```
@@ -489,52 +476,42 @@ async def get_widget_data(
 7. **Direct router navigation from widget buttons** - Never call `useNavigate()`, `router.push()`, `window.location.href = ...`, or `window.parent.location` from inside `Widget.tsx`. The widget runs in an iframe; router calls only navigate the iframe, and `window.parent.location` is sandbox-blocked. Use `triggerDeepLink({ path })` from `frontend/src/lib/widget-actions.ts` — the host catches the message and opens its app modal at the deep-link path. See "🎬 Widget Button Actions" above and `WIDGETS.md` → "Widget Action Patterns".
 8. **Database queries without workspace filtering**:
    ```python
-   # ❌ WRONG - returns data across all tenants
+   # ❌ WRONG - returns data across all users
    users = db.query(User).all()
 
-   # ✅ CORRECT - filters by workspace
-   workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
-   users = db.query(User).filter(User.workspace_id == workspace_id).all()
+   # ✅ CORRECT - filters by the caller (X-User-ID header → user_id)
+   users = db.query(User).filter(User.user_id == user_id).all()
    ```
 
 ### ⚠️ WARN Before Suggesting
 
 **Before suggesting modifications to these files, warn the developer:**
 
-1. **Infrastructure files** (`Dockerfile`, `docker-compose.yml`, `nginx.conf`, `api.ts`)
-   > ⚠️ **Warning**: This file is managed by Claritty Platform. Modifying it may break production deployment. See `INFRASTRUCTURE.md` for details.
+1. **Provider API keys** (`ANTHROPIC_API_KEY`, importing `anthropic`/`openai`)
+   > ⚠️ Call models through `claritty_sdk.llm.get_llm_client` instead — no keys.
 
-2. **Port configuration changes**
-   > ⚠️ **Warning**: Platform uses dynamic port allocation for multi-tenancy. Hardcoding ports will break deployment.
+2. **Deleting required env vars** (`DATABASE_URL`, `CLARITTY_PLATFORM_URL`, `CLARITTY_AUTH_TOKEN`)
+   > ⚠️ The app won't run / won't reach the LLM without these.
 
-3. **API base URL changes**
-   > ⚠️ **Warning**: Frontend MUST use relative URLs (empty string) for production. Hardcoding localhost breaks deployment.
+3. **Hardcoded API base URLs**
+   > ⚠️ Use relative URLs (empty `VITE_API_URL`) so the frontend calls `/api/...` on its own origin.
 
-4. **Base image changes in Dockerfile**
-   > ⚠️ **Warning**: Platform uses ECR Public Gallery base images to avoid Docker Hub rate limits. Your local Dockerfile is for development only.
+4. **Ad-hoc schema changes**
+   > ⚠️ Adding a column? Write an Alembic migration — `create_all` won't ALTER an existing table, so the change silently won't apply.
 
 ---
 
 ## 📚 Documentation Index
 
 ### Core Documentation (Minimal, Always Available)
-- **README.md** - 5-minute quick start, core concepts
+- **README.md** - 5-minute quick start, self-hosting, core concepts
 - **CLAUDE.md** (this file) - AI assistant guide
-- **PLATFORM.md** - Claritty deployment guide
-- **WIDGETS.md** - Widget design specifications
-- **INFRASTRUCTURE.md** - Infrastructure files explanation
+- **WIDGETS.md** - Widget design specifications (3 sizes, the UI kit)
+- **LLM_PROXY.md** - how agents call Claude via the Claritty SDK proxy
+- **.cursorrules** - concise editing rules (single source of the canonical facts)
 
-### Comprehensive Guides (Archived, Reference Only)
-- **docs/archive/README.comprehensive.md** - Full platform explanation
-- **docs/archive/DEVELOPER_GUIDE.md** - Detailed development workflow
-- **docs/archive/API.md** - Complete API reference
-- **docs/archive/ARCHITECTURE.md** - System architecture deep dive
-- **docs/archive/FAQ.md** - Frequently asked questions
-- **docs/archive/WIDGET_*.md** - Comprehensive widget guides
-
-### Platform Documentation (External References)
-- **claritty-core/INFRASTRUCTURE.md** - Platform infrastructure guide
-- **claritty-core/CLAUDE.md** - Platform-level AI assistant guide
+### Archived (historical reference only — may be out of date)
+- **docs/archive/** - older comprehensive guides
 
 ---
 
@@ -614,20 +591,23 @@ See `frontend/src/components/Widget.tsx` for complete annotated example.
 **Q: How do I add a new agent?**
 A: See [Task 1: Add a New Agent](#task-1-add-a-new-agent)
 
-**Q: Why can't I modify the Dockerfile?**
-A: Platform generates production Dockerfile. See `INFRASTRUCTURE.md`
+**Q: Can I modify the Dockerfile / nginx?**
+A: Yes — you self-host this app, so the infra is yours. Test with
+`docker compose up --build` after changing it.
 
-**Q: How do I test my app locally?**
-A: `docker-compose up -d` then check http://localhost:8000/health
+**Q: How do I run my app locally?**
+A: `docker compose up --build` then open http://localhost:3200.
 
-**Q: What's the deployment process?**
-A: Push to GitHub → Submit to Claritty → Platform validates/builds/deploys. See `PLATFORM.md`
+**Q: How do I deploy it?**
+A: It's a normal Docker app — host it anywhere you can run the container +
+Postgres. Keep `DATABASE_URL` and the `CLARITTY_*` LLM-proxy env vars set.
 
 **Q: What widget sizes are available?**
-A: Platform follows Apple HIG standards: small (170×170px), medium (360×170px), and large (360×360px).
+A: Apple HIG, three sizes: small (170×170), medium (360×170), large (360×360).
 
 **Q: How do I handle multi-tenancy?**
-A: Filter all DB queries by `CLARITY_WORKSPACE_ID` environment variable.
+A: Read the caller from the `X-User-ID` header and filter every user-data query
+by `Model.user_id`. There is no `CLARITY_WORKSPACE_ID`.
 
 ---
 
@@ -638,13 +618,12 @@ Before deployment, ensure:
 - [ ] Created custom agent(s) following minimal example
 - [ ] Created workflow(s) chaining agents
 - [ ] Created trigger template(s) for user configuration
-- [ ] Customized widget (small, medium & large views)
-- [ ] Tested locally (`docker-compose up`, curl endpoints)
+- [ ] Customized widget (small, medium & large views) using the UI kit
+- [ ] Tested locally (`docker compose up --build`, curl endpoints)
 - [ ] No hardcoded localhost URLs
-- [ ] No infrastructure file modifications
-- [ ] Multi-tenancy queries (workspace filtering)
-- [ ] Widget performance (< 200ms small, < 500ms large)
-- [ ] Screenshots captured (widget-small.png, widget-medium.png, widget-large.png)
+- [ ] Multi-tenancy: every user-data query filters by `user_id` (X-User-ID)
+- [ ] Schema changes via Alembic migration (not bare `create_all`)
+- [ ] Required env vars kept: `DATABASE_URL`, `CLARITTY_PLATFORM_URL`, `CLARITTY_AUTH_TOKEN`
 
 ---
 
@@ -654,12 +633,12 @@ Help developers:
 
 1. **Brainstorm** great agentic app ideas
 2. **Implement** agents/workflows/triggers following best practices
-3. **Avoid** platform-controlled file modifications
-4. **Test** locally before deploying
-5. **Deploy** successfully to Claritty Platform
+3. **Use the Claritty pieces**: AI via the SDK proxy, widgets via the UI kit
+4. **Keep it working**: don't delete required env vars; migrate the schema
+5. **Test** locally (`docker compose up --build`) before shipping to your host
 
 **Result**: High-quality agentic apps that solve real problems and delight users!
 
 ---
 
-**Questions?** Check [README.md](README.md) | [PLATFORM.md](PLATFORM.md) | [docs/archive/](docs/archive/)
+**Questions?** Check [README.md](README.md) | [WIDGETS.md](WIDGETS.md) | [.cursorrules](.cursorrules)

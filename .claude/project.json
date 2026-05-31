@@ -6,13 +6,16 @@
     "files": [
       "README.md",
       "CLAUDE.md",
-      "PLATFORM.md",
       "WIDGETS.md",
-      "INFRASTRUCTURE.md",
+      "LLM_PROXY.md",
+      ".claude/design-tokens.md",
+      "backend/routes/app.py",
       "backend/agents/example_agent.py",
       "backend/workflows/example_workflow.py",
       "backend/triggers/example_trigger.py",
-      "frontend/src/components/Widget.tsx"
+      "frontend/src/components/Widget.tsx",
+      "frontend/src/lib/widget-sizes.ts",
+      "frontend/src/pages/Dashboard.tsx"
     ],
     "ignore": [
       "docs/archive/**",
@@ -28,25 +31,26 @@
     ]
   },
   "metadata": {
-    "stack": "Python FastAPI + React TypeScript",
-    "platform": "Claritty Platform",
-    "deployment": "AWS ECS (platform-managed)",
-    "widget_sizes": ["190×190px", "400×190px"],
-    "reserved_env_vars": [
-      "DATABASE_URL",
-      "PORT",
-      "CLARITY_APP_ID",
-      "CLARITY_WORKSPACE_ID",
-      "JWT_SECRET",
-      "REDIS_URL"
-    ]
+    "stack": "Python FastAPI + React TypeScript + Postgres",
+    "claritty_dependencies": ["LLM via claritty_sdk proxy", "@clarittyai/widget-toolkit UI kit"],
+    "deployment": "Self-hosted — Docker (host it yourself)",
+    "widget_sizes": ["170×170px (small)", "360×170px (medium)", "360×360px (large)"],
+    "required_env_vars": [
+      "DATABASE_URL — Postgres connection (required)",
+      "CLARITTY_PLATFORM_URL + CLARITTY_AUTH_TOKEN — LLM proxy (required for real AI; heuristic fallback if unset)"
+    ],
+    "tenancy": "Per-user via the X-User-ID header (models.user_id); there is NO CLARITY_WORKSPACE_ID"
   },
   "guidelines": {
     "start_with_brainstorming": "Always run /superpowers:brainstorming before implementing",
     "widget_first_design": "Design widgets before full app pages - widgets are primary interface",
-    "platform_controlled_infrastructure": "DO NOT modify Dockerfile, docker-compose.yml, nginx.conf, or api.ts",
-    "multi_tenancy_required": "All database queries MUST filter by CLARITY_WORKSPACE_ID",
-    "exactly_2_widget_sizes": "Small (190×190px) and Large (400×190px) only - NO MEDIUM",
+    "self_hosted": "You host this app yourself (Docker). The only Claritty dependencies are the LLM (via claritty_sdk proxy) and the UI kit (@clarittyai/widget-toolkit). Don't delete the required env vars (DATABASE_URL, CLARITTY_PLATFORM_URL, CLARITTY_AUTH_TOKEN).",
+    "ai_via_sdk": "Call models ONLY through claritty_sdk.llm.get_llm_client — never a raw provider SDK or ANTHROPIC_API_KEY.",
+    "schema_via_migrations": "Change the DB schema with Alembic migrations (backend/alembic.ini), never ad-hoc create_all — so data is preserved.",
+    "keep_api_contract_in_sync": "frontend/src/lib/api.ts and backend/routes/app.py must agree (same paths, methods, response shapes).",
+    "multi_tenancy_required": "Every query holding user data MUST filter by the caller (X-User-ID header). There is no CLARITY_WORKSPACE_ID.",
+    "three_widget_sizes": "Apple HIG, three sizes only: Small 170×170, Medium 360×170, Large 360×360",
+    "design_system": "On-brand 'Claritty' look — use semantic tokens (bg-card, text-accent, text-muted-foreground), never bare hex; no hover-scale (use background-color transitions); 44px touch targets, 12px min font. See .claude/design-tokens.md",
     "performance_targets": "Small widget < 200ms, Large widget < 500ms"
   }
 }

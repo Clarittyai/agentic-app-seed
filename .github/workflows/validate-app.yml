@@ -36,8 +36,7 @@ jobs:
       - name: Create .env file
         run: |
           cp .env.example .env
-          # Add dummy API key for build testing
-          echo "ANTHROPIC_API_KEY=sk-ant-test-key-for-ci" >> .env
+          # No API keys needed — AI runs via the platform proxy (heuristic fallback in CI)
 
       - name: Start services
         run: |
@@ -166,7 +165,6 @@ jobs:
       - name: Create .env file
         run: |
           cp .env.example .env
-          echo "ANTHROPIC_API_KEY=sk-ant-test-key" >> .env
 
       - name: Start services
         run: |
@@ -199,7 +197,6 @@ jobs:
       - name: Create .env file
         run: |
           cp .env.example .env
-          echo "ANTHROPIC_API_KEY=sk-ant-test-key" >> .env
 
       - name: Build app image
         run: |

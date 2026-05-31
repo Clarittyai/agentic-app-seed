@@ -310,8 +310,9 @@ class AppValidator:
         # Read file
         env_content = env_example_file.read_text()
 
-        # Check for required variables
-        required_vars = ["ANTHROPIC_API_KEY"]
+        # No provider API keys are required — AI runs through the platform LLM
+        # proxy (CLARITTY_AUTH_TOKEN + CLARITTY_PLATFORM_URL, injected at deploy).
+        required_vars = []
         missing_vars = []
 
         for var in required_vars:

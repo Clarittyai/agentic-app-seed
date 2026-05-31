@@ -1,26 +1,71 @@
 """
-Database models for Clarity backend
+Database models for the Clarity app.
 
 Models:
-- UserIntegration: User-connected integrations
-- WorkflowExecution: Workflow execution history
+- Task: the example app's domain entity (a simple to-do item)
+- UserIntegration: user-connected integrations (OAuth/API keys) — optional
+- WorkflowExecution: workflow execution history
+
+Generated apps REPLACE `Task` with their own domain models. Keep
+`UserIntegration` + `WorkflowExecution` (used by the SDK runtime + the optional
+integrations layer). Every model that holds user data MUST have a `user_id`
+column and every query MUST filter by it (multi-tenancy).
 
 Note: trigger instances + their execution audit are owned by the Claritty
 platform now (not the app); see /internal/* dispatch endpoints in main.py.
 """
 
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, JSON, ForeignKey, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, JSON, Text
 from datetime import datetime
 import uuid
 from backend.database import Base
 
 
+class Task(Base):
+    """
+    The seed's example domain entity: a simple, AI-prioritized to-do item.
+
+    This is intentionally generic — replace it with your app's real models.
+    It demonstrates the full pattern: user-scoped CRUD, an agent that enriches
+    it (priority + suggested action), and a widget that summarizes it.
+    """
+    __tablename__ = "tasks"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=False, index=True)  # multi-tenancy key
+
+    title = Column(String, nullable=False)
+    notes = Column(Text)
+
+    # Set by the "prioritize-task" agent (Claude) on create; safe default so
+    # the app works even when the LLM proxy isn't configured (local/CI).
+    priority = Column(String, default="medium", index=True)  # low|medium|high|urgent
+    suggested_action = Column(Text)  # one short AI-suggested next step
+
+    done = Column(Boolean, default=False, index=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "notes": self.notes,
+            "priority": self.priority,
+            "suggested_action": self.suggested_action,
+            "done": self.done,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self):
+        return f"<Task id={self.id} priority={self.priority} done={self.done}>"
+
+
 class UserIntegration(Base):
     """
-    User-connected integrations (OAuth, API keys).
-
-    Stores encrypted credentials for third-party services.
+    User-connected integrations (OAuth, API keys). Optional — the default app
+    needs none. Kept because the integrations layer + workflow runtime use it.
     """
     __tablename__ = "user_integrations"
 
@@ -40,9 +85,8 @@ class UserIntegration(Base):
 
 class WorkflowExecution(Base):
     """
-    Workflow execution history.
-
-    Records every workflow run with inputs, outputs, and timing.
+    Workflow execution history. Records every workflow run with inputs,
+    outputs, and timing (written by the workflow execute endpoint).
     """
     __tablename__ = "workflow_executions"
 
@@ -62,88 +106,3 @@ class WorkflowExecution(Base):
 
     def __repr__(self):
         return f"<WorkflowExecution id={self.id} workflow={self.workflow_id} status={self.status}>"
-
-
-class UserEmailCriteria(Base):
-    """
-    User's importance criteria for email filtering.
-
-    Stores user-defined rules for what makes an email important.
-    Used by EmailAnalyzerAgent to personalize importance detection.
-    """
-    __tablename__ = "user_email_criteria"
-
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, nullable=False, unique=True, index=True)
-
-    # Importance rules
-    important_senders = Column(JSON, default=list)  # ["boss@company.com", "client@"]
-    ignore_senders = Column(JSON, default=list)  # ["noreply@", "newsletter@"]
-    keywords_important = Column(JSON, default=list)  # ["urgent", "deadline", "meeting"]
-    keywords_ignore = Column(JSON, default=list)  # ["unsubscribe", "promotional"]
-
-    # User context for AI analysis
-    work_context = Column(Text)  # "I'm a Product Manager at TechCo working on AI products"
-    role = Column(String)  # "Product Manager", "Software Engineer", etc.
-    company = Column(String)  # "TechCo"
-
-    # Learning data
-    feedback_count = Column(Integer, default=0)
-    accuracy_score = Column(Integer, default=0)  # Percentage 0-100
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return f"<UserEmailCriteria user={self.user_id} accuracy={self.accuracy_score}%>"
-
-
-class ProcessedEmail(Base):
-    """
-    Record of processed emails with AI analysis results.
-
-    Stores every email analyzed by the system for:
-    - Preventing duplicate processing
-    - Tracking notification history
-    - Learning from user feedback
-    - Analytics and reporting
-    """
-    __tablename__ = "processed_emails"
-
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, nullable=False, index=True)
-    email_id = Column(String, nullable=False, index=True)  # Gmail message ID
-
-    # Email metadata
-    sender = Column(String, index=True)
-    sender_name = Column(String)
-    subject = Column(String)
-    snippet = Column(Text)
-    received_at = Column(DateTime, index=True)
-    processed_at = Column(DateTime, default=datetime.utcnow, index=True)
-
-    # Analysis results
-    is_important = Column(Boolean, index=True)
-    importance_score = Column(Integer)  # 0-100
-    category = Column(String, index=True)  # work, personal, newsletter, promotional, urgent
-    urgency_level = Column(String, index=True)  # low, medium, high, critical
-    reasoning = Column(Text)  # AI explanation
-    suggested_action = Column(String)  # read_now, read_later, archive, delete
-
-    # Notification status
-    notification_sent = Column(Boolean, default=False, index=True)
-    notification_sent_at = Column(DateTime)
-    notification_channels = Column(JSON)  # ["email", "slack"]
-    notification_id = Column(String)
-
-    # User feedback (for learning)
-    user_feedback = Column(String, index=True)  # correct, false_positive, false_negative, no_feedback
-    feedback_at = Column(DateTime)
-    feedback_note = Column(Text)  # Optional user note
-
-    # Metadata
-    has_attachments = Column(Boolean, default=False)
-    is_unread = Column(Boolean, default=True)
-    labels = Column(JSON)  # Gmail labels
-
-    def __repr__(self):
-        return f"<ProcessedEmail id={self.email_id} score={self.importance_score} important={self.is_important}>"

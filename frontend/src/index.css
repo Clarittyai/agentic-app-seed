@@ -3,56 +3,58 @@
 @tailwind utilities;
 
 @layer base {
+  /* Canonical Claritty palette (mirrors clarity-platform/src/app/globals.css).
+     Values are HSL channels for `hsl(var(--x) / <alpha-value>)`. */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --background: 0 0% 100%;          /* #FFFFFF */
+    --foreground: 222 47% 11%;        /* #1E293B */
+    --card: 0 0% 100%;                /* #FFFFFF */
+    --card-foreground: 222 47% 11%;   /* #1E293B */
+    --primary: 222 47% 11%;           /* #1E293B navy */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96.1%;          /* shadcn slot (unused by brand accent) */
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;         /* #EF4444 */
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 227 100% 68%;
     --radius: 0.5rem;
 
-    /* Brand tokens (HSL channels) — neutral defaults; each generated app
-       overrides these in src/theme.css to get a unique, on-theme look. */
-    --brand-primary: 0 0% 0%;
-    --brand-accent: 227 100% 68%;
+    /* Brand tokens (HSL channels). Default = Claritty indigo #5B7FFF; each
+       generated app may override these in src/theme.css for a unique look. */
+    --brand-primary: 222 47% 11%;
+    --brand-accent: 227 100% 68%;     /* #5B7FFF */
     --brand-accent-600: 244 76% 59%;
     --brand-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --background: 240 6% 6%;          /* #0F0F10 */
+    --foreground: 210 40% 98%;        /* #F8FAFC */
+    --card: 240 4% 10%;               /* #1A1A1C — distinct from bg for depth */
     --card-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 217 91% 60%;           /* #3B82F6 */
+    --primary-foreground: 222 47% 11%;
+    --secondary: 240 4% 16%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 240 4% 16%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 51%;         /* #DC2626 */
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 227 100% 68%;
   }
 
   body {
-    @apply bg-white text-gray-900 font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -197,6 +199,21 @@
 }
 
 @layer utilities {
+  /* Animated dataflow along the agent-graph connector lines. */
+  .agent-graph-flow {
+    animation: agentGraphFlow 1.2s linear infinite;
+  }
+  @keyframes agentGraphFlow {
+    to {
+      stroke-dashoffset: -11; /* one dash+gap cycle (5 + 6) */
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .agent-graph-flow {
+      animation: none;
+    }
+  }
+
   /* Smooth scroll */
   .scroll-smooth {
     scroll-behavior: smooth;

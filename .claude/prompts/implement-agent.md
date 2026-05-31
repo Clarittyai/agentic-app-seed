@@ -124,27 +124,26 @@ class YourAgentName(BaseAgent):
 
 ## 🔌 Common Patterns
 
-### Pattern 1: Claude API Integration
+### Pattern 1: Claude via the Claritty LLM proxy (NO API keys)
+
+Never use a raw `Anthropic(api_key=...)` client — apps hold no provider keys.
+Always call the model through `claritty_sdk.llm.get_llm_client`, which routes to
+the platform's metered, BYOK-aware proxy (auth is injected at deploy):
 
 ```python
-from anthropic import Anthropic
+from claritty_sdk.llm import get_llm_client
+import asyncio
 
 async def _call_claude(self, prompt: str) -> str:
-    """
-    Call Claude API for AI analysis.
-    """
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-
-    response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+    """Call Claude through the Claritty proxy (no ANTHROPIC_API_KEY)."""
+    client = get_llm_client("claude-sonnet-4-6")
+    # chat() is sync; off-load it so the event loop isn't blocked.
+    result = await asyncio.to_thread(
+        client.chat,
+        [{"role": "user", "content": prompt}],
         max_tokens=1024,
-        messages=[{
-            "role": "user",
-            "content": prompt
-        }]
     )
-
-    return response.content[0].text
+    return result.content
 ```
 
 ### Pattern 2: Database Query (Multi-Tenant!)
@@ -157,12 +156,12 @@ async def _fetch_data(self, context: AgentContext):
     """
     Fetch data from database (multi-tenant aware).
     """
-    workspace_id = os.getenv('CLARITY_WORKSPACE_ID')
     db = get_db()
 
-    # ✅ CRITICAL: Always filter by workspace_id!
+    # ✅ CRITICAL: Always filter by the caller's user_id (context.user_id,
+    # which the platform resolves from the X-User-ID header).
     items = db.query(YourModel).filter(
-        YourModel.workspace_id == workspace_id
+        YourModel.user_id == context.user_id
     ).all()
 
     return items
@@ -234,8 +233,8 @@ Before marking agent complete:
 - [ ] Decorator has unique `id` (kebab-case)
 - [ ] All inputs defined with type and description
 - [ ] All outputs defined with type and description
-- [ ] Database queries filter by `CLARITY_WORKSPACE_ID`
-- [ ] External API keys read from environment variables
+- [ ] Database queries filter by the caller's `user_id` (X-User-ID)
+- [ ] AI via `get_llm_client` (no provider keys)
 - [ ] Error handling for common failure cases
 - [ ] Logging at key steps (`context.log()`)
 - [ ] Timeout set appropriately (default: 30s)
@@ -278,4 +277,4 @@ asyncio.run(test_agent())
 
 - `backend/agents/example_agent.py` - Reference implementation
 - `CLAUDE.md` - Full agent development guide
-- `PLATFORM.md` - Deployment guide
+- `LLM_PROXY.md` - calling Claude via the SDK proxy

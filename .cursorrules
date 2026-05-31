@@ -1,222 +1,55 @@
-# Cursor IDE Rules - Clarity Agentic App Seed
+# Claritty Agentic App — Cursor / AI editor rules
 
-## ⚠️ CRITICAL: Infrastructure Files - DO NOT MODIFY
+A **self-hostable** agentic web app: FastAPI backend + Vite/React frontend +
+Postgres. You host it yourself (Docker or your own infra). It depends on Claritty
+for exactly two things:
 
-**STOP BEFORE SUGGESTING CHANGES TO THESE FILES:**
+1. **AI** — call models ONLY through the Claritty SDK's LLM proxy
+   (`from claritty_sdk.llm import get_llm_client`). NEVER use a raw provider SDK
+   or an `ANTHROPIC_API_KEY`. The proxy is reached via `CLARITTY_PLATFORM_URL` +
+   `CLARITTY_AUTH_TOKEN` (set in `.env`); with neither set, agents fall back to a
+   built-in heuristic so the app still runs.
+2. **Widget UI** — build dashboard widgets with the Claritty UI kit
+   `@clarittyai/widget-toolkit` (`WidgetContainer`, `WidgetButton`, `WidgetBadge`).
 
-The following files are managed by the Clarity Platform and MUST NOT be modified:
-- `docker-compose.yml` - Port configuration and service orchestration
-- `frontend/Dockerfile` - Build configuration with VITE_API_URL
-- `frontend/nginx.conf` - Nginx reverse proxy configuration
-- `frontend/src/lib/api.ts` - API client base URL configuration
+## Required env vars (don't delete these — the app needs them)
+- `DATABASE_URL` — Postgres connection (required).
+- `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN` — the LLM proxy (required for
+  real AI; optional locally — heuristic fallback).
 
-### Why These Files Are Protected
+## Structure
+- `backend/models.py` — SQLAlchemy models. **Every user-data model has a
+  `user_id` column and EVERY query filters by it** (multi-tenancy).
+- `backend/routes/app.py` — the app's HTTP API (`@router.get/post(...)`). Read the
+  caller from the **`X-User-ID`** header (`_resolve_user`) — there is NO
+  `CLARITY_WORKSPACE_ID`.
+- `backend/agents/*.py` — `@agent` classes; do work + call the LLM via the SDK.
+- `backend/workflows/*.py` — `@workflow` + `@uses_agent` orchestration.
+- `backend/triggers/*.py` — `@trigger_template` (schedule / webhook).
+- `frontend/src/components/Widget.tsx` — the dashboard widget (uses the UI kit).
+- `frontend/src/pages/*` + `frontend/src/components/ui/*` — full-app screens.
+  `components/ui/` has app primitives (Button/Input/Card/Dialog/Table/...).
+- Schema changes go through **Alembic** migrations (see below), never ad-hoc.
 
-This template uses a **monolithic container architecture** with Nginx reverse proxy:
-- Single container runs both Nginx (port 3200) + FastAPI (port 8000) via supervisord
-- Nginx proxies `/api/*` requests to localhost:8000 (same container)
-- MUST use relative URLs (empty string) for production deployment
-- Required for Clarity Platform's single-container ECS deployment
+## Widgets — Apple HIG, THREE sizes (canonical: `frontend/src/lib/widget-sizes.ts`)
+- small **170×170**, medium **360×170**, large **360×360**.
+- Build with the kit: `<WidgetContainer size={size}>…</WidgetContainer>` +
+  `WidgetButton` / `WidgetBadge`. Don't hand-roll the card or set
+  width/height/rounded/overflow yourself — the kit does it.
+- Branch on the `size` prop into three distinct layouts. No responsive prefixes
+  (`sm:`/`md:`), no `@media`, no `window.innerWidth` — widgets are fixed-size.
 
-### 🚨 NEVER Suggest These Changes
+## Dev workflow (self-hosted)
+- `docker compose up --build` → app on http://localhost:3200 (nginx → FastAPI).
+- DB schema: `alembic -c backend/alembic.ini revision --autogenerate -m "..."`
+  then `alembic -c backend/alembic.ini upgrade head` (the app also runs
+  `upgrade head` on startup).
+- Frontend tests: `npm run test:widgets`.
 
-#### ❌ DO NOT: Hardcode localhost URLs
-```typescript
-// WRONG - breaks production deployment
-const API_BASE_URL = 'http://localhost:8000';
-```
-
-**ALWAYS USE**:
-```typescript
-// CORRECT - works in dev and production
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-```
-
-#### ❌ DO NOT: Remove /api/ proxy from nginx.conf
-```nginx
-# WRONG - API calls will fail in production
-location / {
-    try_files $uri $uri/ /index.html;
-}
-```
-
-**ALWAYS KEEP**:
-```nginx
-# CORRECT - proxies API calls to backend (same container)
-location /api/ {
-    proxy_pass http://localhost:8000;
-    # ... headers
-}
-```
-
-#### ❌ DO NOT: Change port mappings in docker-compose.yml
-```yaml
-# WRONG - conflicts with Clarity Platform
-ports:
-  - "8000:8000"  # Hardcoded port
-```
-
-**ALWAYS USE**:
-```yaml
-# CORRECT - dynamic port allocation
-ports:
-  - "${BACKEND_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
-```
-
-#### ❌ DO NOT: Change VITE_API_URL to localhost in Dockerfile
-```dockerfile
-# WRONG - breaks production
-ARG VITE_API_URL=http://localhost:8000
-```
-
-**ALWAYS USE**:
-```dockerfile
-# CORRECT - empty string for relative URLs
-ARG VITE_API_URL=
-ENV VITE_API_URL=${VITE_API_URL}
-```
-
-### ✅ What You CAN Suggest
-
-**In docker-compose.yml**:
-- Adding new environment variables for app logic
-- Adjusting resource limits (memory, CPU)
-- Adding volumes for data persistence
-
-**In frontend/nginx.conf**:
-- Adding new location blocks for custom routes
-- Adjusting cache settings for static assets
-- Adding custom headers (without breaking /api/ proxy)
-
-**In frontend/src/lib/api.ts**:
-- Adding new API methods
-- Customizing request/response interceptors
-- Adding authentication logic
-
-**In frontend/Dockerfile**:
-- Changing Node version if needed
-- Adding build optimizations
-- Installing additional dependencies
-
-### 🎯 Widget Sizes (Apple HIG Compliance)
-
-**CRITICAL**: The platform supports EXACTLY two widget sizes:
-- **Small**: 190×190px (1:1 ratio - SQUARE)
-- **Large**: 400×190px (2.1:1 ratio - WIDE RECTANGLE)
-- **NO MEDIUM SIZE EXISTS**
-
-When implementing widgets:
-```typescript
-// CORRECT - only two sizes
-interface WidgetProps {
-  size?: 'small' | 'large';  // NOT 'small' | 'medium' | 'large'
-}
-
-export default function Widget({ size = 'large' }: WidgetProps) {
-  if (size === 'small') {
-    return <SmallWidgetView />;  // 190×190px
-  }
-  return <LargeWidgetView />;    // 400×190px - no medium option
-}
-```
-
-Backend widget endpoint:
-```python
-@app.get("/api/widget")
-async def get_widget_data(
-    size: str = "large",  # Only "small" or "large"
-    user_id: str = Depends(get_current_user)
-):
-    if size == "small":
-        return {"active_triggers": 5, "success_rate": "95%"}
-    else:  # large (not elif - only two options)
-        return {"active_triggers": 5, "total_executions": 42, "recent_executions": [...]}
-```
-
-### 📚 When Developer Asks About Infrastructure
-
-If the developer asks to modify infrastructure files:
-
-1. **WARN** them with this message:
-   > ⚠️ **Warning**: This file is managed by the Clarity Platform infrastructure. Modifying it may break your production deployment. Please read `INFRASTRUCTURE.md` to understand the monolithic container architecture before making changes.
-
-2. **DIRECT** them to read `INFRASTRUCTURE.md` first
-
-3. **EXPLAIN** the monolithic container architecture:
-   - Single container runs both Nginx and FastAPI via supervisord
-   - Nginx proxies `/api/*` to localhost:8000 (same container)
-   - Relative URLs required for production (empty VITE_API_URL)
-   - Required for Clarity Platform's single-container ECS deployment
-
-4. **ONLY HELP** if they confirm they understand the implications
-
-### 🚀 What You SHOULD Focus On
-
-Developers using this template should focus on:
-- **Agents** (`backend/agents/`) - AI agent implementations
-- **Workflows** (`backend/workflows/`) - Workflow definitions
-- **Triggers** (`backend/triggers/`) - User-configurable trigger templates
-- **Frontend Components** (`frontend/src/components/`) - React components
-- **Frontend Pages** (`frontend/src/pages/`) - React pages
-- **Widget** (`frontend/src/components/Widget.tsx`) - Widget implementation (2 sizes only!)
-
-### 📖 Documentation References
-
-For detailed guidance, point developers to:
-- `INFRASTRUCTURE.md` - Complete infrastructure guide
-- `README.md` - Quick start and architecture overview
-- `CLAUDE.md` - Comprehensive guide for AI assistants
-- File comments - Warning comments in infrastructure files
-
-## Project-Specific Rules
-
-### Decorators Are Required
-All agents, workflows, and triggers MUST use SDK decorators:
-```python
-from claritty_sdk import agent, workflow, trigger_template
-
-@agent(id="my-agent", name="My Agent", ...)
-class MyAgent(BaseAgent):
-    async def execute(self, context: AgentContext) -> AgentResult:
-        ...
-```
-
-### Always Use Async
-All execute methods MUST be async:
-```python
-# CORRECT
-async def execute(self, context: AgentContext) -> AgentResult:
-    return result
-```
-
-### Registration Required
-All new agents/workflows/triggers MUST be registered in `__init__.py`:
-```python
-# backend/agents/__init__.py
-from backend.agents.my_agent import MyAgent
-__all__ = ["MyAgent", ...]
-```
-
-### User-Configurable Triggers
-NEVER hardcode schedules. Use trigger templates with config_fields:
-```python
-# WRONG
-@cron("0 9 * * *")  # Users can't customize
-
-# CORRECT
-@trigger_template(
-    config_fields=[{"key": "time", "type": "time"}]  # Users configure
-)
-```
-
-## Summary
-
-✅ **DO**: Build agents, workflows, triggers, and UI components
-✅ **DO**: Use relative URLs and environment variables
-✅ **DO**: Implement exactly 2 widget sizes (190×190px and 400×190px)
-✅ **DO**: Direct developers to INFRASTRUCTURE.md for infrastructure questions
-
-❌ **DO NOT**: Suggest modifying docker-compose.yml, Dockerfile, nginx.conf, or api.ts base URL
-❌ **DO NOT**: Suggest hardcoded localhost URLs
-❌ **DO NOT**: Implement 3 widget sizes (NO medium size!)
-❌ **DO NOT**: Remove the /api/ proxy from nginx.conf
+## DON'T
+- ❌ Don't add provider API keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) or import
+  `anthropic`/`openai` directly — use `get_llm_client`.
+- ❌ Don't implement 2 widget sizes or 190×190/400×190 — it's 3 sizes (170/360).
+- ❌ Don't reference `CLARITY_WORKSPACE_ID` — tenancy is the `X-User-ID` header.
+- ❌ Don't forget `.filter(Model.user_id == user_id)` on user-data queries.
+- ❌ Don't `create_all` new columns — write an Alembic migration.

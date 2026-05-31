@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import os
 import logging
 
-from backend.database import get_db, init_db, engine
+from backend.database import get_db, init_db, seed_example_tasks, engine
 from backend import models
 from claritty_sdk import (
     AgentRegistry,
@@ -130,156 +130,10 @@ def get_current_user(
 # ============================================================================
 # CORE ENDPOINTS
 # ============================================================================
-# Note: Health check endpoint is provided by backend/infrastructure/health.py
-
-@app.get("/api/widget")
-async def get_widget_data(
-    size: str = "large",
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
-    db: Session = Depends(get_db)
-):
-    """
-    Widget data endpoint - REQUIRED by Clarity platform.
-
-    Returns data to display in the user's Clarity dashboard widget.
-    Supports two sizes: small (quick glance), large (detailed view)
-
-    For Smart Email Filter: Shows important email intelligence data
-
-    Authentication:
-    - X-User-ID header (from Clarity platform) if present
-    - Defaults to "test-user" for development/testing
-    - No authentication required - Clarity platform handles access control
-    """
-    # Use X-User-ID header if provided by Clarity platform, otherwise default to test-user
-    user_id = x_user_id if x_user_id else "test-user"
-
-    from datetime import datetime, timedelta
-
-    # Get important emails from last 24 hours
-    yesterday = datetime.utcnow() - timedelta(days=1)
-
-    important_emails_today = db.query(models.ProcessedEmail).filter(
-        models.ProcessedEmail.user_id == user_id,
-        models.ProcessedEmail.is_important == True,
-        models.ProcessedEmail.processed_at >= yesterday
-    ).count()
-
-    # Get total emails processed in last 24 hours
-    total_emails_processed = db.query(models.ProcessedEmail).filter(
-        models.ProcessedEmail.user_id == user_id,
-        models.ProcessedEmail.processed_at >= yesterday
-    ).count()
-
-    # Calculate detection accuracy from user feedback
-    feedback_emails = db.query(models.ProcessedEmail).filter(
-        models.ProcessedEmail.user_id == user_id,
-        models.ProcessedEmail.user_feedback.in_(['correct', 'false_positive', 'false_negative'])
-    ).all()
-
-    if feedback_emails:
-        correct_predictions = sum(1 for e in feedback_emails if e.user_feedback == 'correct')
-        detection_accuracy = int((correct_predictions / len(feedback_emails)) * 100)
-    else:
-        # Default accuracy when no feedback yet
-        detection_accuracy = 95
-
-    # Get last check time from most recent processed email
-    last_email = db.query(models.ProcessedEmail).filter(
-        models.ProcessedEmail.user_id == user_id
-    ).order_by(
-        models.ProcessedEmail.processed_at.desc()
-    ).first()
-
-    if last_email:
-        time_diff = datetime.utcnow() - last_email.processed_at
-        if time_diff.seconds < 60:
-            last_checked = "just now"
-        elif time_diff.seconds < 3600:
-            minutes = time_diff.seconds // 60
-            last_checked = f"{minutes} minute{'s' if minutes != 1 else ''} ago"
-        else:
-            hours = time_diff.seconds // 3600
-            last_checked = f"{hours} hour{'s' if hours != 1 else ''} ago"
-    else:
-        last_checked = "not yet checked"
-
-    # Return different data based on widget size
-    if size == "small":
-        # Small widget: Quick glance - important email count and accuracy
-        return {
-            "important_emails_today": important_emails_today,
-            "detection_accuracy": f"{detection_accuracy}%",
-            "last_checked": last_checked
-        }
-    else:  # large
-        # Large widget: Detailed view - recent important emails with full details
-        recent_important_emails = db.query(models.ProcessedEmail).filter(
-            models.ProcessedEmail.user_id == user_id,
-            models.ProcessedEmail.is_important == True
-        ).order_by(
-            models.ProcessedEmail.processed_at.desc()
-        ).limit(5).all()
-
-        return {
-            "important_emails_today": important_emails_today,
-            "total_emails_processed": total_emails_processed,
-            "detection_accuracy": detection_accuracy,
-            "recent_important_emails": [
-                {
-                    "sender": email.sender,
-                    "subject": email.subject,
-                    "importance_score": email.importance_score,
-                    "urgency_level": email.urgency_level or "medium",
-                    "detected_at": email.processed_at.isoformat(),
-                    "snippet": email.snippet[:100] if email.snippet else ""
-                }
-                for email in recent_important_emails
-            ],
-            "last_checked": last_checked
-        }
-
-
-@app.post("/api/emails/mark-read")
-async def mark_urgent_emails_as_read(
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
-    db: Session = Depends(get_db)
-):
-    """
-    Mark all urgent emails as read (clears important flags).
-
-    This endpoint is called from the widget's "Mark Read" button
-    to clear urgent email notifications.
-    """
-    # Use X-User-ID header if provided by Clarity platform, otherwise default to test-user
-    user_id = x_user_id if x_user_id else "test-user"
-
-    from datetime import datetime, timedelta
-
-    # Get urgent emails from last 24 hours
-    yesterday = datetime.utcnow() - timedelta(days=1)
-
-    urgent_emails = db.query(models.ProcessedEmail).filter(
-        models.ProcessedEmail.user_id == user_id,
-        models.ProcessedEmail.is_important == True,
-        models.ProcessedEmail.processed_at >= yesterday
-    ).all()
-
-    # Mark as read by setting is_important to False
-    count = 0
-    for email in urgent_emails:
-        email.is_important = False
-        count += 1
-
-    db.commit()
-
-    logger.info(f"Marked {count} urgent emails as read for user {user_id}")
-
-    return {
-        "success": True,
-        "marked_count": count,
-        "message": f"Marked {count} urgent email{'s' if count != 1 else ''} as read"
-    }
+# Note: the health endpoint is provided by backend/infrastructure/health.py.
+# The app's data endpoints — including the REQUIRED `GET /api/widget` — live in
+# backend/routes/app.py (auto-included above). Generated apps overwrite that
+# file with their own routes; main.py stays generic (discovery + execution).
 
 
 # ============================================================================
@@ -630,8 +484,11 @@ async def execute_workflow(
     body = dict(input_data or {})
     agent_context = body.pop("agent_context", {}) or {}
 
-    # Execute workflow
+    # Execute workflow. Measure duration here ourselves — the SDK executor's
+    # return shape varies across versions and may omit `duration_seconds`, so we
+    # never index it directly (a missing key used to 500 the whole request).
     executor = WorkflowExecutor()
+    started_at = datetime.utcnow()
     try:
         result = await executor.execute_workflow(
             workflow_id=workflow_id,
@@ -641,32 +498,37 @@ async def execute_workflow(
             agent_context=agent_context,
         )
 
+        success = bool(result.get("success", True))
+        duration = result.get("duration_seconds")
+        if duration is None:
+            duration = (datetime.utcnow() - started_at).total_seconds()
+
         # Create execution record
         execution = models.WorkflowExecution(
             workflow_id=workflow_id,
             user_id=user_id,
-            status="completed" if result["success"] else "failed",
+            status="completed" if success else "failed",
             input_data=input_data or {},
             output_data=result.get("outputs", {}),
             error_message=result.get("error"),
-            started_at=datetime.utcnow() - timedelta(seconds=result["duration_seconds"]),
+            started_at=started_at,
             completed_at=datetime.utcnow(),
-            duration_seconds=int(result["duration_seconds"])
+            duration_seconds=int(duration),
         )
         db.add(execution)
         db.commit()
         db.refresh(execution)
 
-        logger.info(f"Workflow execution completed: {execution.id} (success={result['success']})")
+        logger.info(f"Workflow execution completed: {execution.id} (success={success})")
 
         return {
             "execution_id": execution.id,
             "workflow_id": workflow_id,
             "status": execution.status,
-            "success": result["success"],
+            "success": success,
             "outputs": result.get("outputs", {}),
             "error": result.get("error"),
-            "duration_seconds": result["duration_seconds"]
+            "duration_seconds": int(duration),
         }
 
     except Exception as e:
@@ -679,7 +541,7 @@ async def execute_workflow(
             status="failed",
             input_data=input_data or {},
             error_message=str(e),
-            started_at=datetime.utcnow(),
+            started_at=started_at,
             completed_at=datetime.utcnow(),
             duration_seconds=0
         )
@@ -734,6 +596,10 @@ async def startup_event():
     # Initialize database
     logger.info("📊 Initializing database...")
     init_db()
+
+    # Seed a few example tasks on first run so the widget shows real content
+    # (makes the small/medium/large sizes visibly different). Idempotent.
+    seed_example_tasks()
 
     # Auto-discover and register all components
     logger.info("🤖 Auto-discovering agents, workflows, and triggers...")

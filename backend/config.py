@@ -49,10 +49,12 @@ class PlatformConfig(BaseModel):
     clarity_webhook_secret: Optional[str] = Field(None, description="Webhook validation secret")
 
     # ============================================================================
-    # AI PROVIDER (Platform-managed API keys)
+    # AI PROVIDER (model defaults only)
+    # The seed holds NO provider API key. LLM access goes through the Claritty
+    # platform proxy, authenticated by CLARITTY_AUTH_TOKEN + CLARITTY_PLATFORM_URL
+    # which the platform injects at deploy (see claritty_sdk.llm.get_llm_client).
     # ============================================================================
 
-    anthropic_api_key: str = Field(..., description="Anthropic Claude API key")
     ai_model: str = Field('claude-3-5-sonnet-20241022', description="Default Claude model")
     ai_timeout_seconds: int = Field(60, description="AI API request timeout")
     ai_max_tokens: int = Field(4096, description="Maximum tokens per request")
@@ -256,7 +258,6 @@ try:
         database_url=os.getenv('DATABASE_URL', DEFAULT_DATABASE_URL),
         clarity_app_id=os.getenv('CLARITY_APP_ID', 'local-dev-app'),
         clarity_platform_url=os.getenv('CLARITY_PLATFORM_URL', 'http://localhost:4000'),
-        anthropic_api_key=os.getenv('ANTHROPIC_API_KEY', ''),  # Only truly required var
         jwt_secret=os.getenv('JWT_SECRET', DEFAULT_JWT_SECRET),
         session_secret=os.getenv('SESSION_SECRET', DEFAULT_SESSION_SECRET),
         frontend_url=os.getenv('FRONTEND_URL', DEFAULT_FRONTEND_URL),
@@ -432,9 +433,8 @@ def validate_configuration():
     errors = []
     warnings = []
 
-    # Only ANTHROPIC_API_KEY is truly required
-    if not platform_config.anthropic_api_key:
-        errors.append("ANTHROPIC_API_KEY is required - get one at https://console.anthropic.com/")
+    # No provider API key is required — LLM access is via the platform proxy
+    # (CLARITTY_AUTH_TOKEN + CLARITTY_PLATFORM_URL, injected by the platform).
 
     # Warn about development defaults (not errors)
     if platform_config.jwt_secret == DEFAULT_JWT_SECRET:

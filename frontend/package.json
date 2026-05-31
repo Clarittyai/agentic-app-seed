@@ -18,7 +18,7 @@
     "test:all": "npm run validate:widgets && npm run test:widgets && npm run test:visual"
   },
   "dependencies": {
-    "@clarittyai/widget-toolkit": "^1.1.4",
+    "@clarittyai/widget-toolkit": "^1.2.3",
     "axios": "^1.6.2",
     "clsx": "^2.1.0",
     "date-fns": "^3.0.6",
