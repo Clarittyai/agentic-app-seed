@@ -287,25 +287,8 @@
         "Ensure good lighting and contrast for visibility"
       ]
     },
-    "required_integrations": [
-      {
-        "service": "gmail",
-        "purpose": "Monitor and analyze your email inbox for important messages",
-        "auth_type": "oauth",
-        "scopes": [
-          "https://www.googleapis.com/auth/gmail.readonly",
-          "https://www.googleapis.com/auth/gmail.metadata"
-        ]
-      }
-    ],
-    "optional_integrations": [
-      {
-        "service": "slack",
-        "purpose": "Send important email notifications to Slack channels",
-        "auth_type": "webhook",
-        "scopes": []
-      }
-    ],
+    "required_integrations": [],
+    "optional_integrations": [],
     "api_contract": {
       "health_endpoint": "/health",
       "widget_endpoint": "/api/widget",

@@ -1,4 +1,4 @@
-import { Cpu, Workflow, Clock, LayoutGrid, Plug, type LucideIcon } from 'lucide-react';
+import { Cpu, Workflow, Clock, LayoutGrid, type LucideIcon } from 'lucide-react';
 
 /**
  * "How Claritty apps work" — the create-react-app-style explainer. Each card
@@ -43,13 +43,6 @@ const CONCEPTS: Concept[] = [
     blurb: 'The at-a-glance surface on the Claritty dashboard — small, medium, and large.',
     file: 'frontend/src/components/Widget.tsx',
     tone: 'text-success bg-success/10',
-  },
-  {
-    icon: Plug,
-    title: 'Integrations',
-    blurb: 'Bring-your-own OAuth / API keys so agents can reach Slack, Sheets, and more.',
-    file: 'backend/integrations/',
-    tone: 'text-teal bg-teal/10',
   },
 ];
 

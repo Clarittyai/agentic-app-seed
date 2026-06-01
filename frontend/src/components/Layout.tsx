@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ListTodo, Plug } from 'lucide-react';
+import { Home, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
 
@@ -13,7 +13,6 @@ export default function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Tasks', href: '/tasks', icon: ListTodo },
-    { name: 'Integrations', href: '/integrations', icon: Plug },
   ];
 
   return (
