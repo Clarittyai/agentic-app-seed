@@ -11,6 +11,12 @@ Help you design a production-ready agentic app for Claritty Platform by answerin
 - AI agents needed
 - User experience (widgets!)
 - Automation schedules
+- **Design identity** (so the app doesn't look like the template — see §7)
+
+> **Before you build:** run `rm .claritty-seed-pristine` to activate the identity
+> gate, and read **IDENTITY.md** (keep the platform contract; replace the template
+> look). The gate (`npm run check:identity`, also a Claude Code Stop hook) will
+> block "done" until the app has its own identity.
 
 ---
 
@@ -132,9 +138,43 @@ Common integrations:
 
 ---
 
+### 7. Design Identity (MAKE IT YOURS — don't ship the template look!)
+
+This repo is a TEMPLATE. If you skip this, the app ships looking exactly like the
+seed (indigo palette, template landing page, Claritty logo) and the **identity
+gate will block the build**. Decide the app's *own* identity now:
+
+**What is this app's visual personality?**
+- **Palette**: pick a primary/accent color + a heading color that fit the app's
+  purpose (calm finance ≠ playful kids ≠ earthy travel). You'll set these as
+  `--brand-accent`, `--brand-accent-600`, `--brand-primary` in `frontend/src/theme.css`.
+- **Typography**: a font that matches the voice (e.g. `Sora`, `Inter`, `Space Grotesk`).
+  Set `--brand-font` and load it in `index.html`.
+- **Voice/tone**: how copy reads (terse & pro? warm & encouraging?).
+- **Landing page**: what the app's real home screen shows (NOT the template
+  showcase) — replace `frontend/src/pages/Dashboard.tsx`.
+- **App mark + name**: your own logo/wordmark (replace `/claritty-logo.png` in
+  `Layout.tsx`) and `appName`/`appDescription` in `lib/app-meta.ts`.
+
+**Keep** the CSS token *names* and the platform contract — change values, not the
+system. Full manifest + checklist: **IDENTITY.md**.
+
+**Example for a Lead Scoring App**: deep emerald accent (`152 60% 38%`), near-black
+headings, `Space Grotesk`; landing = "Today's pipeline" board; mark = a bolt glyph.
+
+---
+
 ## 🎨 Design Output
 
 After brainstorming, you should have:
+
+### Design Identity
+- Palette: accent `H S% L%`, accent-600 `…`, primary `…`  (→ `frontend/src/theme.css`)
+- Font: `[name]`  (→ `--brand-font` + `index.html`)
+- Landing page concept: [what the real Dashboard shows]
+- App name + mark: [name] + [logo idea]  (→ `app-meta.ts`, `Layout.tsx`)
+
+
 
 ### Agents (1-3 recommended)
 - **Agent 1**: [Name] - [What it does]

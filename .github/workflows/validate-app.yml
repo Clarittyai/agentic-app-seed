@@ -20,6 +20,13 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.branch || github.ref }}
 
+      - name: Check app identity (not still the template)
+        run: |
+          # Fails while the app still looks like the seed (empty theme.css,
+          # template Dashboard, default appName, Claritty logo, example agents).
+          # No-op on the untouched seed (.claritty-seed-pristine present).
+          node scripts/check-not-template.mjs
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
