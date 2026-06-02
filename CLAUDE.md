@@ -4,6 +4,32 @@
 
 ---
 
+## ⚠️ READ FIRST — this is a TEMPLATE, make the app its OWN
+
+The #1 failure mode is shipping an app that still **looks exactly like this seed**
+(same indigo palette, same template landing page, same Claritty logo, same example
+agents). Swapping the backend logic is NOT enough.
+
+Your job has two halves:
+1. **KEEP** the platform contract (endpoints, SDK decorators, widget sizes, infra,
+   multi-tenancy, CSS token *names*).
+2. **REPLACE** the template identity completely — palette + typography
+   (`frontend/src/theme.css`), the landing page (`frontend/src/pages/Dashboard.tsx`),
+   the header mark (`frontend/src/components/Layout.tsx`), the app name
+   (`frontend/src/lib/app-meta.ts`), and the example agent/workflow/trigger.
+
+👉 **The full KEEP-vs-REPLACE manifest + redesign checklist is in [IDENTITY.md](IDENTITY.md). Read it before building.**
+
+An automated **identity gate** (`scripts/check-not-template.mjs`, wired as a Claude
+Code Stop hook, `npm run check:identity`, and CI) will **refuse to let the build be
+"done"** while template residue remains. First thing when you start:
+
+```bash
+rm .claritty-seed-pristine   # activates the identity gate
+```
+
+---
+
 ## 🎯 Repository Purpose
 
 This is a **minimal template repository** for developers building agentic apps that deploy to Claritty Platform.
@@ -13,10 +39,11 @@ This is a **minimal template repository** for developers building agentic apps t
 **Developer workflow**:
 ```
 1. Clone this repo
-2. Open in Claude Code
-3. Brainstorm app idea with AI (/superpowers:brainstorming)
-4. Implement agents/workflows/triggers following minimal examples
-5. Deploy to Claritty Platform (one click)
+2. Open in Claude Code; run `rm .claritty-seed-pristine` to activate the identity gate
+3. Brainstorm app idea AND its design identity (/superpowers:brainstorming) — see .claude/prompts/brainstorm.md
+4. Give the app its own identity: theme.css palette/type, real landing page, own logo, app name (IDENTITY.md)
+5. Implement agents/workflows/triggers (delete the seed examples; follow the minimal patterns)
+6. Make `npm run check:identity` pass, then deploy to Claritty Platform (one click)
 ```
 
 **Your role as AI assistant**: Help developers transform ideas into production-ready agentic apps with minimal friction.
@@ -615,10 +642,20 @@ by `Model.user_id`. There is no `CLARITY_WORKSPACE_ID`.
 
 Before deployment, ensure:
 
+**Identity — the app no longer looks like the seed (enforced by `npm run check:identity`):**
+- [ ] `rm .claritty-seed-pristine` done (gate active)
+- [ ] `frontend/src/theme.css` filled with YOUR palette + font (`--brand-*` values)
+- [ ] `frontend/src/lib/app-meta.ts` has your real `appName` + `appDescription`
+- [ ] `frontend/src/pages/Dashboard.tsx` is your real landing page (template showcase removed)
+- [ ] `frontend/src/components/Layout.tsx` uses your own logo/mark (not `claritty-logo.png`)
+- [ ] Seed example agent/workflow/trigger deleted and replaced by your domain
+
+**Function:**
 - [ ] Created custom agent(s) following minimal example
 - [ ] Created workflow(s) chaining agents
 - [ ] Created trigger template(s) for user configuration
 - [ ] Customized widget (small, medium & large views) using the UI kit
+- [ ] The problem the app solves is delivered end-to-end (agent → workflow → widget → UI)
 - [ ] Tested locally (`docker compose up --build`, curl endpoints)
 - [ ] No hardcoded localhost URLs
 - [ ] Multi-tenancy: every user-data query filters by `user_id` (X-User-ID)

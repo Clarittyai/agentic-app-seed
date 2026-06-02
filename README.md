@@ -22,8 +22,8 @@ Its only Claritty dependencies are **the LLM (via the `claritty_sdk` proxy)** an
 
 **Developer workflow:**
 ```bash
-1. Clone this repo
-2. Open in Claude Code or Cursor
+1. npx create-claritty-app my-app   (scaffolds this template + .env for you)
+2. Open in Claude Code, Cursor, or Codex
 3. Brainstorm your app idea with AI
 4. Implement agents/workflows/triggers + your UI
 5. docker compose up --build  →  host it wherever you like
@@ -33,14 +33,26 @@ Its only Claritty dependencies are **the LLM (via the `claritty_sdk` proxy)** an
 
 ## ⚡ 5-Minute Quick Start
 
-### 1. Clone & Setup
+### 1. Scaffold your app
 ```bash
-git clone https://github.com/Clarittyai/agentic-app-seed.git my-awesome-app
+npx create-claritty-app my-awesome-app
 cd my-awesome-app
-cp .env.example .env
+# Clones this template, creates .env, and inits a fresh git repo for you.
 # No API keys needed — AI runs through the Claritty platform proxy
 # (and falls back to a built-in heuristic when running locally).
 ```
+
+> **Claude Code users:** install the plugin instead and run `/claritty:new my-awesome-app`:
+> ```
+> /plugin marketplace add Clarittyai/claritty-plugins
+> /plugin install claritty@claritty
+> ```
+>
+> **Prefer to clone manually?**
+> ```bash
+> git clone https://github.com/Clarittyai/agentic-app-seed.git my-awesome-app
+> cd my-awesome-app && cp .env.example .env
+> ```
 
 ### 2. Start Development Environment
 ```bash
@@ -66,12 +78,20 @@ In Claude Code, run:
 - What problem your app solves
 - What tasks should be automated
 - When/how users want it to run
+- **Its design identity** — palette, typography, landing page, app name/logo
 
 **Claude will help you design:**
 - AI agents for specific tasks
 - Workflows to chain agents
 - User-configurable triggers
 - Widget interfaces (small & large)
+- A distinct visual identity (so it doesn't look like this template)
+
+> ⚠️ **This is a template — make the app your own.** Keep the platform contract,
+> but completely replace the look (theme, landing page, logo, name). Run
+> `rm .claritty-seed-pristine` to activate the **identity gate**
+> (`npm run check:identity`, also a Claude Code Stop hook) which blocks "done"
+> until you do. Full guide: **[IDENTITY.md](IDENTITY.md)**.
 
 ---
 

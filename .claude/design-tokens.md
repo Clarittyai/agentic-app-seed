@@ -1,10 +1,26 @@
-# Claritty Design Tokens — build on-brand by default
+# Claritty Design Tokens — the system to build on, then make YOURS
 
-Mirror of the platform design system (clarity-platform `DESIGN_SYSTEM.md` /
-`globals.css`). The seed already wires these into `tailwind.config.js` +
-`src/index.css`. **Use the semantic Tailwind tokens below — never bare hex** —
-so light/dark + per-app theming "just work". `Widget.tsx`, `Dashboard.tsx`, and
-`Layout.tsx` are the canonical reference implementations.
+The seed wires a semantic token system into `tailwind.config.js` + `src/index.css`.
+**Use the semantic Tailwind tokens (never bare hex)** so light/dark + theming "just
+work". Two rules that matter for making each app distinct:
+
+- **Token NAMES are fixed** (the UI kit + widget-toolkit read them). Don't rename.
+- **Token VALUES are YOURS.** The seed's indigo palette is a placeholder. Give your
+  app its own look by overriding the brand values in **`frontend/src/theme.css`** —
+  this is *required*, not optional (the identity gate checks it). See **IDENTITY.md**.
+
+```css
+/* frontend/src/theme.css — set these to YOUR palette + font (HSL channels) */
+:root {
+  --brand-accent: 268 84% 58%;      /* primary action / accent */
+  --brand-accent-600: 268 84% 48%;  /* darker hover shade */
+  --brand-primary: 240 6% 10%;      /* headings / strong text */
+  --brand-font: 'Sora', system-ui, sans-serif;  /* load it in index.html */
+}
+```
+
+`Widget.tsx`, `Dashboard.tsx`, and `Layout.tsx` are reference implementations of
+the *patterns* — re-skin them for your brand, don't ship them as-is.
 
 ## Semantic tokens (use these, not raw colors)
 
@@ -21,7 +37,7 @@ so light/dark + per-app theming "just work". `Widget.tsx`, `Dashboard.tsx`, and
 
 Opacity utilities work on every token (`bg-accent/10`, `text-foreground/70`).
 
-## Rules that make it look "Claritty"
+## Rules that keep it coherent (apply with YOUR palette)
 
 - **No bare hex.** Always go through the tokens above so theming + dark mode hold.
 - **No hover-scale.** Hover = a background-color transition (`transition-colors hover:bg-accent/90`, `hover:bg-muted`), never `hover:scale-*`. Entry/mount scale (framer-motion) is fine.

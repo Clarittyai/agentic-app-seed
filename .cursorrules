@@ -31,6 +31,22 @@ for exactly two things:
   `components/ui/` has app primitives (Button/Input/Card/Dialog/Table/...).
 - Schema changes go through **Alembic** migrations (see below), never ad-hoc.
 
+## Make it YOUR app — don't ship the template look (see IDENTITY.md)
+This is a TEMPLATE. Replacing backend logic is not enough — you MUST give the app
+its own identity, or it looks exactly like the seed. An identity gate
+(`scripts/check-not-template.mjs`, run as a Stop hook / `npm run check:identity` /
+CI) blocks "done" until you do. First: `rm .claritty-seed-pristine`.
+- Fill `frontend/src/theme.css` with YOUR palette + font — set `--brand-accent`,
+  `--brand-accent-600`, `--brand-primary`, `--brand-font`. Token NAMES are fixed
+  (the kit reads them); you change their VALUES. This is the biggest lever.
+- Replace `frontend/src/pages/Dashboard.tsx` (it's a template showcase) with your
+  real landing page; remove `AgentGraph`/`HowItWorks`/`WidgetGallery`.
+- Swap `/claritty-logo.png` in `frontend/src/components/Layout.tsx` for your mark;
+  reskin `components/ui/*`; set real `appName`/`appDescription` in `lib/app-meta.ts`.
+- Delete the seed `example_agent`/`example_workflow`/`example_trigger`; build your own.
+KEEP the contract: endpoints, SDK decorators, widget sizes, infra, multi-tenancy,
+and the CSS token NAMES.
+
 ## Widgets — Apple HIG, THREE sizes (canonical: `frontend/src/lib/widget-sizes.ts`)
 - small **170×170**, medium **360×170**, large **360×360**.
 - Build with the kit: `<WidgetContainer size={size}>…</WidgetContainer>` +
@@ -53,3 +69,7 @@ for exactly two things:
 - ❌ Don't reference `CLARITY_WORKSPACE_ID` — tenancy is the `X-User-ID` header.
 - ❌ Don't forget `.filter(Model.user_id == user_id)` on user-data queries.
 - ❌ Don't `create_all` new columns — write an Alembic migration.
+- ❌ Don't leave `theme.css` empty, the template `Dashboard.tsx`, the Claritty logo,
+  `appName='Claritty Template'`, or the example agents — the identity gate fails.
+- ❌ Don't rename the CSS token variables (`--brand-accent`, `--accent`, …) — change
+  their values in `theme.css`, not their names.

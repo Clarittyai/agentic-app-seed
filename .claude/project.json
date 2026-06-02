@@ -6,6 +6,7 @@
     "files": [
       "README.md",
       "CLAUDE.md",
+      "IDENTITY.md",
       "WIDGETS.md",
       "LLM_PROXY.md",
       ".claude/design-tokens.md",
@@ -42,7 +43,8 @@
     "tenancy": "Per-user via the X-User-ID header (models.user_id); there is NO CLARITY_WORKSPACE_ID"
   },
   "guidelines": {
-    "start_with_brainstorming": "Always run /superpowers:brainstorming before implementing",
+    "give_it_its_own_identity": "This is a TEMPLATE. Keep the platform contract but COMPLETELY replace the template identity (palette+font in frontend/src/theme.css, the landing page Dashboard.tsx, the header logo in Layout.tsx, appName in app-meta.ts, and the example agent/workflow/trigger). First run `rm .claritty-seed-pristine`. The identity gate (scripts/check-not-template.mjs, also a Stop hook + `npm run check:identity`) blocks 'done' until you do. See IDENTITY.md.",
+    "start_with_brainstorming": "Always run /superpowers:brainstorming before implementing — include the Design Identity step (palette, type, landing page, app mark)",
     "widget_first_design": "Design widgets before full app pages - widgets are primary interface",
     "self_hosted": "You host this app yourself (Docker). The only Claritty dependencies are the LLM (via claritty_sdk proxy) and the UI kit (@clarittyai/widget-toolkit). Don't delete the required env vars (DATABASE_URL, CLARITTY_PLATFORM_URL, CLARITTY_AUTH_TOKEN).",
     "ai_via_sdk": "Call models ONLY through claritty_sdk.llm.get_llm_client — never a raw provider SDK or ANTHROPIC_API_KEY.",
@@ -50,7 +52,7 @@
     "keep_api_contract_in_sync": "frontend/src/lib/api.ts and backend/routes/app.py must agree (same paths, methods, response shapes).",
     "multi_tenancy_required": "Every query holding user data MUST filter by the caller (X-User-ID header). There is no CLARITY_WORKSPACE_ID.",
     "three_widget_sizes": "Apple HIG, three sizes only: Small 170×170, Medium 360×170, Large 360×360",
-    "design_system": "On-brand 'Claritty' look — use semantic tokens (bg-card, text-accent, text-muted-foreground), never bare hex; no hover-scale (use background-color transitions); 44px touch targets, 12px min font. See .claude/design-tokens.md",
+    "design_system": "Use the semantic token SYSTEM (bg-card, text-accent, text-muted-foreground; never bare hex; no hover-scale; 44px touch targets, 12px min font) — but give THIS app its own look by overriding the brand VALUES in frontend/src/theme.css (token names stay, values are yours). Don't ship the seed's indigo defaults. See .claude/design-tokens.md + IDENTITY.md",
     "performance_targets": "Small widget < 200ms, Large widget < 500ms"
   }
 }

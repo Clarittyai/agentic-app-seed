@@ -9,13 +9,14 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
     "validate:widgets": "node ../scripts/validate-widgets.js",
+    "check:identity": "node ../scripts/check-not-template.mjs",
     "test:widgets": "vitest run src/components/__tests__/Widget.test.tsx",
     "test:widgets:watch": "vitest watch src/components/__tests__/Widget.test.tsx",
     "test:widgets:coverage": "vitest run src/components/__tests__/Widget.test.tsx --coverage",
     "test:visual": "playwright test tests/widget-constraints.spec.ts",
     "test:visual:headed": "playwright test tests/widget-constraints.spec.ts --headed",
     "test:visual:debug": "playwright test tests/widget-constraints.spec.ts --debug",
-    "test:all": "npm run validate:widgets && npm run test:widgets && npm run test:visual"
+    "test:all": "npm run check:identity && npm run validate:widgets && npm run test:widgets && npm run test:visual"
   },
   "dependencies": {
     "@clarittyai/widget-toolkit": "^1.2.3",
