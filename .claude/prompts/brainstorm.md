@@ -123,18 +123,32 @@ leads = db.query(Lead).all()
 
 ---
 
-### 6. External Integrations
+### 6. External action & connection (don't skip this!)
 
-**What APIs/services will you integrate with?**
+**Does this app act on an outside system?** post→LinkedIn/X, send→email, charge→Stripe,
+sync→Notion/Sheets, message→Slack… If the core verb hits an external service, "generate the
+content" is only half the app — you must also let the user **connect** that service.
 
-Common integrations:
-- Claude (built in, via the Claritty LLM proxy — no API key) for AI analysis
-- Email services (SendGrid, Mailgun)
-- CRMs (Salesforce, HubSpot)
-- Communication (Slack, Teams)
-- Payment (Stripe)
+- **Which service?** If the user didn't name one, **infer the obvious one and confirm it** — don't
+  silently drop it. (Idea: "auto-post marketing" → assume LinkedIn, ask to confirm.)
+- **How does the user connect it?** Plan a **Connect screen** + per-user credential storage +
+  a pluggable action that **simulates** until connected (see INTEGRATIONS.md). Build this in.
+- **Self-contained?** If the app genuinely touches no external system (like the Tasks example),
+  say so explicitly.
 
-**Remember**: User provides API keys via .env during installation!
+AI itself is NOT an integration — it's built in via the Claritty LLM proxy (no API key).
+
+### 6b. Approval gate
+
+**Should the AI act on its own, or should the user approve first?** If a human should sign off
+(publishing, sending, charging), plan a **draft → approve → act** lifecycle (status field + an
+approve action in the UI/widget). If it's safe to act automatically, note that instead.
+
+### 6c. Definition of done
+
+**Write one concrete sentence describing end-to-end success for THIS app.** e.g. "A daily run
+produces 2 post drafts; approving one publishes it (or marks it simulated) and the widget shows it."
+This becomes `app-config.json` → `core_action.definition_of_done` and the bar for "done."
 
 ---
 
@@ -197,6 +211,16 @@ After brainstorming, you should have:
 - **Entity 1**: [Name] - Fields: [list]
 - **Entity 2**: [Name] - Fields: [list]
 
+### External action & connection
+- **Acts on**: [service, or "none — self-contained"]
+- **Connect**: [Connect screen + UserIntegration storage + simulated fallback — see INTEGRATIONS.md]
+
+### Approval gate
+- [Yes — draft → approve → act, with an approve action] / [No — acts automatically]
+
+### Definition of done
+- [one concrete end-to-end success sentence → app-config.json core_action.definition_of_done]
+
 ---
 
 ## ✅ Validation Checklist
@@ -207,6 +231,9 @@ Before implementing, verify:
 - [ ] Agents have well-defined single responsibilities
 - [ ] Workflows chain agents logically
 - [ ] Triggers allow user customization (time, frequency, filters)
+- [ ] External action identified + a Connect flow planned (or confirmed self-contained)
+- [ ] Approval gate decided (draft→approve→act, or auto)
+- [ ] Definition of done written (the end-to-end success sentence)
 - [ ] Small widget shows ONE key metric (glanceable)
 - [ ] Large widget shows 2-4 metrics + activity
 - [ ] Database entities have a `user_id` field (filtered on every query)

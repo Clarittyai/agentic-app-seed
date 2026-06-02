@@ -638,6 +638,46 @@ by `Model.user_id`. There is no `CLARITY_WORKSPACE_ID`.
 
 ---
 
+## 🧩 Build patterns that make the app actually WORK
+
+The identity gate ensures the app doesn't *look* like the template. These patterns ensure it
+*does its job* end-to-end. Apply the ones the app needs.
+
+### External connections (if the app acts on an outside service)
+If the core verb hits an external system — **post** to LinkedIn, **send** email, **charge** with
+Stripe, **sync** to Notion — then generating content is only half the app. You MUST also ship a way
+for the user to **connect** that service. Add it **proactively**, even if the user didn't name the
+platform (infer the obvious one and confirm).
+- Pattern (copy it): a **Connect page** + per-user creds in the existing `UserIntegration` model +
+  a **pluggable action** that uses real creds when present and **simulates** otherwise (so the app
+  always demos). Full guide + code: **[INTEGRATIONS.md](INTEGRATIONS.md)**.
+- App-specific secrets in `.env` reach the backend (docker-compose loads `env_file: .env`).
+
+### Approval / human-in-the-loop (AI proposes → user approves → system acts)
+Many apps shouldn't act autonomously. Model a lifecycle instead of a bare boolean:
+- `status`: `draft → approved → published | failed` on the domain model.
+- An `/approve` endpoint that flips status **and performs the action** (calling the pluggable
+  helper above); store the outcome (`published_at`, `external_id`, `simulated`, `error`).
+- A widget **quick action** to approve the top item in place (`runQuickAction`), and a review queue
+  in the UI. Don't auto-publish what a human should sign off on.
+
+### Scheduling reality (local vs platform)
+There is **no local scheduler**. `SCHEDULE_DAILY`/interval triggers only fire once the app runs on
+the Claritty platform (it calls `/internal/run-due-triggers`). **Locally**, run a workflow on demand:
+`POST /api/workflows/{id}/execute` (or a "generate now" button) — the widget only updates after a
+run. Say this to the user so they don't wait for a schedule that won't fire locally. Still ship the
+trigger template — it works on the platform.
+
+### Definition of done (verify the value path, not just the build)
+Before calling it done, confirm the app actually solves the problem end-to-end:
+- the agent runs (`POST /api/agents/{id}/execute` returns data),
+- the workflow persists (`POST /api/workflows/{id}/execute`),
+- `GET /api/widget` returns real data and the widget renders it,
+- the **real action** happens (or is clearly labeled simulated when not connected).
+Capture this as one concrete success sentence in the brainstorm + `app-config.json` `core_action.definition_of_done`.
+
+---
+
 ## 🚀 Success Checklist
 
 Before deployment, ensure:
@@ -650,12 +690,15 @@ Before deployment, ensure:
 - [ ] `frontend/src/components/Layout.tsx` uses your own logo/mark (not `claritty-logo.png`)
 - [ ] Seed example agent/workflow/trigger deleted and replaced by your domain
 
-**Function:**
+**Function (the value path — see "Build patterns" above):**
 - [ ] Created custom agent(s) following minimal example
 - [ ] Created workflow(s) chaining agents
 - [ ] Created trigger template(s) for user configuration
 - [ ] Customized widget (small, medium & large views) using the UI kit
-- [ ] The problem the app solves is delivered end-to-end (agent → workflow → widget → UI)
+- [ ] If the app acts on an external service: a **Connect** screen + per-user creds + pluggable/simulated action (see INTEGRATIONS.md)
+- [ ] If it shouldn't act autonomously: a **draft → approve → act** lifecycle with an approve action
+- [ ] `app-config.json` `core_action.definition_of_done` is filled, and that end-to-end path is verified
+- [ ] The problem the app solves is delivered end-to-end (agent → workflow → widget → real action)
 - [ ] Tested locally (`docker compose up --build`, curl endpoints)
 - [ ] No hardcoded localhost URLs
 - [ ] Multi-tenancy: every user-data query filters by `user_id` (X-User-ID)

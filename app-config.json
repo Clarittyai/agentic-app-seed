@@ -289,6 +289,13 @@
     },
     "required_integrations": [],
     "optional_integrations": [],
+    "core_action": {
+      "_comment": "Filled during brainstorm. Describes what this app DOES to the outside world + the bar for done. Used by the identity gate's advisory checks. See INTEGRATIONS.md + CLAUDE.md 'Build patterns'.",
+      "description": "",
+      "external_systems": [],
+      "requires_approval": false,
+      "definition_of_done": ""
+    },
     "api_contract": {
       "health_endpoint": "/health",
       "widget_endpoint": "/api/widget",

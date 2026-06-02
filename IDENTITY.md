@@ -37,6 +37,12 @@ the Claritty platform.
 | **Infra** | `Dockerfile`, `docker-compose.yml`, `frontend/nginx.conf`, ports 3200/8000, `VITE_API_URL=''` (relative URLs), required env vars `DATABASE_URL` / `CLARITTY_PLATFORM_URL` / `CLARITTY_AUTH_TOKEN` |
 | **Widget contract** | `/widget?size=`, the 3 fixed sizes (170×170 / 360×170 / 360×360), `WidgetContainer` / `WidgetButton` / `WidgetBadge` from `@clarittyai/widget-toolkit`, the `data-widget-size` attribute, `p-4` / `rounded-3xl`, and **no responsive prefixes** (`sm:`/`md:`/`@media`/`window.innerWidth`) |
 | **CSS token NAMES** | Keep the token *names* (`--background`, `--foreground`, `--accent`, `--card`, `--muted`, `--border`, `--ring`, `--brand-font`, `--brand-accent`, `--brand-accent-600`). The UI kit reads them. You change their **values**, not their names. |
+| **Integration store** | `UserIntegration` (in `backend/models.py`) is the sanctioned place to store per-user credentials when your app connects an external service. Keep it. See **[INTEGRATIONS.md](INTEGRATIONS.md)**. |
+
+> **Identity ≠ done.** This file is about how the app *looks*. Making it actually *work* —
+> connecting external services, an approve→act lifecycle, scheduling reality, a definition of
+> done — is covered in **CLAUDE.md → "Build patterns that make the app actually WORK"** and
+> **[INTEGRATIONS.md](INTEGRATIONS.md)**. The gate also prints non-blocking advisories for these.
 
 ---
 

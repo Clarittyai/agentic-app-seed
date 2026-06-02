@@ -46,6 +46,11 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-}
     container_name: ${CONTAINER_PREFIX:-clarity-agentic}-app
+    # Load ALL vars from .env into the backend process, so app-specific secrets
+    # you add to .env (e.g. an integration token) actually reach os.getenv(...).
+    # The explicit `environment:` keys below still win where both are set.
+    env_file:
+      - .env
     environment:
       # Database — defaults to the local postgres service. Override DATABASE_URL
       # in .env to point the local app at the prod RDS instead.
