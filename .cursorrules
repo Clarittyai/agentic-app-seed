@@ -55,6 +55,16 @@ and the CSS token NAMES.
 - Branch on the `size` prop into three distinct layouts. No responsive prefixes
   (`sm:`/`md:`), no `@media`, no `window.innerWidth` — widgets are fixed-size.
 
+## Make it actually work (not just compile — see CLAUDE.md "Build patterns" + INTEGRATIONS.md)
+- If the app acts on an external service (post/send/charge/sync…), SHIP a way to connect it: a
+  Connect page + per-user creds in `UserIntegration` + a pluggable action that SIMULATES until
+  connected. Infer the obvious platform if the user didn't name one, and confirm. (INTEGRATIONS.md)
+- If a human should approve before acting: model `draft → approved → published|failed` + an
+  `/approve` endpoint that performs the action + a widget approve quick-action.
+- No local scheduler: `SCHEDULE_*` triggers fire only on the platform. Locally run workflows on
+  demand (`POST /api/workflows/{id}/execute`); the widget updates after a run.
+- App-specific secrets in `.env` reach the backend (compose loads `env_file: .env`).
+
 ## Dev workflow (self-hosted)
 - `docker compose up --build` → app on http://localhost:3200 (nginx → FastAPI).
 - DB schema: `alembic -c backend/alembic.ini revision --autogenerate -m "..."`

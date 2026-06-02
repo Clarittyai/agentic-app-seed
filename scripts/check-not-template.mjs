@@ -18,7 +18,7 @@
  * See IDENTITY.md for the full KEEP-vs-REPLACE manifest + redesign checklist.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
@@ -28,6 +28,9 @@ const PRISTINE_MARKER = join(ROOT, '.claritty-seed-pristine');
 const read = (rel) => {
   const p = join(ROOT, rel);
   return existsSync(p) ? readFileSync(p, 'utf8') : null;
+};
+const listFiles = (rel) => {
+  try { return readdirSync(join(ROOT, rel)); } catch { return []; }
 };
 // Strip /* */ and // comments so "examples in a comment" don't count as real code.
 const stripComments = (s) =>
@@ -93,6 +96,62 @@ for (const f of [
   }
 }
 
+// ===========================================================================
+// Advisory warnings (NON-BLOCKING) — completeness, not identity. These never
+// change the exit code; they nudge toward an app that actually works end-to-end.
+// ===========================================================================
+const warnings = [];
+const warn = (title, fix) => warnings.push({ title, fix });
+
+let cfg = {};
+try { cfg = JSON.parse(read('app-config.json') || '{}'); } catch { /* ignore */ }
+const mkt = cfg.clarity_marketplace || {};
+const core = mkt.core_action || {};
+
+const agentFiles = listFiles('backend/agents').filter((f) => f.endsWith('.py') && f !== '__init__.py');
+
+// (a) Acts on an external service but ships no way to connect it.
+const ACTION_RE = /\b(post|publish|send|email|charge|tweet|sync|message|notify|sms|dm)\b/i;
+const declaredIntegration =
+  (Array.isArray(mkt.required_integrations) && mkt.required_integrations.length > 0) ||
+  (Array.isArray(mkt.optional_integrations) && mkt.optional_integrations.length > 0) ||
+  (Array.isArray(core.external_systems) && core.external_systems.length > 0);
+let backendText = read('backend/routes/app.py') || '';
+for (const f of agentFiles) backendText += '\n' + (read('backend/agents/' + f) || '');
+const actionSignal = declaredIntegration || ACTION_RE.test(backendText);
+const routesTxt = read('backend/routes/app.py') || '';
+const connectSurface =
+  routesTxt.includes('/api/settings/') ||
+  routesTxt.includes('/api/integrations') ||
+  existsSync(join(ROOT, 'frontend/src/pages/Settings.tsx')) ||
+  listFiles('frontend/src/pages').some((f) => /connect/i.test(f));
+if (actionSignal && !connectSurface) {
+  warn('This app looks like it acts on an external service, but ships no way to connect one.',
+    'Add a Connect screen + per-user creds (UserIntegration) + a pluggable/simulated action — see INTEGRATIONS.md. If the app is intentionally self-contained, ignore this.');
+}
+
+// (b) No custom agent — does the app do anything?
+if (agentFiles.length === 0) {
+  warn('No custom agent in backend/agents/ — does the app actually do its core work?',
+    'Add at least one @agent (and a workflow) that performs the app\'s job.');
+}
+
+// (c) Definition of done not written.
+if (!String(core.definition_of_done || '').trim()) {
+  warn('app-config.json → clarity_marketplace.core_action.definition_of_done is empty.',
+    'Write one concrete end-to-end success sentence — the bar for "done".');
+}
+
+function printWarnings() {
+  if (!warnings.length) return;
+  console.error('\n⚠ Advisory (non-blocking) — completeness checks:');
+  for (const { title, fix } of warnings) {
+    console.error(`  ⚠ ${title}`);
+    console.error(`      → ${fix}`);
+  }
+  console.error("  (These don't block the build — address them or confirm they're intentional.)");
+}
+
 // ----- Report -----
 if (existsSync(PRISTINE_MARKER)) {
   console.log('🟡 Identity gate inactive: this is the untouched seed template (.claritty-seed-pristine present).');
@@ -103,6 +162,7 @@ if (existsSync(PRISTINE_MARKER)) {
 
 if (failures.length === 0) {
   console.log('✅ Identity gate passed — this app no longer looks like the seed template.');
+  printWarnings();
   process.exit(0);
 }
 
@@ -114,4 +174,5 @@ for (const { title, fix } of failures) {
   console.error(`      → ${fix}\n`);
 }
 console.error(`(${failures.length} issue${failures.length === 1 ? '' : 's'}. The gate stays red until all are resolved.)`);
+printWarnings();
 process.exit(1);
