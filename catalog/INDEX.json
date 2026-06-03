@@ -1,0 +1,518 @@
+{
+  "generatedAt": "2026-06-03T16:40:35.646Z",
+  "integrations": [
+    {
+      "id": "airtable",
+      "version": "0.1.0",
+      "name": "Airtable",
+      "description": "Read and write records in Airtable bases via MCP.",
+      "category": "data",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "airtable records",
+        "create an airtable row"
+      ]
+    },
+    {
+      "id": "anthropic",
+      "version": "1.0.0",
+      "name": "Anthropic",
+      "description": "Call Anthropic Messages directly. Most apps use the Claritty proxy instead and get this for free.",
+      "category": "ai",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "call claude",
+        "anthropic chat"
+      ]
+    },
+    {
+      "id": "asana",
+      "version": "1.0.0",
+      "name": "Asana",
+      "description": "Create and list tasks in Asana projects.",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "create an asana task",
+        "list my asana tasks"
+      ]
+    },
+    {
+      "id": "calendly",
+      "version": "0.1.0",
+      "name": "Calendly",
+      "description": "List scheduled meetings and cancel events via a community MCP server.",
+      "category": "calendar",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "calendly meetings",
+        "cancel a calendly event"
+      ]
+    },
+    {
+      "id": "clickup",
+      "version": "0.1.0",
+      "name": "ClickUp",
+      "description": "Create and list tasks in ClickUp via MCP.",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "clickup task",
+        "list clickup tasks"
+      ]
+    },
+    {
+      "id": "discord",
+      "version": "0.1.0",
+      "name": "Discord",
+      "description": "Send messages to Discord channels via a community MCP server.",
+      "category": "communication",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "post to discord",
+        "alert a discord channel"
+      ]
+    },
+    {
+      "id": "dropbox",
+      "version": "0.1.0",
+      "name": "Dropbox",
+      "description": "List and upload files in Dropbox via MCP.",
+      "category": "files",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "upload to dropbox",
+        "list dropbox files"
+      ]
+    },
+    {
+      "id": "github",
+      "version": "1.0.0",
+      "name": "GitHub",
+      "description": "List + create issues, open PRs, and search code in GitHub repos.",
+      "category": "dev",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "open a github issue",
+        "create a pull request",
+        "search github code"
+      ]
+    },
+    {
+      "id": "gitlab",
+      "version": "0.1.0",
+      "name": "GitLab",
+      "description": "List issues + create MRs in GitLab via MCP.",
+      "category": "dev",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "gitlab issues",
+        "open a merge request"
+      ]
+    },
+    {
+      "id": "gmail",
+      "version": "1.0.0",
+      "name": "Gmail",
+      "description": "Send and read email through the authenticated user's Gmail account.",
+      "category": "email",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "send an email",
+        "search my inbox",
+        "reply to a thread",
+        "label messages"
+      ]
+    },
+    {
+      "id": "google-calendar",
+      "version": "1.0.0",
+      "name": "Google Calendar",
+      "description": "Read events, create events, and check free/busy time on the user's Google Calendar.",
+      "category": "calendar",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "what's on my calendar",
+        "schedule a meeting",
+        "find a time"
+      ]
+    },
+    {
+      "id": "google-drive",
+      "version": "1.0.0",
+      "name": "Google Drive",
+      "description": "List, upload, and export files from the user's Google Drive.",
+      "category": "files",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "find a file in drive",
+        "upload to drive",
+        "export a doc"
+      ]
+    },
+    {
+      "id": "hubspot",
+      "version": "1.0.0",
+      "name": "HubSpot",
+      "description": "Create and search contacts, and update deals in the user's HubSpot CRM.",
+      "category": "crm",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "create a hubspot contact",
+        "update a hubspot deal",
+        "search hubspot crm"
+      ]
+    },
+    {
+      "id": "jira",
+      "version": "1.0.0",
+      "name": "Jira",
+      "description": "Create and transition issues in Jira via the Atlassian OAuth.",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "create a jira ticket",
+        "transition an issue",
+        "jql search"
+      ]
+    },
+    {
+      "id": "linear",
+      "version": "1.0.0",
+      "name": "Linear",
+      "description": "Create issues, search, and comment in the user's Linear workspace.",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "create a linear issue",
+        "find linear tickets",
+        "comment on a linear issue"
+      ]
+    },
+    {
+      "id": "linkedin",
+      "version": "1.0.0",
+      "name": "LinkedIn",
+      "description": "Read the authenticated user's LinkedIn feed and post updates.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "summarize my linkedin feed",
+        "post a daily linkedin digest",
+        "monitor linkedin notifications",
+        "read what's happening on linkedin"
+      ]
+    },
+    {
+      "id": "mailchimp",
+      "version": "0.1.0",
+      "name": "Mailchimp",
+      "description": "Add subscribers and send campaigns via MCP.",
+      "category": "marketing",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "add a subscriber",
+        "send a campaign"
+      ]
+    },
+    {
+      "id": "microsoft-teams",
+      "version": "1.0.0",
+      "name": "Microsoft Teams",
+      "description": "Post messages to Teams channels and chats.",
+      "category": "communication",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "post in teams",
+        "send a teams message"
+      ]
+    },
+    {
+      "id": "notion",
+      "version": "1.0.0",
+      "name": "Notion",
+      "description": "Search, read, create, and update pages in the user's Notion workspace.",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "search notion",
+        "create a notion page",
+        "update a notion doc"
+      ]
+    },
+    {
+      "id": "notion-mcp",
+      "version": "0.1.0",
+      "name": "Notion (MCP)",
+      "description": "Search, read, and create Notion pages via a third-party MCP server.",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "search my notion workspace",
+        "create a notion page",
+        "summarize my notion docs"
+      ]
+    },
+    {
+      "id": "openai",
+      "version": "1.0.0",
+      "name": "OpenAI",
+      "description": "Call OpenAI chat completions, embeddings, and image generation. Routed via the Claritty proxy when no key is configured.",
+      "category": "ai",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "openai chat",
+        "embedding",
+        "generate an image"
+      ]
+    },
+    {
+      "id": "outlook",
+      "version": "1.0.0",
+      "name": "Outlook",
+      "description": "Send and read email through the authenticated user's Outlook (Microsoft 365) account.",
+      "category": "email",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "send an outlook email",
+        "search my outlook inbox"
+      ]
+    },
+    {
+      "id": "outlook-calendar",
+      "version": "1.0.0",
+      "name": "Outlook Calendar",
+      "description": "Read and write events on the user's Outlook calendar.",
+      "category": "calendar",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "outlook calendar",
+        "schedule a meeting in outlook"
+      ]
+    },
+    {
+      "id": "pipedrive",
+      "version": "0.1.0",
+      "name": "Pipedrive",
+      "description": "List and create deals in Pipedrive via MCP.",
+      "category": "crm",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "pipedrive deals",
+        "create a pipedrive deal"
+      ]
+    },
+    {
+      "id": "postgres",
+      "version": "1.0.0",
+      "name": "Postgres",
+      "description": "Run read + write queries against a user-supplied Postgres connection.",
+      "category": "data",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "query my database",
+        "look up a row",
+        "describe a postgres table"
+      ]
+    },
+    {
+      "id": "posthog",
+      "version": "0.1.0",
+      "name": "PostHog",
+      "description": "Capture events and query event data via MCP.",
+      "category": "analytics",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "track an event",
+        "query posthog"
+      ]
+    },
+    {
+      "id": "s3",
+      "version": "1.0.0",
+      "name": "AWS S3",
+      "description": "Read and write objects in S3 buckets using IAM credentials.",
+      "category": "files",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "put to s3",
+        "list s3 objects",
+        "fetch from s3"
+      ]
+    },
+    {
+      "id": "salesforce",
+      "version": "1.0.0",
+      "name": "Salesforce",
+      "description": "Run SOQL, create leads, and update opportunities in Salesforce.",
+      "category": "crm",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "soql",
+        "create a salesforce lead",
+        "update an opportunity"
+      ]
+    },
+    {
+      "id": "slack",
+      "version": "1.0.0",
+      "name": "Slack",
+      "description": "Post messages and read conversations across the authenticated user's Slack workspace.",
+      "category": "communication",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "post to a slack channel",
+        "alert the team in slack",
+        "search slack messages"
+      ]
+    },
+    {
+      "id": "stripe",
+      "version": "1.0.0",
+      "name": "Stripe",
+      "description": "Create customers, list charges, and generate payment links.",
+      "category": "payments",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "create a stripe customer",
+        "issue a payment link",
+        "list charges"
+      ]
+    },
+    {
+      "id": "trello",
+      "version": "0.1.0",
+      "name": "Trello",
+      "description": "Create cards and list cards across Trello boards via MCP.",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "create a trello card",
+        "list trello cards"
+      ]
+    },
+    {
+      "id": "twilio",
+      "version": "1.0.0",
+      "name": "Twilio",
+      "description": "Send SMS and place voice calls.",
+      "category": "communication",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "text me",
+        "send an sms",
+        "call a number"
+      ]
+    },
+    {
+      "id": "x-twitter",
+      "version": "0.1.0",
+      "name": "X (Twitter)",
+      "description": "Post tweets and search via a community MCP server.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "post a tweet",
+        "search tweets"
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "id": "llm.summarize",
+      "version": "1.0.0",
+      "description": "Summarize a list of texts into a short digest using the LLM proxy.",
+      "intentHints": [
+        "summarize a list of posts",
+        "create a digest from messages",
+        "boil down a thread"
+      ]
+    }
+  ],
+  "agents": [
+    {
+      "id": "linkedin-summarizer",
+      "version": "0.1.0",
+      "description": "Fetch the user's LinkedIn feed, summarize it, and return the digest.",
+      "intentHints": [
+        "summarize linkedin feed",
+        "daily linkedin digest",
+        "what happened on linkedin today"
+      ],
+      "defaultTools": [
+        "llm.summarize"
+      ],
+      "defaultIntegrations": [
+        "linkedin"
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "id": "schedule-daily",
+      "version": "1.0.0",
+      "kind": "trigger",
+      "description": "Fire a workflow once a day at a user-chosen time.",
+      "configFields": [
+        {
+          "key": "time",
+          "type": "time",
+          "required": true,
+          "label": "Run at",
+          "default": "09:00"
+        },
+        {
+          "key": "timezone",
+          "type": "timezone",
+          "required": true,
+          "label": "Timezone"
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "morning-digest",
+      "version": "1.0.0",
+      "description": "Fire once per morning; run the LinkedIn summarizer agent and write the digest.",
+      "intentHints": [
+        "morning digest",
+        "daily summary",
+        "send me a morning email"
+      ]
+    }
+  ]
+}
