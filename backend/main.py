@@ -620,14 +620,21 @@ async def startup_event():
     logger.info(f"✅ Registered {len(templates)} trigger templates")
 
     # Cache the graph for the platform's build-time / unreachable fallback
-    # (same build_graph() the /api/graph endpoint serves — one source of truth).
+    # (same build_graph() the /api/graph endpoint serves on demand). This is a
+    # COLD-START hot path: on Lambda the task dir is READ-ONLY, so the write
+    # always failed (and build_graph() ran for nothing) on every cold init.
+    # Only do the work where the FS is writable AND the cache is missing — so
+    # it's written once at build/first-run and skipped entirely on Lambda.
     try:
-        import json as _json
+        import os as _os
         from pathlib import Path as _Path
         _cache_dir = _Path(__file__).parent / ".clarity"
-        _cache_dir.mkdir(exist_ok=True)
-        (_cache_dir / "graph.json").write_text(_json.dumps(build_graph(), indent=2))
-        logger.info("✅ Wrote graph cache to backend/.clarity/graph.json")
+        _graph_file = _cache_dir / "graph.json"
+        if not _graph_file.exists() and _os.access(_cache_dir.parent, _os.W_OK):
+            import json as _json
+            _cache_dir.mkdir(exist_ok=True)
+            _graph_file.write_text(_json.dumps(build_graph(), indent=2))
+            logger.info("✅ Wrote graph cache to backend/.clarity/graph.json")
     except Exception as _e:
         logger.warning(f"⚠️  Failed to write graph cache: {_e}")
 
