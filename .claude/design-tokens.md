@@ -55,3 +55,9 @@ Canonical dims live in `src/lib/widget-sizes.ts`. Small **170×170**, Medium
 **360×170**, Large **360×360** — no others. Widgets are window-size invariant
 (fixed px). Give each size a distinct, fully-filled layout (see `Widget.tsx`):
 small = one metric, medium = a compact row/list, large = a rich multi-row list.
+
+The widget is shown in an **iframe sized exactly to the widget**, so it has
+**no box-shadow** and the host (`WidgetPage.tsx`) adds **no background, padding,
+or margin** around it (it renders the bare widget under a transparent `widget-host`
+body). The kit's internal content padding (`p-4`) and `rounded-3xl` tile stay.
+See WIDGETS.md → "Exact-size iframe".

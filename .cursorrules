@@ -54,6 +54,9 @@ and the CSS token NAMES.
   width/height/rounded/overflow yourself — the kit does it.
 - Branch on the `size` prop into three distinct layouts. No responsive prefixes
   (`sm:`/`md:`), no `@media`, no `window.innerWidth` — widgets are fixed-size.
+- The widget runs in an iframe sized EXACTLY to it: **no box-shadow**, and the host
+  (`WidgetPage.tsx`) renders the bare widget with **no bg/padding/margin** (transparent
+  `widget-host` body — see index.css). See WIDGETS.md → "Exact-size iframe".
 
 ## Make it actually work (not just compile — see CLAUDE.md "Build patterns" + INTEGRATIONS.md)
 - If the app acts on an external service (post/send/charge/sync…), SHIP a way to connect it: a
