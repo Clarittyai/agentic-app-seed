@@ -35,7 +35,7 @@ the Claritty platform.
 | **SDK** | `@agent` / `@workflow` / `@uses_agent` / `@trigger_template`; AI **only** via `claritty_sdk.llm.get_llm_client` (never a raw provider SDK) |
 | **Multi-tenancy** | `X-User-ID` header; every user-data model has `user_id`; every query filters by it |
 | **Infra** | `Dockerfile`, `docker-compose.yml`, `frontend/nginx.conf`, ports 3200/8000, `VITE_API_URL=''` (relative URLs), required env vars `DATABASE_URL` / `CLARITTY_PLATFORM_URL` / `CLARITTY_AUTH_TOKEN` |
-| **Widget contract** | `/widget?size=`, the 3 fixed sizes (170×170 / 360×170 / 360×360), `WidgetContainer` / `WidgetButton` / `WidgetBadge` from `@clarittyai/widget-toolkit`, the `data-widget-size` attribute, `p-4` / `rounded-3xl`, and **no responsive prefixes** (`sm:`/`md:`/`@media`/`window.innerWidth`) |
+| **Widget contract** | `/widget?size=`, the 3 fixed sizes (170×170 / 360×170 / 360×360), `WidgetContainer` / `WidgetButton` / `WidgetBadge` from `@clarittyai/widget-toolkit`, the `data-widget-size` attribute, `p-4` (content) / `rounded-3xl`, **no responsive prefixes** (`sm:`/`md:`/`@media`/`window.innerWidth`), and **no box-shadow / no host background-padding-margin** (the iframe is exactly the widget size — see WIDGETS.md) |
 | **CSS token NAMES** | Keep the token *names* (`--background`, `--foreground`, `--accent`, `--card`, `--muted`, `--border`, `--ring`, `--brand-font`, `--brand-accent`, `--brand-accent-600`). The UI kit reads them. You change their **values**, not their names. |
 | **Integration store** | `UserIntegration` (in `backend/models.py`) is the sanctioned place to store per-user credentials when your app connects an external service. Keep it. See **[INTEGRATIONS.md](INTEGRATIONS.md)**. |
 

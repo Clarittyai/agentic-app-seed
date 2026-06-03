@@ -59,6 +59,19 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Widget host (the /widget route, embedded in an exact-size iframe):
+     no background, no margin/padding, and the widget casts no shadow — so
+     nothing is clipped or offset by the iframe edge. Added by WidgetPage. */
+  body.widget-host {
+    background: transparent;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  body.widget-host [data-widget-size] {
+    box-shadow: none !important;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight;
     letter-spacing: -0.02em; /* Tighter tracking for Apple style */

@@ -39,7 +39,7 @@ test.describe('Widget visual constraints', () => {
         }
       });
 
-      test('has 16px padding, 24px radius, overflow hidden', async ({ page }) => {
+      test('has 16px padding, 24px radius, overflow hidden, no shadow', async ({ page }) => {
         const widget = await gotoWidget(page, size);
         const css = await widget.evaluate((el) => {
           const s = window.getComputedStyle(el);
@@ -47,11 +47,26 @@ test.describe('Widget visual constraints', () => {
             pad: [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft].map(parseFloat),
             radius: parseFloat(s.borderTopLeftRadius),
             overflow: s.overflow,
+            shadow: s.boxShadow,
           };
         });
-        expect(css.pad).toEqual([16, 16, 16, 16]);
-        expect(css.radius).toBe(24);
+        expect(css.pad).toEqual([16, 16, 16, 16]);   // internal content padding stays
+        expect(css.radius).toBe(24);                 // rounded tile stays
         expect(css.overflow).toBe('hidden');
+        // The iframe is sized exactly to the widget, so a drop-shadow would be
+        // clipped — the widget must cast none.
+        expect(css.shadow).toBe('none');
+      });
+
+      test('host adds no background/margin around the widget (flush in iframe)', async ({ page }) => {
+        await gotoWidget(page, size);
+        const body = await page.evaluate(() => {
+          const s = window.getComputedStyle(document.body);
+          return { margin: s.margin, bg: s.backgroundColor };
+        });
+        expect(body.margin).toBe('0px');
+        // transparent (rgba alpha 0) — the parent/iframe shows through, no blush halo
+        expect(body.bg === 'rgba(0, 0, 0, 0)' || body.bg === 'transparent').toBe(true);
       });
 
       test('does not scroll (content fits)', async ({ page }) => {

@@ -70,6 +70,13 @@ Column pitch 170px + gap 20px:
 
 ---
 
+## 🚫 Exact-size iframe (Hard Rule)
+
+The widget is shown in an iframe sized **exactly** to the widget (170×170, 360×170, or 360×360). So:
+- **No box-shadow on the widget** — a drop-shadow extends beyond the bounds and gets clipped by the iframe edge (ugly halo). The widget casts none.
+- **No background, padding, or margin around the widget** — `WidgetPage.tsx` renders the *bare* widget and adds a `widget-host` body class (see `index.css`) that makes the body transparent with `margin:0` and removes the widget shadow. Don't wrap the widget in a centering/padded/`bg-*` container.
+- Internal **content** padding (the kit's `p-4`) and the rounded tile (`rounded-3xl`) stay — those are the widget's own surface, not space around it. The parent shows through the rounded corners.
+
 ## 🚫 Window-Size Invariance (Hard Rule)
 
 The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages/WidgetPage.tsx`) MUST look **identical at every viewport size — mobile, tablet, desktop, embedded iframe**. The widget is a fixed-frame surface (170×170, 360×170, or 360×360). Its appearance is controlled **only by the `size` prop** (small / medium / large), never by the browser window.
@@ -424,7 +431,7 @@ export function SmallWidget({ data }) {
   return (
     <div
       style={{ width: '170px', height: '170px' }}
-      className="bg-white rounded-lg shadow-sm p-3 overflow-hidden"
+      className="bg-white rounded-lg p-3 overflow-hidden"
     >
       <div className="flex flex-col gap-2 h-full">
         {/* Title */}
@@ -468,7 +475,7 @@ export function MediumWidget({ data }) {
   return (
     <div
       style={{ width: '360px', height: '170px', gridColumn: 'span 2' }}
-      className="bg-white rounded-lg shadow-sm p-3 overflow-hidden"
+      className="bg-white rounded-lg p-3 overflow-hidden"
     >
       <div className="flex gap-4 h-full">
         {/* Left: Metrics */}
