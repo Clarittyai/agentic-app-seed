@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ListTodo } from 'lucide-react';
+import { Home, ListTodo, Plug } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
+import SetupChecklist from '@/components/SetupChecklist';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,7 +14,13 @@ export default function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Tasks', href: '/tasks', icon: ListTodo },
+    { name: 'Integrations', href: '/integrations', icon: Plug },
   ];
+
+  // App glyph — the app's own initial in a themed tile. Derived from the
+  // stamped appName so every generated app brands its OWN header (never the
+  // platform mark). Theme-token driven so it follows the per-app palette.
+  const appInitial = (appName.trim()[0] || 'A').toUpperCase();
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,14 +28,15 @@ export default function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-20">
-            {/* Logo — the real Claritty mark + the app's name. Generation
-                overwrites appName per app; the mark works on light & dark. */}
+            {/* Brand — the app's OWN initial glyph + name. Generation stamps
+                appName per app; the glyph follows the per-app theme accent. */}
             <Link to="/" className="flex items-center gap-2.5 group">
-              <img
-                src="/claritty-logo.png"
-                alt="Claritty"
-                className="h-7 w-7 flex-shrink-0 object-contain"
-              />
+              <span
+                aria-hidden="true"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-accent/10 text-sm font-bold text-accent"
+              >
+                {appInitial}
+              </span>
               <span className="inline-block text-lg lg:text-xl font-bold text-foreground transition-colors group-hover:text-accent">
                 {appName}
               </span>
@@ -76,7 +84,10 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Main Content */}
       <main className="min-h-[calc(100vh-16rem)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
+          {/* First-run setup banner — renders only while a required integration
+              is unconnected; invisible for self-contained / fully-connected apps. */}
+          <SetupChecklist compact />
           {children}
         </div>
       </main>

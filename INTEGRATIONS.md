@@ -5,117 +5,102 @@
 > You MUST also ship a way for the user to **connect** that service, or the app can't do its job.
 > The AI assistant should add this **proactively**, even if the user didn't name the platform.
 
-This is the lightweight, reliable pattern (no heavy framework). It's exactly what the example
-LinkedIn app uses. Copy it.
+Integrations are **platform-owned**. The user connects a service once (OAuth/API key) through the
+platform; credentials are stored **encrypted at rest (KMS) on the platform**, never in the app's own
+database and never in the app's env. Your code reaches a connected service through the SDK — it never
+sees raw OAuth client secrets.
 
 ---
 
-## The rule
+## The rule (read this — it's the #1 thing apps get wrong)
 
-If the brainstorm's **external action** is non-empty, build all three:
-1. a **Connect** screen so the user can link the service,
-2. **per-user credential storage** (the `UserIntegration` model — already in the seed),
-3. a **pluggable action** that uses real creds when present and **simulates** otherwise — so the
-   app always demos end-to-end, even before the user connects anything.
+If the app's **external action** is non-empty, build all three:
+1. a **Connect** surface so the user can link the service (see `frontend/src/pages/Integrations`),
+2. the **action**, performed through a real catalog tool (e.g. `linkedin.create_post`),
+3. **honest failure**: when the service isn't connected, surface a clear "connect X to do this"
+   state (HTTP **409** from the route, a banner in the UI) — and when the external call fails, surface
+   the error.
 
-Never block the whole app on a missing key: degrade to a clearly-labeled "simulated" result.
+**NEVER fake success.** Do not "simulate" a post, do not swallow the error and mark the row as done,
+do not downgrade `posted` → `approved` in an `except`. A user who clicks Approve and sees "posted"
+must actually have a post on LinkedIn. Faking it is the worst possible outcome — it hides a broken app.
 
 ---
 
-## Backend
+## How an agent or tool reaches a connected service
 
-### 1. Store creds per user (reuse `UserIntegration`)
-`backend/models.py` already ships `UserIntegration` (`user_id`, `service`, `credentials` JSON,
-`is_active`). Don't invent a new table. Store your service's creds as plain JSON under a
-`service` key (e.g. `"linkedin"`). For stronger at-rest encryption see *Advanced* below.
+Inside a `@tool` handler (or an agent's tools), call `ctx.integration("<id>")` — or use the
+integration's **provided catalog tool** directly. The catalog ships real tools; e.g. the `linkedin`
+integration provides `linkedin.fetch_posts` and `linkedin.create_post`. Reference them by their
+dotted id in your agent's `system_prompt` and list them in `app.yaml#agents[].tools`; the tool-use
+loop dispatches them. A provided tool returns `{"error": "<id>_not_connected"}` when the user hasn't
+connected the service — handle that, don't crash.
 
-### 2. Settings endpoints (in `backend/routes/app.py`)
 ```python
-class LinkedInConnect(BaseModel):
-    access_token: str
-    author_urn: str
+from claritty_sdk import tool, ToolCtx
 
-def _creds(db, user_id):
-    """Prefer the user's connected creds; fall back to env; else (None, None)."""
-    integ = (db.query(models.UserIntegration)
-             .filter(models.UserIntegration.user_id == user_id,
-                     models.UserIntegration.service == "linkedin",
-                     models.UserIntegration.is_active == True).first())
-    if integ and integ.credentials:
-        c = integ.credentials
-        if c.get("access_token") and c.get("author_urn"):
-            return c["access_token"], c["author_urn"]
-    return os.getenv("LINKEDIN_ACCESS_TOKEN"), os.getenv("LINKEDIN_AUTHOR_URN")
-
-@router.get("/api/settings/linkedin")
-async def li_status(x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
-                    db: Session = Depends(get_db)):
-    tok, urn = _creds(db, _resolve_user(x_user_id))
-    return {"connected": bool(tok and urn), "author_urn": urn if (tok and urn) else None}
-
-@router.put("/api/settings/linkedin")
-async def li_connect(payload: LinkedInConnect,
-                     x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
-                     db: Session = Depends(get_db)):
-    user_id = _resolve_user(x_user_id)
-    integ = (db.query(models.UserIntegration)
-             .filter(models.UserIntegration.user_id == user_id,
-                     models.UserIntegration.service == "linkedin").first())
-    if not integ:
-        integ = models.UserIntegration(user_id=user_id, service="linkedin", auth_type="api-key")
-        db.add(integ)
-    integ.credentials = {"access_token": payload.access_token.strip(),
-                         "author_urn": payload.author_urn.strip()}
-    integ.is_active = True
-    db.commit()
-    return {"connected": True, "author_urn": integ.credentials["author_urn"]}
+@tool(id="app.publish_draft")
+def publish_draft(input: dict, ctx: ToolCtx) -> dict:
+    li = ctx.integration("linkedin")          # ConnectedIntegration or None
+    if li is None:
+        return {"error": "linkedin_not_connected"}
+    # ... call li / a provided tool; raise on a real failure, never fake a post id.
 ```
-Never return the token to the client — only connection status.
 
-### 3. Pluggable action (real or simulated)
+Agents do **not** call the LLM or import `openai`/`requests` themselves, and do **not** call a
+`run_tool()` helper (there is none). They declare tools in `app.yaml`; the loop invokes them.
+
+---
+
+## Publishing from a human-in-the-loop route (the Approve button)
+
+When the user approves a draft, the route should invoke the real publish tool and translate the
+result into honest HTTP:
+
 ```python
-async def publish(content, token, author):
-    if not token or not author:
-        return {"ok": True, "simulated": True, "external_id": None}   # works without creds
-    import httpx
-    async with httpx.AsyncClient(timeout=20) as c:
-        r = await c.post("https://api.linkedin.com/v2/ugcPosts", headers={...}, json={...})
-    return {"ok": r.status_code in (200, 201), "simulated": False,
-            "external_id": r.headers.get("x-restli-id"), "error": None if r.status_code < 300 else r.text}
-```
-Call it from your `/approve` (or act) route with `token, author = _creds(db, user_id)` and store
-`simulated` / `external_id` / `status` on the row.
+import inspect
+from claritty_sdk import decorators as _sdk
+from claritty_sdk.context import ToolCtx
+from claritty_sdk.integrations.client import make_resolver
 
-### Runtime read inside an agent/workflow
-`backend/main.py` builds an `integrations` dict onto the agent context from `UserIntegration`
-rows, so an agent can read `context.integrations.get("linkedin")`. (For the simple pattern above,
-reading in the route via `_creds()` is enough.)
+@router.post("/{item_id}/approve")
+async def approve_post(item_id: str, db=Depends(get_db), user_id: str = Depends(require_user)):
+    row = _get_owned_draft(db, item_id, user_id)        # 404 if missing, 400 if not a draft
+    handler = _sdk.get_registered_tool("linkedin.create_post")
+    if handler is None:
+        raise HTTPException(500, "publish tool not registered")
+    ctx = ToolCtx(user_id=user_id, integration_resolver=make_resolver(user_id, optional_ids=set()))
+    result = handler({"text": row.draft_text}, ctx)
+    if inspect.isawaitable(result):
+        result = await result
+    if isinstance(result, dict) and result.get("error") == "linkedin_not_connected":
+        raise HTTPException(409, "LinkedIn not connected — connect it to publish")
+    post_id = result["post_id"]                          # KeyError → 500; do NOT swallow
+    row.status, row.external_id = "posted", str(post_id)
+    db.commit(); db.refresh(row)
+    return row.to_dict()
+```
+
+A missing connection is a **409** (the UI turns it into a connect prompt); a real LinkedIn failure
+bubbles up as a 5xx with the row left un-posted for retry. Only a genuine `post_id` flips to `posted`.
 
 ---
 
 ## Frontend
 
-- A **Connect page** (`frontend/src/pages/Settings.tsx`, route `/settings`, in the nav): inputs for
-  the token/fields, a connected/simulated status badge, Save + Disconnect. `httpx`/axios to the
-  endpoints above (`getLinkedInStatus`, `connectLinkedIn`, `disconnectLinkedIn` in `lib/api.ts`).
-- A **status banner** on the landing page: when not connected, "approvals publish in *simulated*
-  mode — tap to connect"; when connected, confirm it's live. (See the example app.)
+- An **Integrations page** (in the nav) listing each integration the app needs, its connected/not
+  status, and a Connect action. See `frontend/src/pages/Integrations` and `lib/api.ts`'s
+  `/api/integrations/*` helpers.
+- A **connect banner** near the action button: when a required integration isn't connected, show
+  "Connect LinkedIn to publish" (matching the route's 409); hide it once connected.
 
 ---
 
-## Secrets & env
+## Secrets
 
-- **Local:** creds entered in the Connect UI are stored in the DB. App-specific env vars (e.g.
-  `LINKEDIN_ACCESS_TOKEN`) now reach the backend because `docker-compose.yml` loads `env_file: .env`
-  — add them to `.env`.
-- **Production:** the Claritty platform injects secrets; don't commit real tokens.
-- Keep using `claritty_sdk.llm.get_llm_client` for the model — that's separate from user integrations.
-
----
-
-## Advanced (optional)
-The seed also contains a generic, catalog-driven integrations layer
-(`backend/integrations/*`, `shared/integrations-catalog.json`, OAuth + Fernet encryption via
-`APP_ENCRYPTION_KEY`). It's powerful but heavier and not wired by default. Most apps should use the
-lightweight pattern above; reach for the generic layer only if you need OAuth or encrypted-at-rest
-storage across many services.
+- **Production:** the platform injects `CLARITTY_PLATFORM_URL` + `CLARITY_INTERNAL_SECRET`; the SDK
+  uses them to fetch the user's decrypted credentials at call time. You store nothing.
+- **Local:** set `CLARITTY_FAKE_CREDS_<INTEGRATION>` to a JSON bundle (e.g.
+  `CLARITTY_FAKE_CREDS_LINKEDIN='{"access_token":"…","sub":"…"}'`) to exercise the path without OAuth.
+- Keep using `claritty_sdk.llm.get_llm_client` for the model — that's separate from user integrations,
+  and agents should not call it directly (the tool-use loop drives the model).

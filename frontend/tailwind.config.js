@@ -6,6 +6,9 @@ export default {
     // Include the widget toolkit's compiled output so its (liquid-glass)
     // className strings aren't purged when an app imports its components.
     "./node_modules/@clarittyai/widget-toolkit/dist/**/*.js",
+    // The app-level kit (Dashboards/lists/forms) — same reason: keep its
+    // token classes from being purged.
+    "./node_modules/@clarittyai/app-ui/dist/**/*.js",
   ],
   darkMode: 'class',
   theme: {

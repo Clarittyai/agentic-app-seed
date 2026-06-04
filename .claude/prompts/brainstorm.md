@@ -131,8 +131,9 @@ content" is only half the app — you must also let the user **connect** that se
 
 - **Which service?** If the user didn't name one, **infer the obvious one and confirm it** — don't
   silently drop it. (Idea: "auto-post marketing" → assume LinkedIn, ask to confirm.)
-- **How does the user connect it?** Plan a **Connect screen** + per-user credential storage +
-  a pluggable action that **simulates** until connected (see INTEGRATIONS.md). Build this in.
+- **How does the user connect it?** Plan a **Connect screen**; the action runs through a real
+  catalog tool via `ctx.integration(...)`, and when the service isn't connected the app shows a
+  **connect prompt (409)** — never a faked/simulated success (see INTEGRATIONS.md). Build this in.
 - **Self-contained?** If the app genuinely touches no external system (like the Tasks example),
   say so explicitly.
 
@@ -147,7 +148,7 @@ approve action in the UI/widget). If it's safe to act automatically, note that i
 ### 6c. Definition of done
 
 **Write one concrete sentence describing end-to-end success for THIS app.** e.g. "A daily run
-produces 2 post drafts; approving one publishes it (or marks it simulated) and the widget shows it."
+produces 2 post drafts; approving one publishes it to LinkedIn (or prompts to connect if not yet connected) and the widget shows it."
 This becomes `app-config.json` → `core_action.definition_of_done` and the bar for "done."
 
 ---
@@ -213,7 +214,7 @@ After brainstorming, you should have:
 
 ### External action & connection
 - **Acts on**: [service, or "none — self-contained"]
-- **Connect**: [Connect screen + UserIntegration storage + simulated fallback — see INTEGRATIONS.md]
+- **Connect**: [Connect screen + action via catalog tool / ctx.integration + 409 connect-prompt when not connected — see INTEGRATIONS.md]
 
 ### Approval gate
 - [Yes — draft → approve → act, with an approve action] / [No — acts automatically]

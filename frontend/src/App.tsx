@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
+import Integrations from './pages/Integrations';
 import WidgetPage from './pages/WidgetPage';
 import Layout from './components/Layout';
 import { useClarittyTheme } from './hooks/useClarittyTheme';
@@ -19,6 +20,7 @@ function App() {
         {/* App routes — with the navigation layout. */}
         <Route path="/" element={<Layout><Dashboard /></Layout>} />
         <Route path="/tasks" element={<Layout><Tasks /></Layout>} />
+        <Route path="/integrations" element={<Layout><Integrations /></Layout>} />
       </Routes>
     </Router>
   );

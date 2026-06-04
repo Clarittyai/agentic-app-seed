@@ -230,6 +230,25 @@ export const getWorkflowExecution = async (executionId: string) => {
 
 // Trigger management lives on the Claritty platform now (not in-app).
 
+// ── Integrations setup (first-run checklist) ───────────────────────────────
+export interface RequiredIntegration {
+  id: string;
+  name: string;
+  connected: boolean;
+}
+export interface IntegrationsStatus {
+  integrations: RequiredIntegration[];
+  all_connected: boolean;
+}
+
+/** The app's required integrations + per-user connection status. Powers the
+ * setup checklist + Integrations page. Returns no required integrations for a
+ * self-contained app. */
+export const getRequiredIntegrations = async (): Promise<IntegrationsStatus> => {
+  const response = await api.get('/api/integrations/required');
+  return response.data;
+};
+
 // Helper functions / aliases for convenience (wrapped format for Dashboard compatibility)
 export const getAgents = async () => ({ agents: await listAgents() });
 export const getWorkflows = async () => ({ workflows: await listWorkflows() });

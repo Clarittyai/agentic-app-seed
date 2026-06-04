@@ -650,16 +650,19 @@ If the core verb hits an external system — **post** to LinkedIn, **send** emai
 Stripe, **sync** to Notion — then generating content is only half the app. You MUST also ship a way
 for the user to **connect** that service. Add it **proactively**, even if the user didn't name the
 platform (infer the obvious one and confirm).
-- Pattern (copy it): a **Connect page** + per-user creds in the existing `UserIntegration` model +
-  a **pluggable action** that uses real creds when present and **simulates** otherwise (so the app
-  always demos). Full guide + code: **[INTEGRATIONS.md](INTEGRATIONS.md)**.
-- App-specific secrets in `.env` reach the backend (docker-compose loads `env_file: .env`).
+- Pattern (copy it): a **Connect page** (the platform stores creds encrypted — you store nothing) +
+  the action performed through a real catalog tool (e.g. `linkedin.create_post`) reached via
+  `ctx.integration(...)`. When the service isn't connected, surface a **409 / connect prompt** —
+  **never simulate or fake a success**. Full guide + code: **[INTEGRATIONS.md](INTEGRATIONS.md)**.
+- Locally, set `CLARITTY_FAKE_CREDS_<INTEGRATION>` (JSON) to exercise the path without OAuth.
 
 ### Approval / human-in-the-loop (AI proposes → user approves → system acts)
 Many apps shouldn't act autonomously. Model a lifecycle instead of a bare boolean:
 - `status`: `draft → approved → published | failed` on the domain model.
-- An `/approve` endpoint that flips status **and performs the action** (calling the pluggable
-  helper above); store the outcome (`published_at`, `external_id`, `simulated`, `error`).
+- An `/approve` endpoint that performs the action through the real tool, then flips status: a
+  not-connected result → **409** (connect prompt), a real failure → **5xx** (row stays for retry),
+  and only a genuine external id flips to `published`. Store `published_at` / `external_id`. Never
+  swallow the error and mark it done.
 - A widget **quick action** to approve the top item in place (`runQuickAction`), and a review queue
   in the UI. Don't auto-publish what a human should sign off on.
 
@@ -675,7 +678,8 @@ Before calling it done, confirm the app actually solves the problem end-to-end:
 - the agent runs (`POST /api/agents/{id}/execute` returns data),
 - the workflow persists (`POST /api/workflows/{id}/execute`),
 - `GET /api/widget` returns real data and the widget renders it,
-- the **real action** happens (or is clearly labeled simulated when not connected).
+- the **real action** happens when connected (a real external id), or returns a clear
+  not-connected/connect-prompt when not — never a faked success.
 Capture this as one concrete success sentence in the brainstorm + `app-config.json` `core_action.definition_of_done`.
 
 ---
@@ -697,7 +701,7 @@ Before deployment, ensure:
 - [ ] Created workflow(s) chaining agents
 - [ ] Created trigger template(s) for user configuration
 - [ ] Customized widget (small, medium & large views) using the UI kit
-- [ ] If the app acts on an external service: a **Connect** screen + per-user creds + pluggable/simulated action (see INTEGRATIONS.md)
+- [ ] If the app acts on an external service: a **Connect** screen + the action via a real catalog tool / `ctx.integration`, with a 409/connect-prompt when not connected — never simulated (see INTEGRATIONS.md)
 - [ ] If it shouldn't act autonomously: a **draft → approve → act** lifecycle with an approve action
 - [ ] `app-config.json` `core_action.definition_of_done` is filled, and that end-to-end path is verified
 - [ ] The problem the app solves is delivered end-to-end (agent → workflow → widget → real action)
