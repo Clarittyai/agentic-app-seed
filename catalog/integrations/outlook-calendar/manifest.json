@@ -1,0 +1,22 @@
+{
+  "id": "outlook-calendar",
+  "kind": "integration",
+  "category": "calendar",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Outlook Calendar",
+  "vendor": "Microsoft",
+  "description": "Read and write events on the user's Outlook calendar.",
+  "intentHints": ["outlook calendar", "schedule a meeting in outlook"],
+  "authType": "oauth2",
+  "oauthConfig": {
+    "authorizeUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+    "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    "scopes": ["Calendars.ReadWrite", "offline_access"],
+    "clientIdSecretRef": "secretsmanager:claritty/integrations/outlook-calendar/client"
+  },
+  "providedTools": [
+    { "id": "outcal.list_events", "description": "List events.", "input": { "from": { "type": "string", "required": true }, "to": { "type": "string", "required": true } }, "output": { "events": { "type": "array", "required": true } } },
+    { "id": "outcal.create_event", "description": "Create an event.", "input": { "subject": { "type": "string", "required": true }, "start": { "type": "string", "required": true }, "end": { "type": "string", "required": true } }, "output": { "event_id": { "type": "string", "required": true } } }
+  ]
+}

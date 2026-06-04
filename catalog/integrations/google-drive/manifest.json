@@ -1,0 +1,23 @@
+{
+  "id": "google-drive",
+  "kind": "integration",
+  "category": "files",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Google Drive",
+  "vendor": "Google",
+  "description": "List, upload, and export files from the user's Google Drive.",
+  "intentHints": ["find a file in drive", "upload to drive", "export a doc"],
+  "authType": "oauth2",
+  "oauthConfig": {
+    "authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+    "tokenUrl": "https://oauth2.googleapis.com/token",
+    "scopes": ["https://www.googleapis.com/auth/drive.file"],
+    "clientIdSecretRef": "secretsmanager:claritty/integrations/google-drive/client"
+  },
+  "providedTools": [
+    { "id": "gdrive.list_files", "description": "List files matching a query.", "input": { "query": { "type": "string", "required": false } }, "output": { "files": { "type": "array", "required": true } } },
+    { "id": "gdrive.upload_file", "description": "Upload a file.", "input": { "name": { "type": "string", "required": true }, "content_base64": { "type": "string", "required": true }, "mime_type": { "type": "string", "required": false } }, "output": { "file_id": { "type": "string", "required": true } } },
+    { "id": "gdrive.export_doc", "description": "Export a Google Doc to a given format.", "input": { "file_id": { "type": "string", "required": true }, "mime_type": { "type": "string", "required": true } }, "output": { "content_base64": { "type": "string", "required": true } } }
+  ]
+}

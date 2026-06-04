@@ -1,0 +1,18 @@
+{
+  "id": "trello",
+  "kind": "integration",
+  "category": "productivity",
+  "transport": "mcp",
+  "version": "0.1.0",
+  "name": "Trello",
+  "vendor": "Atlassian",
+  "description": "Create cards and list cards across Trello boards via MCP.",
+  "intentHints": ["create a trello card", "list trello cards"],
+  "authType": "apiKey",
+  "mcpUrl": "https://mcp.example.com/trello",
+  "mcpAuth": { "type": "bearer", "envVar": "CLARITTY_TRELLO_MCP_TOKEN" },
+  "providedTools": [
+    { "id": "trello.create_card", "description": "Create a card.", "input": { "list_id": { "type": "string", "required": true }, "name": { "type": "string", "required": true } }, "output": { "card_id": { "type": "string", "required": true } } },
+    { "id": "trello.list_cards", "description": "List cards on a board.", "input": { "board_id": { "type": "string", "required": true } }, "output": { "cards": { "type": "array", "required": true } } }
+  ]
+}

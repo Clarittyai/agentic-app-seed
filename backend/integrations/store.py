@@ -4,13 +4,17 @@ Per-user integration credential storage (encrypted) on top of UserIntegration.
 Credentials are encrypted before they touch the database and decrypted only in
 memory when an app needs to call the provider. Status views never expose secrets.
 """
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend import models
 from backend.integrations import crypto
+
+logger = logging.getLogger(__name__)
 
 
 def _row(db: Session, user_id: str, service: str):
@@ -95,11 +99,31 @@ def get_credentials(db: Session, user_id: str, service: str) -> Optional[Dict[st
 
 
 def get_status(db: Session, user_id: str, service: str) -> Dict[str, Any]:
-    """Connection status WITHOUT secrets — safe to return to the client."""
-    row = _row(db, user_id, service)
+    """
+    Connection status WITHOUT secrets — safe to return to the client.
+
+    Resilient by design: the integrations LIST is built from the static catalog
+    and must always render (it tells the user what the app needs). A per-user
+    status lookup that fails (e.g. the table isn't provisioned yet, a transient
+    DB error, or an unreadable credential envelope) must degrade to
+    "not connected" — never 500 the whole page.
+    """
+    try:
+        row = _row(db, user_id, service)
+    except SQLAlchemyError:
+        # Leave the session usable for the next entry's lookup.
+        try:
+            db.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        logger.warning("integration status lookup failed for %s", service, exc_info=True)
+        return {"connected": False}
     if not row:
         return {"connected": False}
-    creds = crypto.decrypt(row.credentials) if row.credentials else {}
+    try:
+        creds = crypto.decrypt(row.credentials) if row.credentials else {}
+    except Exception:  # noqa: BLE001 - a bad/undecryptable envelope must not 500 the list
+        creds = {}
     return {
         "connected": bool(row.is_active),
         "connectedAt": row.connected_at.isoformat() if row.connected_at else None,

@@ -1,0 +1,23 @@
+{
+  "id": "notion",
+  "kind": "integration",
+  "category": "productivity",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Notion",
+  "vendor": "Notion",
+  "description": "Search, read, create, and update pages in the user's Notion workspace.",
+  "intentHints": ["search notion", "create a notion page", "update a notion doc"],
+  "authType": "oauth2",
+  "oauthConfig": {
+    "authorizeUrl": "https://api.notion.com/v1/oauth/authorize",
+    "tokenUrl": "https://api.notion.com/v1/oauth/token",
+    "scopes": [],
+    "clientIdSecretRef": "secretsmanager:claritty/integrations/notion/client"
+  },
+  "providedTools": [
+    { "id": "notion.search", "description": "Search pages.", "input": { "query": { "type": "string", "required": true } }, "output": { "results": { "type": "array", "required": true } } },
+    { "id": "notion.create_page", "description": "Create a page.", "input": { "parent_id": { "type": "string", "required": true }, "title": { "type": "string", "required": true }, "content": { "type": "string", "required": false } }, "output": { "page_id": { "type": "string", "required": true } } },
+    { "id": "notion.update_page", "description": "Update a page.", "input": { "page_id": { "type": "string", "required": true }, "properties": { "type": "object", "required": true } }, "output": { "ok": { "type": "boolean", "required": true } } }
+  ]
+}

@@ -1,0 +1,64 @@
+# Catalog integration: LinkedIn — Phase 2 stub.
+#
+# The materializer copies this file into apps that declare the
+# `linkedin` integration. Phase 3 fills in the real OAuth credential
+# fetch + REST calls. For Phase 2 the provided tools return shaped
+# fake data so a generated app can be smoke-tested end-to-end before
+# real OAuth is live.
+#
+# The two provided tools are registered with the SDK's integration
+# catalog on import; the agent's tool-use loop dispatches to them by
+# the dotted ids `linkedin.fetch_posts` and `linkedin.create_post`.
+
+from claritty_sdk import tool, ToolCtx
+from claritty_sdk.integrations import catalog as _catalog
+from claritty_sdk.integrations import platform_creds
+
+
+def _creds(ctx: ToolCtx):
+    """Resolve LinkedIn credentials for the current user. Catches the
+    Phase-2 stub error and surfaces it as a `not_connected` tool result
+    so the agent loop can degrade gracefully."""
+    if ctx.user_id is None:
+        return None
+    try:
+        return platform_creds.fetch_for_user("linkedin", ctx.user_id)
+    except platform_creds.CredentialsNotAvailable:
+        return None
+
+
+@tool(id="linkedin.fetch_posts")
+def fetch_posts(input: dict, ctx: ToolCtx) -> dict:
+    creds = _creds(ctx)
+    if creds is None:
+        return {
+            "error": "linkedin_not_connected",
+            "message": "User has not connected LinkedIn. Phase 3 will surface the connect prompt automatically.",
+        }
+    # Phase 3: real httpx GET https://api.linkedin.com/rest/feed ...
+    return {
+        "posts": [
+            {
+                "id": "stub-post-1",
+                "author": "Stub User",
+                "text": "Phase 2 stub: replace with real LinkedIn fetch in Phase 3.",
+            }
+        ]
+    }
+
+
+@tool(id="linkedin.create_post")
+def create_post(input: dict, ctx: ToolCtx) -> dict:
+    creds = _creds(ctx)
+    if creds is None:
+        return {"error": "linkedin_not_connected"}
+    text = input.get("text") or ""
+    # Phase 3: real POST.
+    return {"post_id": f"stub-post-{abs(hash(text))}"}
+
+
+# Register the provided-tool handlers with the SDK's catalog so the
+# tool-use loop can find them even if the app's main module doesn't
+# explicitly import this file.
+_catalog.register_provided_tool("linkedin", "linkedin.fetch_posts", fetch_posts)
+_catalog.register_provided_tool("linkedin", "linkedin.create_post", create_post)

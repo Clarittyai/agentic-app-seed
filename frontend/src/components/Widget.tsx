@@ -97,9 +97,18 @@ export default function Widget({ size = 'medium', className }: WidgetProps) {
   }
 
   if (error || !data) {
+    // High-contrast on the glass surface in BOTH themes: the headline uses
+    // text-foreground (muted-on-glass is ~2:1 and reads as invisible), and the
+    // Retry uses the themed WidgetButton — never a hardcoded blue.
     return (
-      <WidgetContainer size={size} className={cn('flex items-center justify-center', className)}>
-        <p className="text-sm text-muted-foreground">{error ?? 'No data'}</p>
+      <WidgetContainer
+        size={size}
+        className={cn('flex flex-col items-center justify-center gap-2 text-center', className)}
+      >
+        <p className="text-sm font-medium text-foreground">{error ?? 'No data yet'}</p>
+        <WidgetButton variant="secondary" onClick={() => void fetchData()}>
+          Retry
+        </WidgetButton>
       </WidgetContainer>
     );
   }

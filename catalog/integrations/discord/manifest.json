@@ -1,0 +1,18 @@
+{
+  "id": "discord",
+  "kind": "integration",
+  "category": "communication",
+  "transport": "mcp",
+  "version": "0.1.0",
+  "name": "Discord",
+  "vendor": "Discord",
+  "description": "Send messages to Discord channels via a community MCP server.",
+  "intentHints": ["post to discord", "alert a discord channel"],
+  "authType": "apiKey",
+  "mcpUrl": "https://mcp.example.com/discord",
+  "mcpAuth": { "type": "bearer", "envVar": "CLARITTY_DISCORD_MCP_TOKEN" },
+  "providedTools": [
+    { "id": "discord.send_message", "description": "Send a message to a channel.", "input": { "channel_id": { "type": "string", "required": true }, "content": { "type": "string", "required": true } }, "output": { "message_id": { "type": "string", "required": true } } },
+    { "id": "discord.list_guilds", "description": "List guilds the bot is in.", "input": {}, "output": { "guilds": { "type": "array", "required": true } } }
+  ]
+}

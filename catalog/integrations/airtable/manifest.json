@@ -1,0 +1,18 @@
+{
+  "id": "airtable",
+  "kind": "integration",
+  "category": "data",
+  "transport": "mcp",
+  "version": "0.1.0",
+  "name": "Airtable",
+  "vendor": "Airtable",
+  "description": "Read and write records in Airtable bases via MCP.",
+  "intentHints": ["airtable records", "create an airtable row"],
+  "authType": "apiKey",
+  "mcpUrl": "https://mcp.example.com/airtable",
+  "mcpAuth": { "type": "bearer", "envVar": "CLARITTY_AIRTABLE_MCP_TOKEN" },
+  "providedTools": [
+    { "id": "airtable.list_records", "description": "List records in a table.", "input": { "base_id": { "type": "string", "required": true }, "table_id": { "type": "string", "required": true } }, "output": { "records": { "type": "array", "required": true } } },
+    { "id": "airtable.create_record", "description": "Create a record.", "input": { "base_id": { "type": "string", "required": true }, "table_id": { "type": "string", "required": true }, "fields": { "type": "object", "required": true } }, "output": { "record_id": { "type": "string", "required": true } } }
+  ]
+}

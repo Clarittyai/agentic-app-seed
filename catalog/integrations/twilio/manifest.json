@@ -1,0 +1,16 @@
+{
+  "id": "twilio",
+  "kind": "integration",
+  "category": "communication",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Twilio",
+  "vendor": "Twilio",
+  "description": "Send SMS and place voice calls.",
+  "intentHints": ["text me", "send an sms", "call a number"],
+  "authType": "apiKey",
+  "providedTools": [
+    { "id": "twilio.send_sms", "description": "Send an SMS.", "input": { "to": { "type": "string", "required": true }, "body": { "type": "string", "required": true } }, "output": { "sid": { "type": "string", "required": true } } },
+    { "id": "twilio.make_call", "description": "Place a voice call.", "input": { "to": { "type": "string", "required": true }, "twiml_url": { "type": "string", "required": true } }, "output": { "sid": { "type": "string", "required": true } } }
+  ]
+}

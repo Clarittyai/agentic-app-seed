@@ -1,0 +1,18 @@
+{
+  "id": "posthog",
+  "kind": "integration",
+  "category": "analytics",
+  "transport": "mcp",
+  "version": "0.1.0",
+  "name": "PostHog",
+  "vendor": "PostHog",
+  "description": "Capture events and query event data via MCP.",
+  "intentHints": ["track an event", "query posthog"],
+  "authType": "apiKey",
+  "mcpUrl": "https://mcp.example.com/posthog",
+  "mcpAuth": { "type": "bearer", "envVar": "CLARITTY_POSTHOG_MCP_TOKEN" },
+  "providedTools": [
+    { "id": "posthog.query", "description": "Run a HogQL query.", "input": { "query": { "type": "string", "required": true } }, "output": { "results": { "type": "array", "required": true } } },
+    { "id": "posthog.capture_event", "description": "Capture an event.", "input": { "distinct_id": { "type": "string", "required": true }, "event": { "type": "string", "required": true }, "properties": { "type": "object", "required": false } }, "output": { "ok": { "type": "boolean", "required": true } } }
+  ]
+}

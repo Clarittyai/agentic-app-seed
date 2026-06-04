@@ -103,6 +103,32 @@ If a legitimate string trips the scanner (e.g. a CSS class that looks
 like `sk-…`), add it to `.claritty-allowlist` (one regex per line) — but
 think twice before doing so.
 
+## Design & UI — make it look designed, not generated
+
+When you build the frontend (`Dashboard.tsx`, `Widget.tsx`, pages), match the
+**golden references** — they are the bar for polish and state-handling:
+
+- [`docs/golden/Dashboard.golden.tsx`](../../docs/golden/Dashboard.golden.tsx)
+- [`docs/golden/Widget.golden.tsx`](../../docs/golden/Widget.golden.tsx)
+
+Study their hierarchy, spacing, and state handling; then ADAPT to this app's
+domain — do not copy the content. The five non-negotiables they demonstrate:
+
+1. **Theme tokens only** — `text-foreground` / `text-muted-foreground` /
+   `text-accent` / `bg-card` / `border`. NEVER hardcode hex or a fixed Tailwind
+   palette (`bg-indigo-500`, `#6366f1`) — it fights the per-app theme. Fill
+   `frontend/src/theme.css` with the app's palette first.
+2. **One primary action per view**; everything else is quiet/secondary.
+3. **All three states, high-contrast** — skeleton while loading, a calm empty
+   state (short line + the primary action), and a legible inline error with
+   retry. Never a blank screen, a raw spinner, or muted-on-glass text.
+4. **Mobile-first** — single column → grid at `md`; tap targets ≥ 44px; no
+   horizontal scroll. (The Widget is the exception: fixed-frame, branches on the
+   `size` prop only — no responsive prefixes inside it.)
+5. **No AI tells** — no emoji in chrome, no decorative icons glued to headings,
+   no rainbow/multi-stop gradients, no "Welcome to…" hero. lucide icons only
+   where they aid scanning; sentence case; concise domain copy.
+
 ## When you don't know
 
 - "Is this integration in the catalog?" → grep `catalog/INDEX.md`

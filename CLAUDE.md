@@ -379,6 +379,8 @@ class MyTrigger:
 
 ### Task 4: Customize Widgets
 
+> 🎨 **Match the golden references** before writing UI: [`docs/golden/Widget.golden.tsx`](docs/golden/Widget.golden.tsx) and [`docs/golden/Dashboard.golden.tsx`](docs/golden/Dashboard.golden.tsx) show the bar for hierarchy, theme-token discipline, and loading/empty/error states. Adapt them to your domain — don't copy. (Full rationale: `.claude/skills/agentic-app-authoring.md` → "Design & UI".)
+
 **Steps:**
 1. Update `frontend/src/components/Widget.tsx`:
 ```typescript

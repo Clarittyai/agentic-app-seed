@@ -1,0 +1,18 @@
+{
+  "id": "calendly",
+  "kind": "integration",
+  "category": "calendar",
+  "transport": "mcp",
+  "version": "0.1.0",
+  "name": "Calendly",
+  "vendor": "Calendly",
+  "description": "List scheduled meetings and cancel events via a community MCP server.",
+  "intentHints": ["calendly meetings", "cancel a calendly event"],
+  "authType": "apiKey",
+  "mcpUrl": "https://mcp.example.com/calendly",
+  "mcpAuth": { "type": "bearer", "envVar": "CLARITTY_CALENDLY_MCP_TOKEN" },
+  "providedTools": [
+    { "id": "calendly.list_events", "description": "List upcoming scheduled events.", "input": {}, "output": { "events": { "type": "array", "required": true } } },
+    { "id": "calendly.cancel_event", "description": "Cancel a scheduled event.", "input": { "event_id": { "type": "string", "required": true } }, "output": { "ok": { "type": "boolean", "required": true } } }
+  ]
+}

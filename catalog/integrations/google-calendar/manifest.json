@@ -1,0 +1,23 @@
+{
+  "id": "google-calendar",
+  "kind": "integration",
+  "category": "calendar",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Google Calendar",
+  "vendor": "Google",
+  "description": "Read events, create events, and check free/busy time on the user's Google Calendar.",
+  "intentHints": ["what's on my calendar", "schedule a meeting", "find a time"],
+  "authType": "oauth2",
+  "oauthConfig": {
+    "authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+    "tokenUrl": "https://oauth2.googleapis.com/token",
+    "scopes": ["https://www.googleapis.com/auth/calendar.events"],
+    "clientIdSecretRef": "secretsmanager:claritty/integrations/google-calendar/client"
+  },
+  "providedTools": [
+    { "id": "gcal.list_events", "description": "List events between two dates.", "input": { "from": { "type": "string", "required": true }, "to": { "type": "string", "required": true } }, "output": { "events": { "type": "array", "required": true } } },
+    { "id": "gcal.create_event", "description": "Create an event.", "input": { "summary": { "type": "string", "required": true }, "start": { "type": "string", "required": true }, "end": { "type": "string", "required": true } }, "output": { "event_id": { "type": "string", "required": true } } },
+    { "id": "gcal.find_freebusy", "description": "Find free time across attendees.", "input": { "attendees": { "type": "array", "required": true }, "from": { "type": "string", "required": true }, "to": { "type": "string", "required": true } }, "output": { "free": { "type": "array", "required": true } } }
+  ]
+}

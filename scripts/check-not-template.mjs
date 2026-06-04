@@ -142,6 +142,53 @@ if (!String(core.definition_of_done || '').trim()) {
     'Write one concrete end-to-end success sentence — the bar for "done".');
 }
 
+// (d) Design tells — make it look designed, not generated. Advisory for now
+// (promote to fail() once tuned). Mirrors the platform's designLintCheck.
+const walkTsx = (rel) => {
+  const out = [];
+  const recur = (r) => {
+    let entries;
+    try { entries = readdirSync(join(ROOT, r), { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const child = `${r}/${e.name}`;
+      if (e.isDirectory()) recur(child);
+      else if (e.name.endsWith('.tsx')) out.push(child);
+    }
+  };
+  recur(rel);
+  return out;
+};
+const SATURATED = 'red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose';
+const paletteRe = new RegExp(`\\b(?:bg|text|border|ring|from|via|to)-(?:${SATURATED})-\\d{2,3}\\b`);
+const hexRe = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/;
+let hexHits = 0, paletteHits = 0, gradientHits = 0;
+const hexFiles = new Set(), paletteFiles = new Set(), gradientFiles = new Set();
+for (const rel of walkTsx('frontend/src')) {
+  const content = read(rel) || '';
+  for (const ln of content.split('\n')) {
+    if (hexRe.test(ln) && !/url\(#|href=["']#/.test(ln)) { hexHits++; hexFiles.add(rel); }
+    if (paletteRe.test(ln)) { paletteHits++; paletteFiles.add(rel); }
+    if (/\bvia-[a-z]/.test(ln) || /bg-gradient-to-[trbl]+\b/.test(ln)) { gradientHits++; gradientFiles.add(rel); }
+  }
+}
+if (hexHits) {
+  warn(`Hardcoded hex color${hexHits === 1 ? '' : 's'} in ${[...hexFiles].join(', ')} fight the per-app theme.`,
+    'Use theme tokens (text-accent / bg-accent / bg-card / text-foreground / text-muted-foreground / border) instead of raw hex.');
+}
+if (paletteHits) {
+  warn(`Fixed-palette Tailwind color${paletteHits === 1 ? '' : 's'} (e.g. bg-indigo-500) in ${[...paletteFiles].join(', ')} make every app look the same.`,
+    'Use the accent/foreground/card theme tokens; reserve the accent for the ONE primary action + key status.');
+}
+if (gradientHits) {
+  warn(`Multi-stop / rainbow gradient${gradientHits === 1 ? '' : 's'} in ${[...gradientFiles].join(', ')}.`,
+    'At most one restrained accent — let type + spacing carry the design (no from-…-via-…-to-…, no gradient text).');
+}
+const widgetTsx = read('frontend/src/components/Widget.tsx') || '';
+if (/\berror\b/i.test(widgetTsx) && /text-muted-foreground/.test(widgetTsx) && !/text-foreground/.test(widgetTsx)) {
+  warn('The widget error/empty state uses only text-muted-foreground on the glass surface (~2:1 contrast — invisible).',
+    'Render the headline with text-foreground and a themed <WidgetButton> Retry — not muted text or a hardcoded-color button.');
+}
+
 function printWarnings() {
   if (!warnings.length) return;
   console.error('\n⚠ Advisory (non-blocking) — completeness checks:');

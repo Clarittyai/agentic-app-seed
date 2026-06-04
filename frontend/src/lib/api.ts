@@ -15,20 +15,39 @@ const api = axios.create({
   },
 });
 
+// The Claritty platform embeds this app (and its widgets) in an iframe and puts
+// the trusted edge admission token on the URL as `?claritty_token=<jwt>`. The
+// backend's `require_user` verifies that token against the edge secret — a
+// `Bearer test-user` fallback is rejected (401), which is what made every widget
+// show its error state. Capture the token once at module load (it can be dropped
+// from the URL later by client-side routing) so every request can present it.
+const edgeToken = new URLSearchParams(window.location.search).get(
+  'claritty_token',
+);
+
 // Add authentication headers to requests
 api.interceptors.request.use((config) => {
-  // Authentication priority:
-  // 1. X-User-ID header (Clarity platform marketplace - production)
-  // 2. Bearer token (development / direct access)
+  // Priority 1: the platform edge token (production / embedded iframe). This is
+  // the trusted identity the backend verifies; never fall back to a default when
+  // it is present.
+  if (edgeToken) {
+    config.headers.Authorization = `Bearer ${edgeToken}`;
+    return config;
+  }
 
-  // Priority 1: X-User-ID for marketplace integration
+  // Priority 2: X-User-ID for marketplace integration (when set by the host).
   const userId = localStorage.getItem('user_id');
   if (userId) {
     config.headers['X-User-ID'] = userId;
   }
 
-  // Priority 2: Bearer token for development
-  const token = localStorage.getItem('auth_token') || 'test-user';
+  // Priority 3: a stored auth token, or — ONLY in local dev — the `test-user`
+  // convenience identity so `docker compose up` works without the platform.
+  // In production we send NO default Authorization: a real 401 is correct and
+  // safe, where `test-user` would silently merge every user's data.
+  const token =
+    localStorage.getItem('auth_token') ||
+    (import.meta.env.DEV ? 'test-user' : null);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

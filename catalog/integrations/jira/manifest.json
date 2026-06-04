@@ -1,0 +1,23 @@
+{
+  "id": "jira",
+  "kind": "integration",
+  "category": "productivity",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Jira",
+  "vendor": "Atlassian",
+  "description": "Create and transition issues in Jira via the Atlassian OAuth.",
+  "intentHints": ["create a jira ticket", "transition an issue", "jql search"],
+  "authType": "oauth2",
+  "oauthConfig": {
+    "authorizeUrl": "https://auth.atlassian.com/authorize",
+    "tokenUrl": "https://auth.atlassian.com/oauth/token",
+    "scopes": ["read:jira-work", "write:jira-work", "offline_access"],
+    "clientIdSecretRef": "secretsmanager:claritty/integrations/jira/client"
+  },
+  "providedTools": [
+    { "id": "jira.create_issue", "description": "Create an issue.", "input": { "project_key": { "type": "string", "required": true }, "summary": { "type": "string", "required": true }, "issue_type": { "type": "string", "required": false } }, "output": { "issue_key": { "type": "string", "required": true } } },
+    { "id": "jira.search_jql", "description": "Search via JQL.", "input": { "jql": { "type": "string", "required": true } }, "output": { "issues": { "type": "array", "required": true } } },
+    { "id": "jira.transition", "description": "Transition an issue's status.", "input": { "issue_key": { "type": "string", "required": true }, "transition_name": { "type": "string", "required": true } }, "output": { "ok": { "type": "boolean", "required": true } } }
+  ]
+}

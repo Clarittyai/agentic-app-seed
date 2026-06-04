@@ -1,0 +1,49 @@
+{
+  "id": "linkedin",
+  "kind": "integration",
+  "category": "social",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "LinkedIn",
+  "vendor": "LinkedIn",
+  "description": "Read the authenticated user's LinkedIn feed and post updates.",
+  "intentHints": [
+    "summarize my linkedin feed",
+    "post a daily linkedin digest",
+    "monitor linkedin notifications",
+    "read what's happening on linkedin"
+  ],
+  "authType": "oauth2",
+  "oauthConfig": {
+    "authorizeUrl": "https://www.linkedin.com/oauth/v2/authorization",
+    "tokenUrl": "https://www.linkedin.com/oauth/v2/accessToken",
+    "scopes": ["r_liteprofile", "r_member_social", "w_member_social"],
+    "clientIdSecretRef": "secretsmanager:claritty/integrations/linkedin/client",
+    "_comment": "Real client_id/secret live in AWS Secrets Manager — Phase 3 wires the actual lookup."
+  },
+  "providedTools": [
+    {
+      "id": "linkedin.fetch_posts",
+      "description": "Fetch the most recent N posts from the authenticated user's home feed.",
+      "input": {
+        "limit": { "type": "integer", "required": false, "default": 20 },
+        "since": { "type": "string", "required": false }
+      },
+      "output": {
+        "posts": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "linkedin.create_post",
+      "description": "Publish a post to the user's LinkedIn feed.",
+      "input": {
+        "text": { "type": "string", "required": true }
+      },
+      "output": {
+        "post_id": { "type": "string", "required": true }
+      }
+    }
+  ],
+  "providedWebhooks": [],
+  "setupGuide": "https://docs.claritty.ai/integrations/linkedin"
+}
