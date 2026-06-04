@@ -1,35 +1,50 @@
 /**
  * GOLDEN REFERENCE — not built, not imported (lives outside src/, suffix
  * `.golden.tsx` so tsc/vite ignore it). It shows the BAR for a generated
- * `frontend/src/pages/Dashboard.tsx`: match this hierarchy, spacing, state
- * handling, and restraint — then ADAPT the domain/content to the real app.
- * Do NOT copy this content.
+ * `frontend/src/pages/Dashboard.tsx`: COMPOSE THE KIT (`@clarittyai/app-ui`),
+ * don't hand-roll raw <div>s. Adapt the domain/content to the real app — do
+ * NOT copy this content.
  *
- * Why it's good:
- *  - ONE strong header stating the app's purpose (real {appName}, one-line value
- *    prop) — no "Welcome to…", no hero blob, no decorative icon glued to the h1.
- *  - Opens on the real work (the queue), not a marketing pitch. Exactly ONE
- *    primary action; everything else is quiet/secondary.
- *  - Theme TOKENS only (text-foreground / text-muted-foreground / text-accent /
- *    bg-card / border) — zero hardcoded hex, full dark-mode parity.
- *  - 8pt rhythm, constrained reading width, mobile-first (single column →
- *    grid at md). All three states handled: skeleton, friendly empty, inline
- *    error with retry — never a blank screen or a raw spinner.
- *  - lucide icons only where they aid scanning (buttons/rows), sentence case,
- *    concise domain copy.
+ * Why it's good — the kit bakes the discipline in, so you can't get it wrong:
+ *  - `AppShell` owns the background + one centered, constrained column.
+ *  - `PageHeader` states the purpose with ONE primary action (single `action`
+ *    slot — structurally one primary per view), no hero pitch.
+ *  - `Section` gives consistent rhythm; `List`/`Row`, `Card`, `Stat` are the
+ *    content primitives. Token-only color (no hex), dark-mode parity, ≥44px
+ *    targets, 8pt spacing — all from the kit.
+ *  - All three states are first-class: `SkeletonCards` (loading), `EmptyState`
+ *    (short line + the primary action), `ErrorState` (high-contrast + retry).
+ *
+ * Domain here is a neutral fictional "reading queue" so it reads as reference.
  */
 import { useEffect, useState } from 'react';
-import { Plus, BookOpen, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
+import {
+  AppShell,
+  PageHeader,
+  Section,
+  Stat,
+  Button,
+  List,
+  Row,
+  Badge,
+  EmptyState,
+  ErrorState,
+  SkeletonCards,
+} from '@clarittyai/app-ui';
 import { appName } from '@/lib/app-meta';
-import { getQueue, addItem, type QueueItem } from '@/lib/api';
+import { getQueue, getStats, addItem, type QueueItem, type Stats } from '@/lib/api';
 
 export default function Dashboard() {
   const [items, setItems] = useState<QueueItem[] | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      setItems(await getQueue());
+      const [q, s] = await Promise.all([getQueue(), getStats()]);
+      setItems(q);
+      setStats(s);
       setError(null);
     } catch {
       setError('Could not load your queue');
@@ -41,69 +56,60 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
-      {/* Header — purpose, not a pitch. One primary action. */}
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{appName}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Everything you saved to read, in one calm queue.</p>
-        </div>
-        <button
-          onClick={() => void addItem().then(load)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground transition-all active:scale-95"
-        >
-          <Plus className="h-4 w-4" />
-          Add link
-        </button>
-      </header>
+    <AppShell>
+      <PageHeader
+        title={appName}
+        description="Everything you saved to read, in one calm queue."
+        action={
+          <Button icon={<Plus className="h-4 w-4" />} onClick={() => void addItem().then(load)}>
+            Add link
+          </Button>
+        }
+      />
 
-      {/* Error — inline, legible, retryable. */}
-      {error && (
-        <div className="mb-6 flex items-center justify-between rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
-          <p className="text-sm font-medium text-foreground">{error}</p>
-          <button onClick={() => void load()} className="inline-flex items-center gap-1.5 text-sm font-medium text-accent">
-            <RefreshCw className="h-4 w-4" />
-            Retry
-          </button>
-        </div>
-      )}
+      {error ? (
+        <ErrorState
+          title={error}
+          action={
+            <Button variant="secondary" icon={<RefreshCw className="h-4 w-4" />} onClick={() => void load()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : items === null ? (
+        <SkeletonCards count={4} />
+      ) : (
+        <>
+          <Section title="This week">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Stat label="To read" value={stats?.unread ?? 0} />
+              <Stat label="Read" value={stats?.read ?? 0} delta={`${stats?.readToday ?? 0} today`} deltaTone="success" />
+              <Stat label="Added" value={stats?.addedToday ?? 0} delta="today" />
+            </div>
+          </Section>
 
-      {/* Loading — skeleton, not a spinner. */}
-      {items === null && !error && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />
-          ))}
-        </div>
+          <Section title="Up next">
+            {items.length === 0 ? (
+              <EmptyState
+                title="Nothing in your queue yet"
+                description="Save a link and it'll show up here, ready to read."
+                action={<Button onClick={() => void addItem().then(load)}>Add your first link</Button>}
+              />
+            ) : (
+              <List>
+                {items.map((it) => (
+                  <Row
+                    key={it.id}
+                    title={it.title}
+                    subtitle={it.source}
+                    trailing={<Badge tone={it.read ? 'neutral' : 'accent'}>{it.read ? 'Read' : 'New'}</Badge>}
+                  />
+                ))}
+              </List>
+            )}
+          </Section>
+        </>
       )}
-
-      {/* Empty — short line + the primary action, centered. */}
-      {items?.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card py-16 text-center">
-          <BookOpen className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Nothing in your queue yet.</p>
-          <button
-            onClick={() => void addItem().then(load)}
-            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground transition-all active:scale-95"
-          >
-            <Plus className="h-4 w-4" />
-            Add your first link
-          </button>
-        </div>
-      )}
-
-      {/* Content — left-aligned cards, quiet metadata. */}
-      {items && items.length > 0 && (
-        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {items.map((it) => (
-            <li key={it.id} className="rounded-2xl border border-border bg-card p-4">
-              <p className="truncate text-sm font-semibold text-foreground">{it.title}</p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">{it.source}</p>
-              <p className="mt-3 text-xs text-muted-foreground">added {it.added_at}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    </AppShell>
   );
 }
