@@ -113,30 +113,6 @@
     @apply text-accent font-bold;
   }
 
-  .text-gradient-purple {
-    @apply text-purple font-bold;
-  }
-
-  .text-gradient-orange {
-    @apply text-orange font-bold;
-  }
-
-  .text-gradient-pink {
-    @apply text-pink font-bold;
-  }
-
-  .text-gradient-teal {
-    @apply text-teal font-bold;
-  }
-
-  .text-gradient-green {
-    @apply text-green font-bold;
-  }
-
-  .text-gradient-yellow {
-    @apply text-yellow font-bold;
-  }
-
   /* Section Containers - Apple Generous Spacing */
   .section-container {
     @apply max-w-6xl mx-auto px-5 py-12 sm:px-6 sm:py-20 md:px-8 md:py-24 lg:px-12 lg:py-32 xl:py-36;

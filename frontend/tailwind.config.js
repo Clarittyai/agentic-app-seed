@@ -55,90 +55,11 @@ export default {
           900: '#312E81',
           foreground: '#FFFFFF',
         },
-        // Vibrant Orange - Energy & Creativity
-        orange: {
-          DEFAULT: '#FF9500',
-          50: '#FFF7ED',
-          100: '#FFEDD5',
-          200: '#FED7AA',
-          300: '#FDBA74',
-          400: '#FB923C',
-          500: '#FF9500',
-          600: '#EA580C',
-          700: '#C2410C',
-          800: '#9A3412',
-          900: '#7C2D12',
-        },
-        // Vibrant Purple - Innovation & Magic
-        purple: {
-          DEFAULT: '#AF52DE',
-          50: '#FAF5FF',
-          100: '#F3E8FF',
-          200: '#E9D5FF',
-          300: '#D8B4FE',
-          400: '#C084FC',
-          500: '#AF52DE',
-          600: '#9333EA',
-          700: '#7E22CE',
-          800: '#6B21A8',
-          900: '#581C87',
-        },
-        // Vibrant Green - Success & Growth
-        green: {
-          DEFAULT: '#34C759',
-          50: '#F0FDF4',
-          100: '#DCFCE7',
-          200: '#BBF7D0',
-          300: '#86EFAC',
-          400: '#4ADE80',
-          500: '#34C759',
-          600: '#16A34A',
-          700: '#15803D',
-          800: '#166534',
-          900: '#14532D',
-        },
-        // Vibrant Pink - Excitement & Passion
-        pink: {
-          DEFAULT: '#FF69B4',
-          50: '#FFF5F7',
-          100: '#FFE4EC',
-          200: '#FFC9DE',
-          300: '#FFA3CA',
-          400: '#FF7BB8',
-          500: '#FF69B4',
-          600: '#FF1493',
-          700: '#E6007A',
-          800: '#B8005F',
-          900: '#8A0047',
-        },
-        // Vibrant Teal/Cyan - Modern & Fresh
-        teal: {
-          DEFAULT: '#5AC8FA',
-          50: '#F0FDFA',
-          100: '#CCFBF1',
-          200: '#99F6E4',
-          300: '#5EEAD4',
-          400: '#2DD4BF',
-          500: '#5AC8FA',
-          600: '#0D9488',
-          700: '#0F766E',
-          800: '#115E59',
-          900: '#134E4A',
-        },
-        // Sunny Yellow - Brightness & Energy
-        yellow: {
-          DEFAULT: '#FFD60A',
-          50: '#FFFBEB',
-          100: '#FFF3C4',
-          200: '#FFE58F',
-          300: '#FFD60A',
-          400: '#FFC107',
-          500: '#FFB300',
-          600: '#FFA000',
-          700: '#FF8F00',
-          800: '#FF6F00',
-          900: '#E65100',
-        },
+        // TOKEN LOCKDOWN: the saturated brand-conflicting ramps
+        // (orange/purple/green/pink/teal/yellow) were removed so a generated
+        // app can't reach for an off-theme accent — color comes ONLY from the
+        // app's own theme tokens (accent/primary + the semantic slots below)
+        // and the default neutral ramp. Status uses success/warning/destructive.
         // Existing shadcn/ui colors (kept for compatibility)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -178,7 +99,7 @@ export default {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'gradient-mesh': 'radial-gradient(at 40% 20%, hsla(240,100%,70%,0.15) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(190,100%,75%,0.15) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(330,100%,75%,0.12) 0px, transparent 50%), radial-gradient(at 100% 100%, hsla(30,100%,65%,0.1) 0px, transparent 50%)',
+        // 'gradient-mesh' (multi-stop rainbow) removed by the style lockdown.
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -194,22 +115,14 @@ export default {
         'lift-lg': '0 20px 60px -15px rgba(0, 0, 0, 0.15)',
       },
       animation: {
-        'float': 'float 6s ease-in-out infinite',
-        'glow': 'glow 2s ease-in-out infinite alternate',
+        // Subtle entrance motion only. The looping `float`/`glow` (decorative
+        // "AI tell") were removed as part of the token/style lockdown.
         'slide-up': 'slideUp 0.5s ease-out',
         'slide-down': 'slideDown 0.5s ease-out',
         'fade-in': 'fadeIn 0.5s ease-out',
         'scale-in': 'scaleIn 0.5s ease-out',
       },
       keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-20px)' },
-        },
-        glow: {
-          '0%': { opacity: '0.5', filter: 'blur(20px)' },
-          '100%': { opacity: '1', filter: 'blur(30px)' },
-        },
         slideUp: {
           '0%': { transform: 'translateY(20px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },

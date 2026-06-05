@@ -1,132 +1,73 @@
-import { TerminalSquare, FileCode2, Rocket, ArrowRight } from 'lucide-react';
-import AgentGraph from '@/components/AgentGraph';
-import HowItWorks from '@/components/HowItWorks';
-import WidgetGallery from '@/components/WidgetGallery';
+import { ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  PageHeader,
+  Section,
+  Card,
+  CardContent,
+  Button,
+  EmptyState,
+} from '@clarittyai/app-ui';
+import { appName } from '@/lib/app-meta';
 
 /**
- * Template showcase — the un-customized landing for a Claritty app, modeled on
- * `create-react-app` / `ng new`: it explains how Claritty apps work and shows
- * THIS app's live agent graph. Generation replaces this page with the app's
- * real UI, so it never ships to a finished app. (The Task example that used to
- * live here moved out; the widget below is kept as a working demo.)
+ * The app's landing page. Built from the @clarittyai/app-ui kit (PageHeader,
+ * Section, Card, Button, EmptyState) — token-only, dark-mode-ready, one primary
+ * action. Renders inside <Layout> (which owns the header + background).
+ *
+ * This is the STARTER landing: generation replaces it with the app's real home
+ * screen (the work/data the user came for) — see IDENTITY.md.
  */
-
-const STEPS = [
-  {
-    icon: TerminalSquare,
-    title: 'Open in Claude Code or Cursor',
-    body: 'Clone the repo and open it in Claude Code or Cursor. Point your AI coding agent at the folder and describe what you want the app to do.',
-  },
-  {
-    icon: FileCode2,
-    title: 'Edit the building blocks',
-    body: 'Agents → backend/agents/ · workflows → backend/workflows/ · triggers → backend/triggers/ · the widget → frontend/src/components/Widget.tsx. Ask Claude Code or Cursor to change them.',
-  },
-  {
-    icon: Rocket,
-    title: 'Run & ship',
-    body: 'Run docker compose up (or npm run dev) to preview locally. Push and Claritty redeploys to your app’s URL — widget and triggers come along automatically.',
-  },
-];
-
 export default function Dashboard() {
   return (
-    <div className="mx-auto max-w-5xl space-y-16 sm:space-y-20">
-      {/* Hero */}
-      <section className="text-center">
-        <img
-          src="/claritty-logo.png"
-          alt="Claritty"
-          className="mx-auto mb-5 h-12 w-12 object-contain sm:h-14 sm:w-14"
-        />
-        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Claritty Template
-        </p>
-        <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-          A Claritty app, working <span className="text-accent">end to end</span>.
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Agents, a workflow, a daily trigger, and a dashboard widget — already wired together and
-          running below. Open it in Claude Code or Cursor, change what you want, and ship.
-        </p>
-      </section>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
+      <PageHeader
+        title={appName}
+        description="Your starter app. Replace this page with the real work your users came for."
+        action={
+          <Button icon={<Sparkles className="h-4 w-4" />}>Get started</Button>
+        }
+      />
 
-      {/* Live agent graph + runner */}
-      <section className="space-y-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Live — this app right now
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-            The real agents and triggers your backend is serving. Run one and watch it work.
-          </p>
-        </div>
-        <AgentGraph />
-      </section>
-
-      {/* How Claritty apps work */}
-      <section className="space-y-5">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            How Claritty apps work
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-            Five building blocks. Each maps to a file you can edit.
-          </p>
-        </div>
-        <HowItWorks />
-      </section>
-
-      {/* Getting started */}
-      <section className="space-y-5">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Get started
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <div
-                key={s.title}
-                className="relative flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm"
+      <Section title="Build your app">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Card>
+            <CardContent className="pt-5">
+              <h3 className="text-sm font-semibold text-foreground">
+                Compose from the kit
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Use <code className="text-foreground">@clarittyai/app-ui</code>{' '}
+                primitives (PageHeader, Section, Card, Stat, List, EmptyState,
+                ErrorState) so every screen stays on-brand and handles its states.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-5">
+              <h3 className="text-sm font-semibold text-foreground">Wire your data</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Add backend agents, workflows, and triggers; surface a glance in
+                the widget. Then route this page to your real home screen.
+              </p>
+              <Link
+                to="/tasks"
+                className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-accent"
               >
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Step {i + 1}
-                  </span>
-                </div>
-                <h3 className="text-base font-semibold text-foreground">{s.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-                {i < STEPS.length - 1 && (
-                  <ArrowRight className="absolute -right-3 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-border sm:block" />
-                )}
-              </div>
-            );
-          })}
+                See the example <ArrowRight className="h-4 w-4" />
+              </Link>
+            </CardContent>
+          </Card>
         </div>
-      </section>
+      </Section>
 
-      {/* Widget demo — all three sizes, embedded as the platform embeds them */}
-      <section className="space-y-5">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            The dashboard widget
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-            How this app appears at a glance on the Claritty dashboard, at all three sizes. Defined in{' '}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-              frontend/src/components/Widget.tsx
-            </code>
-            .
-          </p>
-        </div>
-        <WidgetGallery />
-      </section>
+      <Section title="Your home screen">
+        <EmptyState
+          title="Nothing here yet"
+          description="This is where your app's primary content will live once you build it."
+          action={<Button variant="secondary">Open the example</Button>}
+        />
+      </Section>
     </div>
   );
 }
