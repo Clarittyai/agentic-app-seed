@@ -25,11 +25,16 @@
     --ring: 227 100% 68%;
     --radius: 0.5rem;
 
-    /* Brand tokens (HSL channels). Default = Claritty indigo #5B7FFF; each
-       generated app may override these in src/theme.css for a unique look. */
+    /* Brand tokens (HSL channels). Default = Claritty royal blue #2957FF; each
+       generated app may override these in src/theme.css for a unique look.
+       NOTE: the accent must stay dark enough that WHITE text on it AND the
+       accent ON white both clear WCAG AA (4.5:1) — the kit's primary Button is
+       white-on-accent, and active nav/links are accent-on-white. #5B7FFF (the
+       old default, L 68%) only reached 3.54:1 and failed the G5 rendered audit;
+       L≈58% gives ~5.4:1. Keep L ≲ 60% when re-theming. */
     --brand-primary: 222 47% 11%;
-    --brand-accent: 227 100% 68%;     /* #5B7FFF */
-    --brand-accent-600: 244 76% 59%;
+    --brand-accent: 227 100% 58%;     /* #2957FF — white-on-accent ≈ 5.4:1 (AA) */
+    --brand-accent-600: 230 88% 50%;  /* darker hover/active shade */
     --brand-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
   }
 

@@ -5,6 +5,14 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * See https://playwright.dev/docs/test-configuration
  */
+/**
+ * Target URL. Defaults to the local dev server (:3200), which Playwright boots
+ * via `webServer` below. Set AUDIT_BASE_URL to point the design audit at an
+ * already-running server or a deployed preview (then Playwright won't try to
+ * boot its own — useful in CI and when :3200 is taken by `docker compose`).
+ */
+const BASE_URL = process.env.AUDIT_BASE_URL || 'http://localhost:3200';
+
 export default defineConfig({
   testDir: './tests',
 
@@ -26,7 +34,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: 'http://localhost:3200',
+    baseURL: BASE_URL,
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -63,11 +71,14 @@ export default defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3200',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  /* Boot the local dev server before the tests — unless AUDIT_BASE_URL points
+   * at an already-running server / deployed preview. */
+  webServer: process.env.AUDIT_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:3200',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      },
 });

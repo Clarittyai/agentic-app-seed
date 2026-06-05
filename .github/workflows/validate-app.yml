@@ -154,6 +154,16 @@ jobs:
           npm run type-check
         continue-on-error: true
 
+      # G5 — rendered design audit. Boots the app (Playwright webServer) and
+      # checks the live DOM/CSS: WCAG AA contrast, ≥32px tap targets, no
+      # horizontal overflow. HARD findings (invisible text, untappable controls,
+      # mobile overflow) fail the build; accent-text dips + spacing are advisory.
+      - name: Design audit (rendered)
+        run: |
+          cd frontend
+          npx playwright install --with-deps chromium
+          npm run check:design
+
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest

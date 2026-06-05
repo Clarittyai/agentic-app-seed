@@ -16,7 +16,8 @@
     "test:visual": "playwright test tests/widget-constraints.spec.ts",
     "test:visual:headed": "playwright test tests/widget-constraints.spec.ts --headed",
     "test:visual:debug": "playwright test tests/widget-constraints.spec.ts --debug",
-    "test:all": "npm run check:identity && npm run validate:widgets && npm run test:widgets && npm run test:visual"
+    "check:design": "playwright test tests/page-design.spec.ts --project=chromium",
+    "test:all": "npm run check:identity && npm run validate:widgets && npm run test:widgets && npm run test:visual && npm run check:design"
   },
   "dependencies": {
     "@clarittyai/app-ui": "^0.1.0",

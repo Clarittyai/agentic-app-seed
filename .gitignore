@@ -127,3 +127,8 @@ dmypy.json
 # (docker compose build in CI + local dev). It's the platform-generated
 # template; at deploy the platform reuses it (DockerfileGenerator detects an
 # existing Dockerfile) or regenerates with forceRegenerate.
+
+# Playwright (rendered design audit) artifacts
+frontend/test-results/
+frontend/playwright-report/
+frontend/.last-run.json
