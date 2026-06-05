@@ -6,7 +6,57 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''; // Use relative URLs for production (proxied by Nginx)
+/**
+ * Where API requests go depends on HOW the app is being served:
+ *
+ *  - PREVIEW (during/just-after generation): the platform serves this app
+ *    through the clarity-api proxy at `…/api/proxy/app/<userId>/<appId>/`. The
+ *    proxy authenticates the platform user and WRAPS every forwarded request
+ *    with the trusted identity (X-User-Id + X-Claritty-Auth). So our requests
+ *    MUST go through the proxy's backend path `…/api/proxy/api/<userId>/<appId>`
+ *    — a root-relative `/api/...` would escape to the platform root and 401.
+ *
+ *  - DEPLOYED (CloudFront + Lambda@Edge): served same-origin on
+ *    `<appId>.apps.claritty.ai` with `?claritty_token=<jwt>`; the edge wraps the
+ *    request after verifying that token. Base is same-origin; we attach the token.
+ *
+ * Resolved ONCE and cached in sessionStorage so client-side routing / a refresh
+ * on a sub-route (which can drop the URL prefix or the `?claritty_token`) never
+ * loses the wrapping context.
+ */
+export function resolveProxyApiBase(pathname: string): string | null {
+  // `…/api/proxy/app/<userId>/<appId>` → `…/api/proxy/api/<userId>/<appId>`
+  const m = pathname.match(/^(.*\/api\/proxy)\/app\/([^/]+)\/([^/]+)(?=\/|$)/);
+  return m ? `${m[1]}/api/${m[2]}/${m[3]}` : null;
+}
+
+function persisted(key: string, value: string | null): string | null {
+  try {
+    if (value) {
+      sessionStorage.setItem(key, value);
+      return value;
+    }
+    return sessionStorage.getItem(key);
+  } catch {
+    return value; // sessionStorage unavailable (rare) — fall back to the live value
+  }
+}
+
+// Preview proxy base (if served through the proxy) — sticky across routing.
+const proxyApiBase = persisted(
+  'claritty_api_base',
+  resolveProxyApiBase(window.location.pathname),
+);
+
+// Deployed edge token — sticky across routing (was previously a one-shot read
+// of window.location.search, lost the moment routing dropped the query param).
+const edgeToken = persisted(
+  'claritty_token',
+  new URLSearchParams(window.location.search).get('claritty_token'),
+);
+
+const API_BASE_URL =
+  proxyApiBase ?? (import.meta.env.VITE_API_URL || ''); // proxy path, or same-origin
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,36 +65,32 @@ const api = axios.create({
   },
 });
 
-// The Claritty platform embeds this app (and its widgets) in an iframe and puts
-// the trusted edge admission token on the URL as `?claritty_token=<jwt>`. The
-// backend's `require_user` verifies that token against the edge secret — a
-// `Bearer test-user` fallback is rejected (401), which is what made every widget
-// show its error state. Capture the token once at module load (it can be dropped
-// from the URL later by client-side routing) so every request can present it.
-const edgeToken = new URLSearchParams(window.location.search).get(
-  'claritty_token',
-);
-
-// Add authentication headers to requests
+// Add authentication to requests.
 api.interceptors.request.use((config) => {
-  // Priority 1: the platform edge token (production / embedded iframe). This is
-  // the trusted identity the backend verifies; never fall back to a default when
-  // it is present.
+  // PREVIEW: the proxy wraps the request with the trusted identity server-side,
+  // so we attach NO token — sending one would be ignored, and the proxy is the
+  // source of truth for "the right user".
+  if (proxyApiBase) {
+    return config;
+  }
+
+  // DEPLOYED: present the platform edge token; the edge verifies + injects the
+  // identity. Never fall back to a default when it's present.
   if (edgeToken) {
     config.headers.Authorization = `Bearer ${edgeToken}`;
     return config;
   }
 
-  // Priority 2: X-User-ID for marketplace integration (when set by the host).
+  // Marketplace / host-set identity fallback.
   const userId = localStorage.getItem('user_id');
   if (userId) {
     config.headers['X-User-ID'] = userId;
   }
 
-  // Priority 3: a stored auth token, or — ONLY in local dev — the `test-user`
-  // convenience identity so `docker compose up` works without the platform.
-  // In production we send NO default Authorization: a real 401 is correct and
-  // safe, where `test-user` would silently merge every user's data.
+  // A stored auth token, or — ONLY in local dev — the `test-user` convenience
+  // identity so `docker compose up` works without the platform. In production we
+  // send NO default Authorization: a real 401 is correct and safe, where
+  // `test-user` would silently merge every user's data.
   const token =
     localStorage.getItem('auth_token') ||
     (import.meta.env.DEV ? 'test-user' : null);
