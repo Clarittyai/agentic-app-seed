@@ -10,13 +10,15 @@ is a self-contained "Tasks" example — replace it for your app, but ALWAYS keep
 a `GET /api/widget` that returns the data your frontend Widget renders.
 
 Conventions:
-- Multi-tenancy: read the caller via the `X-User-ID` header (fallback "test-user")
-  and filter EVERY query by it.
+- Multi-tenancy: get the caller with `user_id: str = Depends(require_user)`
+  (from backend.security) — the edge-verified identity. NEVER read X-User-ID by
+  hand and NEVER fall back to a shared default like "test-user" (that silently
+  merges every user's data). Filter EVERY query by `user_id`.
 - Query backend.models with SQLAlchemy via the `db` dependency.
 - Return plain dicts/lists (FastAPI serializes to JSON).
 """
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -24,6 +26,7 @@ from datetime import datetime
 import logging
 
 from backend.database import get_db
+from backend.security import require_user
 from backend import models
 
 logger = logging.getLogger(__name__)
@@ -55,10 +58,6 @@ async def prioritize_task(title: str, notes: str = "") -> dict:
     return {"priority": priority, "suggested_action": None}
 
 
-def _resolve_user(x_user_id: Optional[str]) -> str:
-    return x_user_id if x_user_id else "test-user"
-
-
 def _relative_time(dt: Optional[datetime]) -> str:
     if not dt:
         return "no tasks yet"
@@ -88,11 +87,10 @@ class TaskCreate(BaseModel):
 
 @router.get("/api/tasks")
 async def list_tasks(
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    user_id: str = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """List the caller's tasks — open first, then by newest."""
-    user_id = _resolve_user(x_user_id)
     tasks = (
         db.query(models.Task)
         .filter(models.Task.user_id == user_id)
@@ -105,14 +103,13 @@ async def list_tasks(
 @router.post("/api/tasks")
 async def create_task(
     payload: TaskCreate,
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    user_id: str = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """
     Create a task. The prioritize-task agent (Claude, with a safe local
     fallback) sets the priority + a suggested next action at create time.
     """
-    user_id = _resolve_user(x_user_id)
     title = (payload.title or "").strip()
     if not title:
         raise HTTPException(status_code=400, detail="Task title is required")
@@ -136,11 +133,10 @@ async def create_task(
 @router.post("/api/tasks/{task_id}/toggle")
 async def toggle_task(
     task_id: str,
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    user_id: str = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """Toggle a task's done state (owner-scoped)."""
-    user_id = _resolve_user(x_user_id)
     task = (
         db.query(models.Task)
         .filter(models.Task.id == task_id, models.Task.user_id == user_id)
@@ -157,11 +153,10 @@ async def toggle_task(
 @router.delete("/api/tasks/{task_id}")
 async def delete_task(
     task_id: str,
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    user_id: str = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """Delete a task (owner-scoped)."""
-    user_id = _resolve_user(x_user_id)
     task = (
         db.query(models.Task)
         .filter(models.Task.id == task_id, models.Task.user_id == user_id)
@@ -182,15 +177,13 @@ async def delete_task(
 @router.get("/api/widget")
 async def get_widget_data(
     size: str = "large",
-    x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
+    user_id: str = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """
     Widget data endpoint. Returns a summary of the caller's tasks. Supports
     small | medium | large. Replace the body for your app, but keep the route.
     """
-    user_id = _resolve_user(x_user_id)
-
     open_tasks = (
         db.query(models.Task)
         .filter(models.Task.user_id == user_id, models.Task.done == False)  # noqa: E712
