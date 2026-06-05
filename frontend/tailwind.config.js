@@ -53,7 +53,10 @@ export default {
           700: '#4338CA',
           800: '#3730A3',
           900: '#312E81',
-          foreground: '#FFFFFF',
+          // Text/icon ON the accent fill. Theme-driven (CSS var, not static
+          // white) so it flips to a dark tone in dark mode where the accent is
+          // lightened — keeps the kit's primary Button label AA in both themes.
+          foreground: 'hsl(var(--brand-accent-foreground) / <alpha-value>)',
         },
         // TOKEN LOCKDOWN: the saturated brand-conflicting ramps
         // (orange/purple/green/pink/teal/yellow) were removed so a generated

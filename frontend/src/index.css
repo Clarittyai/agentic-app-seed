@@ -35,6 +35,7 @@
     --brand-primary: 222 47% 11%;
     --brand-accent: 227 100% 58%;     /* #2957FF — white-on-accent ≈ 5.4:1 (AA) */
     --brand-accent-600: 230 88% 50%;  /* darker hover/active shade */
+    --brand-accent-foreground: 0 0% 100%; /* text/icon ON the accent fill (white in light mode) */
     --brand-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
   }
 
@@ -56,6 +57,14 @@
     --border: 240 4% 16%;
     --input: 240 4% 16%;
     --ring: 227 100% 68%;
+    /* Brand accent — LIGHTER in dark mode so it reads as text/links on the
+       near-black surface, with a DARK foreground on the accent fill. One accent
+       can't clear WCAG AA as text in both themes (dark-for-light-mode-buttons vs
+       light-for-dark-surfaces), so it flips per theme. Per-app theme.css ships
+       its own .dark block (see renderThemeCss) and overrides these. */
+    --brand-accent: 227 100% 68%;
+    --brand-accent-600: 227 100% 58%;
+    --brand-accent-foreground: 227 45% 12%;
   }
 
   body {
