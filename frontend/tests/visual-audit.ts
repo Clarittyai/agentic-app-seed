@@ -177,7 +177,9 @@ export function isLargeText(fontPx: number, weight: number): boolean {
  * text in BOTH light and dark — graded SOFT so it doesn't dead-end the build.
  */
 export function isSaturatedColor(rgb: RGBA): boolean {
-  return Math.max(rgb[0], rgb[1], rgb[2]) - Math.min(rgb[0], rgb[1], rgb[2]) > 16;
+  return (
+    Math.max(rgb[0], rgb[1], rgb[2]) - Math.min(rgb[0], rgb[1], rgb[2]) > 16
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -209,8 +211,7 @@ export function evaluateAudit(
       ? opts.minContrastLarge
       : opts.minContrast;
     if (ratio >= min) continue;
-    const accentDip =
-      isSaturatedColor(fg) && ratio >= opts.minContrastLarge;
+    const accentDip = isSaturatedColor(fg) && ratio >= opts.minContrastLarge;
     if (accentDip) {
       softN++;
       if (!worstSoft || ratio < worstSoft.ratio)
@@ -307,6 +308,115 @@ export function passesHardAudit(
   options?: AuditOptions,
 ): boolean {
   return !evaluateAudit(snapshot, options).some((f) => f.severity === 'hard');
+}
+
+// ---------------------------------------------------------------------------
+// G6 — rubric scorecard. Turns the deterministic findings + snapshot into a
+// per-criterion score against the versioned DESIGN_RUBRIC, so every kit / prompt
+// / template change is MEASURED (not just pass/fail). The audit covers the
+// objective criteria; `hierarchy` and `coherence` are subjective → left to the
+// vision critic (scored elsewhere), reported here as automated:false / null.
+//
+// RUBRIC_VERSION is duplicated from design-rubric.ts so this stays vendorable
+// into the seed; an engine calibration test asserts the two never drift.
+// ---------------------------------------------------------------------------
+
+export const RUBRIC_VERSION = '1.0.0';
+
+/** Which rubric criterion each deterministic finding key counts against. */
+export const RUBRIC_FINDING_MAP: Record<string, string> = {
+  contrast: 'contrast',
+  'contrast-accent': 'contrast',
+  'touch-target': 'mobile',
+  overflow: 'mobile',
+  'accent-count': 'restraint',
+  'type-scale': 'typography',
+  'spacing-grid': 'spacing',
+};
+
+/** Rubric criteria the deterministic audit can score from a render. */
+export const AUTOMATED_RUBRIC_KEYS = [
+  'contrast',
+  'restraint',
+  'typography',
+  'spacing',
+  'states',
+  'mobile',
+] as const;
+
+export interface RubricCriterionScore {
+  key: string;
+  /** 0 fail / 1 partial / 2 pass; null when not scored automatically. */
+  score: number | null;
+  automated: boolean;
+  findings: string[];
+}
+
+export interface RubricScore {
+  version: string;
+  criteria: RubricCriterionScore[];
+  /** Sum of the automated criterion scores. */
+  automatedScore: number;
+  /** Max possible automated score (2 × automated criteria). */
+  automatedMax: number;
+  /** True iff no automated criterion scored 0 (a hard failure on that axis). */
+  pass: boolean;
+}
+
+const ALL_RUBRIC_KEYS = [
+  'hierarchy',
+  'spacing',
+  'restraint',
+  'typography',
+  'states',
+  'contrast',
+  'coherence',
+  'mobile',
+] as const;
+
+/**
+ * Score a rendered snapshot + its findings against the rubric. A criterion
+ * scores 0 if a HARD finding maps to it, 1 if only SOFT findings do, else 2;
+ * `states` is read from the snapshot's affordance signals. Subjective criteria
+ * (hierarchy/coherence) return null with automated:false.
+ */
+export function scoreAgainstRubric(
+  snapshot: AuditSnapshot,
+  findings: AuditFinding[],
+): RubricScore {
+  const automated = new Set<string>(AUTOMATED_RUBRIC_KEYS);
+  const criteria: RubricCriterionScore[] = ALL_RUBRIC_KEYS.map((key) => {
+    if (!automated.has(key)) {
+      return { key, score: null, automated: false, findings: [] };
+    }
+    if (key === 'states') {
+      const has =
+        snapshot.hasSkeleton ||
+        snapshot.hasEmptyState ||
+        snapshot.hasErrorAffordance;
+      return {
+        key,
+        score: has ? 2 : 1,
+        automated: true,
+        findings: has ? [] : ['No loading/empty/error affordance detected.'],
+      };
+    }
+    const mapped = findings.filter((f) => RUBRIC_FINDING_MAP[f.key] === key);
+    const score = mapped.some((f) => f.severity === 'hard')
+      ? 0
+      : mapped.length
+        ? 1
+        : 2;
+    return { key, score, automated: true, findings: mapped.map((f) => f.message) };
+  });
+  const scored = criteria.filter((c) => c.automated);
+  return {
+    version: RUBRIC_VERSION,
+    criteria,
+    automatedScore: scored.reduce((n, c) => n + (c.score ?? 0), 0),
+    automatedMax: scored.length * 2,
+    pass: !scored.some((c) => c.score === 0),
+  };
 }
 
 // ---------------------------------------------------------------------------

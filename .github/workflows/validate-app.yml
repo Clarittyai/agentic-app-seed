@@ -164,6 +164,22 @@ jobs:
           npx playwright install --with-deps chromium
           npm run check:design
 
+      # G6 — rubric scorecard over the page corpus. Fails only on a hard-zero
+      # criterion; the JSON report is uploaded so kit/template changes can be
+      # tracked against the versioned DESIGN_RUBRIC over time.
+      - name: Design golden-set scorecard
+        run: |
+          cd frontend
+          npm run check:design:score
+
+      - name: Upload design scorecard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-score
+          path: frontend/test-results/design-score.json
+          if-no-files-found: ignore
+
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
