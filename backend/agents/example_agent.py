@@ -15,7 +15,7 @@ tool-use loop and validates the final output against the manifest's
 ``output:`` schema before returning it.
 """
 
-from claritty_sdk import agent, BaseAgent
+from claritty_sdk import agent, AgentContext, BaseAgent
 
 
 @agent(id="example-agent")
@@ -27,3 +27,16 @@ When invoked, you receive `{name: string}`. Call the `app.echo` tool
 with a greeting message, then call `__finish` with
 `{greeting: <the greeting>}`. Do not invent extra fields.
 """
+
+    def fallback(self, ctx: AgentContext) -> dict:
+        """Deterministic, no-AI result used when the LLM proxy is unconfigured.
+
+        The SDK calls this (instead of running the model) when neither
+        CLARITTY_PLATFORM_URL nor CLARITTY_LLM_PROXY_URL/CLARITTY_AUTH_TOKEN is
+        set — the usual local-dev case — so the app still works end-to-end
+        without AI. It MUST return a dict matching the agent's `output:` schema
+        in app.yaml (here `{greeting: string}`). Every generated agent whose work
+        needs the model should ship one of these.
+        """
+        name = (ctx.get_input("name") or "there").strip() or "there"
+        return {"greeting": f"Hello, {name}! 👋"}

@@ -7,15 +7,16 @@ for exactly two things:
 1. **AI** — call models ONLY through the Claritty SDK's LLM proxy
    (`from claritty_sdk.llm import get_llm_client`). NEVER use a raw provider SDK
    or an `ANTHROPIC_API_KEY`. The proxy is reached via `CLARITTY_PLATFORM_URL` +
-   `CLARITTY_AUTH_TOKEN` (set in `.env`); with neither set, agents fall back to a
-   built-in heuristic so the app still runs.
+   `CLARITTY_AUTH_TOKEN` (set in `.env`); with neither set, the SDK calls each
+   agent's `fallback(ctx)` method (a deterministic, no-AI result) so the app still
+   runs locally. Give every agent that needs the model a `fallback(ctx)`.
 2. **Widget UI** — build dashboard widgets with the Claritty UI kit
    `@clarittyai/widget-toolkit` (`WidgetContainer`, `WidgetButton`, `WidgetBadge`).
 
 ## Required env vars (don't delete these — the app needs them)
 - `DATABASE_URL` — Postgres connection (required).
 - `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN` — the LLM proxy (required for
-  real AI; optional locally — heuristic fallback).
+  real AI; optional locally — agents degrade via `fallback(ctx)`).
 
 ## Structure
 - `backend/models.py` — SQLAlchemy models. **Every user-data model has a

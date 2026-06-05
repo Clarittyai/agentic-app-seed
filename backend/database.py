@@ -94,8 +94,9 @@ def seed_example_tasks():
     this is what makes the small/medium/large widget sizes visibly different.
 
     Idempotent: only seeds when the tasks table is completely empty. Seeds for
-    the default user ("test-user", the fallback in routes/app.py:_resolve_user),
-    which is who the widget reads when no X-User-ID header is present.
+    the local identity ("dev-user" — what backend/security.py:require_user returns
+    in local dev, when no Claritty edge is present to stamp a real user), so the
+    template's data shows out of the box when you run it locally.
 
     This is template/example data only — generated apps overwrite the models and
     this layer with their own, so it never leaks into a real app.
@@ -107,7 +108,7 @@ def seed_example_tasks():
         if db.query(models.Task).count() > 0:
             return  # already has data — don't duplicate
 
-        DEMO_USER = "test-user"
+        DEMO_USER = "dev-user"
         # (title, priority, suggested_action, done) — mixed so open_count,
         # top_priority, and done_today are all non-zero.
         samples = [

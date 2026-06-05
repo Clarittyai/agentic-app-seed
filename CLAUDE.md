@@ -195,7 +195,7 @@ backend/
 2. **Environment Variables (required to run — don't delete these)**
    - `DATABASE_URL` - PostgreSQL connection (required)
    - `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN` - the Claritty LLM proxy
-     (required for real AI; unset → agents use the built-in heuristic)
+     (required for real AI; unset → the SDK calls each agent's `fallback(ctx)`, a no-AI result)
    - There is NO `CLARITY_WORKSPACE_ID` — tenancy is the `X-User-ID` header.
 
 3. **User-Provided Variables** (Developer sets in `.env.example`)
@@ -253,7 +253,7 @@ Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `
 **📚 See**: `WIDGETS.md` → "Widget Action Patterns" for the contract, helpers, and examples.
 
 5. **Multi-Tenancy**
-   - Read the caller from the `X-User-ID` header (`_resolve_user` in routes/app.py)
+   - Get the caller with `user_id: str = Depends(require_user)` (from `backend.security`) — the edge-verified identity. NEVER read `X-User-ID` by hand and NEVER fall back to a shared default like `"test-user"` (it silently merges every user's data). Locally `require_user` returns `"dev-user"`.
    - Every user-data model has a `user_id` column; filter EVERY query by it
    - Never query across users (there is no `CLARITY_WORKSPACE_ID`)
 

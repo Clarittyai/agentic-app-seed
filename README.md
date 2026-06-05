@@ -39,7 +39,7 @@ npx create-claritty-app my-awesome-app
 cd my-awesome-app
 # Clones this template, creates .env, and inits a fresh git repo for you.
 # No API keys needed — AI runs through the Claritty platform proxy
-# (and falls back to a built-in heuristic when running locally).
+# (and each agent's fallback(ctx) runs instead when no proxy is set locally).
 ```
 
 > **Claude Code users:** install the plugin instead and run `/claritty:new my-awesome-app`:
@@ -250,7 +250,7 @@ docker compose up --build
 **Required env vars** (set in `.env` — don't delete them):
 - `DATABASE_URL` — Postgres connection
 - `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN` — the Claritty LLM proxy
-  (for real AI; without them, agents fall back to a built-in heuristic)
+  (for real AI; without them, the SDK runs each agent's `fallback(ctx)` — a no-AI result)
 
 To deploy, ship the same image to your host of choice (any container platform) and
 point `DATABASE_URL` at your Postgres. The schema is managed by Alembic migrations
