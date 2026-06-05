@@ -183,6 +183,22 @@ if (gradientHits) {
   warn(`Multi-stop / rainbow gradient${gradientHits === 1 ? '' : 's'} in ${[...gradientFiles].join(', ')}.`,
     'At most one restrained accent — let type + spacing carry the design (no from-…-via-…-to-…, no gradient text).');
 }
+// (e) App-kit usage — full-app pages should COMPOSE @clarittyai/app-ui, not
+// hand-roll raw <button>. Mirrors the platform's appKitUsageCheck (advisory
+// here; HARD in the engine behind DESIGN_HARD_GATE). The widget surface is
+// exempt (it uses @clarittyai/widget-toolkit instead).
+const handRolledPages = [];
+for (const rel of walkTsx('frontend/src/pages')) {
+  if (/WidgetPage\.tsx$/.test(rel)) continue;
+  const content = read(rel) || '';
+  if (/from\s+['"]@clarittyai\/app-ui['"]/.test(content)) continue;
+  if (/<button[\s>]/.test(content)) handRolledPages.push(rel);
+}
+if (handRolledPages.length) {
+  warn(`Page${handRolledPages.length === 1 ? '' : 's'} hand-roll a raw <button> instead of the Claritty app-ui kit (${handRolledPages.join(', ')}).`,
+    "Import from '@clarittyai/app-ui' (Button/Card/PageHeader/Section/Stat/EmptyState/ErrorState…) and compose its primitives — the kit bakes in the spacing, hierarchy, one-primary-action and state discipline.");
+}
+
 const widgetTsx = read('frontend/src/components/Widget.tsx') || '';
 if (/\berror\b/i.test(widgetTsx) && /text-muted-foreground/.test(widgetTsx) && !/text-foreground/.test(widgetTsx)) {
   warn('The widget error/empty state uses only text-muted-foreground on the glass surface (~2:1 contrast — invisible).',
