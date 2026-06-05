@@ -25,13 +25,34 @@ import logging
 
 from backend.database import get_db
 from backend import models
-from backend.agents.example_agent import prioritize_task
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 PRIORITY_RANK = {"urgent": 3, "high": 2, "medium": 1, "low": 0}
+
+
+async def prioritize_task(title: str, notes: str = "") -> dict:
+    """Safe, dependency-free task enrichment used at create time.
+
+    The v1 helper this replaces lived in backend/agents/example_agent.py, which
+    became a v2 manifest-first agent class (no module-level function) — leaving
+    this route importing a symbol that no longer exists and silently failing to
+    register (every /api/* route, incl. the required /api/widget, 404'd). This
+    local fallback keeps the example self-contained and the router always live;
+    a generated app wires real AI prioritization through an agent/workflow.
+    """
+    text = f"{title} {notes}".lower()
+    if any(w in text for w in ("urgent", "asap", "critical", "today", "now")):
+        priority = "urgent"
+    elif any(w in text for w in ("important", "high", "deadline", "soon")):
+        priority = "high"
+    elif any(w in text for w in ("someday", "maybe", "later", "low priority")):
+        priority = "low"
+    else:
+        priority = "medium"
+    return {"priority": priority, "suggested_action": None}
 
 
 def _resolve_user(x_user_id: Optional[str]) -> str:

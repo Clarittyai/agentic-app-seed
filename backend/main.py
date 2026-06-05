@@ -202,27 +202,66 @@ async def get_agent(agent_id: str):
 @app.get("/api/workflows")
 async def list_workflows():
     """
-    List all registered workflows.
+    List all registered workflows. v1 workflows come from WorkflowRegistry;
+    in the manifest-first v2 model workflows are declared in app.yaml (the
+    legacy per-file @workflow registry is empty), so fall back to reading them
+    from app.yaml so the endpoint reflects the app's real workflows.
     """
     workflows = WorkflowRegistry.list_workflows()
-    return {
-        "workflows": [
+    if workflows:
+        return {
+            "workflows": [
+                {
+                    "id": workflow.id,
+                    "name": workflow.name,
+                    "description": workflow.description,
+                    "execution_mode": workflow.execution_mode.value,
+                    "steps": [
+                        {
+                            "agent_id": step.agent_id,
+                            "output_key": step.output_key,
+                        }
+                        for step in workflow.steps
+                    ],
+                }
+                for workflow in workflows
+            ]
+        }
+    return {"workflows": _workflows_from_app_yaml()}
+
+
+def _workflows_from_app_yaml() -> list:
+    """Read v2 workflow declarations from app.yaml (id/name/steps). Best-effort:
+    returns [] if app.yaml is absent or unreadable."""
+    try:
+        import yaml  # FastAPI app already depends on pyyaml via the SDK
+
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app.yaml")
+        if not os.path.isfile(path):
+            path = os.path.join(os.getcwd(), "app.yaml")
+        with open(path, "r", encoding="utf-8") as fh:
+            manifest = yaml.safe_load(fh) or {}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"could not read app.yaml workflows: {exc}")
+        return []
+    out = []
+    for wf in manifest.get("workflows") or []:
+        if not isinstance(wf, dict) or not wf.get("id"):
+            continue
+        out.append(
             {
-                "id": workflow.id,
-                "name": workflow.name,
-                "description": workflow.description,
-                "execution_mode": workflow.execution_mode.value,
+                "id": wf["id"],
+                "name": wf.get("name") or wf["id"],
+                "description": wf.get("description", ""),
+                "execution_mode": "sequential",
                 "steps": [
-                    {
-                        "agent_id": step.agent_id,
-                        "output_key": step.output_key
-                    }
-                    for step in workflow.steps
-                ]
+                    {"agent_id": s.get("agent"), "output_key": s.get("id")}
+                    for s in (wf.get("steps") or [])
+                    if isinstance(s, dict)
+                ],
             }
-            for workflow in workflows
-        ]
-    }
+        )
+    return out
 
 
 @app.get("/api/trigger-templates")
