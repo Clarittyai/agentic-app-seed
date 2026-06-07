@@ -184,61 +184,79 @@ async def get_widget_data(
     Widget data endpoint. Returns a summary of the caller's tasks. Supports
     small | medium | large. Replace the body for your app, but keep the route.
     """
-    open_tasks = (
-        db.query(models.Task)
-        .filter(models.Task.user_id == user_id, models.Task.done == False)  # noqa: E712
-        .order_by(models.Task.created_at.desc())
-        .all()
-    )
-    open_tasks.sort(key=lambda t: PRIORITY_RANK.get(t.priority, 1), reverse=True)
-
-    last = (
-        db.query(models.Task)
-        .filter(models.Task.user_id == user_id)
-        .order_by(models.Task.updated_at.desc())
-        .first()
-    )
-    last_updated = _relative_time(last.updated_at if last else None)
-
-    # "Done today" — honest: completed tasks whose last change was today (UTC),
-    # not the all-time completed count.
-    start_of_today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    done_today = (
-        db.query(models.Task)
-        .filter(
-            models.Task.user_id == user_id,
-            models.Task.done == True,  # noqa: E712
-            models.Task.updated_at >= start_of_today,
+    try:
+        open_tasks = (
+            db.query(models.Task)
+            .filter(models.Task.user_id == user_id, models.Task.done == False)  # noqa: E712
+            .order_by(models.Task.created_at.desc())
+            .all()
         )
-        .count()
-    )
+        open_tasks.sort(key=lambda t: PRIORITY_RANK.get(t.priority, 1), reverse=True)
 
-    open_count = len(open_tasks)
-    top_priority = open_tasks[0].priority if open_tasks else None
+        last = (
+            db.query(models.Task)
+            .filter(models.Task.user_id == user_id)
+            .order_by(models.Task.updated_at.desc())
+            .first()
+        )
+        last_updated = _relative_time(last.updated_at if last else None)
 
-    if size == "small":
+        # "Done today" — honest: completed tasks whose last change was today (UTC),
+        # not the all-time completed count.
+        start_of_today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        done_today = (
+            db.query(models.Task)
+            .filter(
+                models.Task.user_id == user_id,
+                models.Task.done == True,  # noqa: E712
+                models.Task.updated_at >= start_of_today,
+            )
+            .count()
+        )
+
+        open_count = len(open_tasks)
+        top_priority = open_tasks[0].priority if open_tasks else None
+
+        if size == "small":
+            return {
+                "open_count": open_count,
+                "top_priority": top_priority,
+                "top_task": open_tasks[0].title if open_tasks else None,
+                "top_task_id": open_tasks[0].id if open_tasks else None,
+                "last_updated": last_updated,
+            }
+
         return {
             "open_count": open_count,
+            "done_today": done_today,
             "top_priority": top_priority,
-            "top_task": open_tasks[0].title if open_tasks else None,
-            "top_task_id": open_tasks[0].id if open_tasks else None,
+            "tasks": [
+                {
+                    "id": t.id,
+                    "title": t.title,
+                    "priority": t.priority,
+                    "done": t.done,
+                    # Used by the large widget's richer rows; harmless for medium.
+                    "suggested_action": t.suggested_action,
+                }
+                for t in open_tasks[:8]
+            ],
             "last_updated": last_updated,
         }
-
-    return {
-        "open_count": open_count,
-        "done_today": done_today,
-        "top_priority": top_priority,
-        "tasks": [
-            {
-                "id": t.id,
-                "title": t.title,
-                "priority": t.priority,
-                "done": t.done,
-                # Used by the large widget's richer rows; harmless for medium.
-                "suggested_action": t.suggested_action,
-            }
-            for t in open_tasks[:8]
-        ],
-        "last_updated": last_updated,
-    }
+    except Exception:
+        # A widget is rendered in a tiny dashboard iframe — it must NEVER 500.
+        # On ANY data/DB/model error (a bad query, a missing column, a model
+        # attribute that doesn't exist), log it and return a calm EMPTY payload
+        # so the widget shows its empty state instead of a broken tile.
+        logger.exception("widget data build failed; returning empty payload")
+        empty = {
+            "open_count": 0,
+            "top_priority": None,
+            "top_task": None,
+            "top_task_id": None,
+            "last_updated": _relative_time(None),
+        }
+        if size != "small":
+            empty["done_today"] = 0
+            empty["tasks"] = []
+        return empty
