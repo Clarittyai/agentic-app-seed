@@ -33,7 +33,7 @@ export default function Layout({ children }: LayoutProps) {
             <Link to="/" className="flex items-center gap-2.5 group">
               <span
                 aria-hidden="true"
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-accent/10 text-sm font-bold text-accent"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-accent/15 text-sm font-bold text-foreground"
               >
                 {appInitial}
               </span>
@@ -59,8 +59,8 @@ export default function Layout({ children }: LayoutProps) {
                         className={cn(
                           'text-sm lg:text-base font-medium transition-colors',
                           isActive
-                            ? 'text-accent'
-                            : 'text-muted-foreground group-hover:text-accent'
+                            ? 'text-foreground'
+                            : 'text-muted-foreground group-hover:text-foreground'
                         )}
                       >
                         {item.name}

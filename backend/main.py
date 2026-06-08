@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import os
+import hmac
 import logging
 
 from backend.database import get_db, init_db, seed_example_tasks, engine
@@ -74,6 +75,14 @@ try:
 except Exception as _e:  # noqa: BLE001
     logger.warning(f"No app routers package to include: {_e}")
 
+# Generic Connect/OAuth API (catalog + connect + oauth/callback + test + disconnect),
+# prefix /api/integrations — drives the Settings → Integrations UI. Included AFTER
+# backend/routes/* so the specific /api/integrations/required route
+# (integrations_setup) registers BEFORE this router's catch-all
+# /api/integrations/{id} — otherwise {id} would shadow /required.
+from backend.integrations.routes import router as integrations_router
+app.include_router(integrations_router)
+
 # Triggers are managed by the Claritty platform; the app only exposes the
 # /internal dispatch endpoints below (no in-app scheduler).
 
@@ -88,42 +97,49 @@ app.add_middleware(
 )
 
 
-# Dependency: Get current user ID from header
+# Dependency: Get current user ID — fail-closed in production.
 def get_current_user(
     x_user_id: Optional[str] = Header(None, alias="X-User-ID"),
-    authorization: Optional[str] = Header(None)
+    x_claritty_auth: Optional[str] = Header(None, alias="X-Claritty-Auth"),
+    authorization: Optional[str] = Header(None),
 ) -> str:
     """
-    Extract user ID from Clarity platform headers or Bearer token.
+    Trusted per-user identity. Mirrors backend.security.require_user (defense-in-depth)
+    so app endpoints can't be tricked by a forged X-User-ID.
 
-    Authentication priority:
-    1. X-User-ID header (injected by Clarity platform proxy)
-    2. Bearer token from Authorization header (for direct API access)
+    Production (ALB_AUTH_SECRET set): identity MUST come from the Claritty edge,
+    which validates the user's JWT and injects X-User-Id PLUS the X-Claritty-Auth
+    admission secret. We re-verify that secret here; a request that bypasses the
+    edge (forging X-User-Id, or presenting a Bearer token) is rejected. Fail closed —
+    NEVER trust a bare X-User-Id or a Bearer token as identity in production.
 
-    When deployed on Clarity platform, all requests are proxied and include
-    X-User-ID header for seamless multi-tenant authentication.
+    Local development only (no ALB secret): accept X-User-Id or a Bearer token for
+    convenience, and fall back to "dev-user" when explicitly running in dev.
     """
-    # Priority 1: Clarity platform header (production)
-    if x_user_id:
-        logger.debug(f"Authenticated via X-User-ID header: {x_user_id}")
+    alb_secret = os.getenv("ALB_AUTH_SECRET", "")
+
+    # Production: require the edge-stamped admission secret.
+    if alb_secret:
+        if not x_claritty_auth or not hmac.compare_digest(x_claritty_auth, alb_secret):
+            raise HTTPException(
+                status_code=403,
+                detail="Request did not originate from the Claritty edge.",
+            )
+        if not x_user_id:
+            raise HTTPException(status_code=401, detail="Authentication required.")
         return x_user_id
 
-    # Priority 2: Bearer token (development / direct access)
+    # Local development only (no ALB secret).
+    if x_user_id:
+        return x_user_id
     if authorization:
-        try:
-            # Extract user ID from Bearer token
-            # In production, implement proper JWT validation here
-            user_id = authorization.replace("Bearer ", "").strip()
-            logger.debug(f"Authenticated via Bearer token: {user_id}")
-            return user_id
-        except Exception as e:
-            logger.error(f"Failed to parse authorization header: {e}")
-            raise HTTPException(status_code=401, detail="Invalid authorization token")
+        return authorization.replace("Bearer ", "").strip()
+    if os.getenv("NODE_ENV", "").lower() in ("development", "dev", "local"):
+        return "dev-user"
 
-    # No authentication provided
     raise HTTPException(
         status_code=401,
-        detail="Authentication required. Provide X-User-ID header or Authorization token."
+        detail="Authentication required.",
     )
 
 
@@ -398,23 +414,88 @@ def _load_user_integrations(db: Session, user_id: str) -> Dict[str, Any]:
     return integrations
 
 
-async def _run_workflow_for_trigger(
-    db: Session, *, workflow_id: str, user_id: str, trigger_data: Dict[str, Any]
+# --- v2 manifest execution (app.yaml workflows) with v1 fallback -------------
+# Both the platform AND a local "run now" execute through here. v2 manifest apps
+# (workflows declared in app.yaml, handlers in backend/custom/) run via the SDK
+# WorkflowEngine — the SAME engine the platform uses — so a local trigger never
+# diverges from how the app is managed when hosted. Legacy v1 (decorator-
+# registered) apps fall back to the v1 WorkflowExecutor. The /internal/* contract
+# is unchanged.
+_BOOT = None
+_BOOT_TRIED = False
+
+
+def _get_boot():
+    global _BOOT, _BOOT_TRIED
+    if _BOOT_TRIED:
+        return _BOOT
+    _BOOT_TRIED = True
+    try:
+        from claritty_sdk.runtime.bootstrap import load as _bootstrap_load
+        _BOOT = _bootstrap_load("app.yaml")
+        logger.info("v2 manifest engine ready (app.yaml).")
+    except Exception as e:  # legacy v1 app, or SDK without bootstrap → v1 path
+        logger.warning(f"v2 manifest engine unavailable; using v1 executor ({e}).")
+        _BOOT = None
+    return _BOOT
+
+
+def _manifest_has_workflow(boot, workflow_id: str) -> bool:
+    try:
+        return any(
+            getattr(w, "id", None) == workflow_id
+            for w in (boot.manifest.workflows or [])
+        )
+    except Exception:
+        return False
+
+
+async def _run_workflow(
+    db: Session,
+    *,
+    workflow_id: str,
+    user_id: str,
+    trigger_data: Dict[str, Any],
+    agent_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    """Run a workflow, preferring the v2 manifest engine (matches hosting)."""
+    boot = _get_boot()
+    if boot is not None and _manifest_has_workflow(boot, workflow_id):
+        inputs = dict(trigger_data or {})
+        inputs.pop("agent_context", None)
+        result = await boot.engine.run(
+            workflow_id, inputs=inputs, trigger=inputs, user_id=user_id
+        )
+        status = getattr(result, "status", "")
+        return {
+            "workflow_id": workflow_id,
+            "success": status == "success",
+            "outputs": getattr(result, "outputs", {}) or {},
+            "error": getattr(result, "error", None),
+        }
+    # Legacy v1 path.
     if not WorkflowRegistry.get_metadata(workflow_id):
         raise HTTPException(
             status_code=404, detail=f"Workflow '{workflow_id}' not found"
         )
     integrations = _load_user_integrations(db, user_id)
     body = dict(trigger_data or {})
-    agent_context = body.pop("agent_context", {}) or {}
+    ac = agent_context if agent_context is not None else (body.pop("agent_context", {}) or {})
     executor = WorkflowExecutor()
     return await executor.execute_workflow(
         workflow_id=workflow_id,
         trigger_data=body,
         user_id=user_id,
         integrations=integrations,
-        agent_context=agent_context,
+        agent_context=ac,
+    )
+
+
+async def _run_workflow_for_trigger(
+    db: Session, *, workflow_id: str, user_id: str, trigger_data: Dict[str, Any]
+) -> Dict[str, Any]:
+    return await _run_workflow(
+        db, workflow_id=workflow_id, user_id=user_id, trigger_data=trigger_data
     )
 
 
@@ -502,20 +583,6 @@ async def execute_workflow(
     Returns execution results.
     """
     # Get workflow metadata
-    workflow_metadata = WorkflowRegistry.get_metadata(workflow_id)
-    if not workflow_metadata:
-        raise HTTPException(status_code=404, detail="Workflow not found")
-
-    # Get user integrations
-    integrations = {}
-    user_integrations = db.query(models.UserIntegration).filter(
-        models.UserIntegration.user_id == user_id,
-        models.UserIntegration.is_active == True
-    ).all()
-
-    for integration in user_integrations:
-        integrations[integration.service] = integration.credentials
-
     logger.info(f"Starting workflow execution: {workflow_id}")
 
     # Per-agent user context map (agentId -> instructions) travels in the body
@@ -523,17 +590,16 @@ async def execute_workflow(
     body = dict(input_data or {})
     agent_context = body.pop("agent_context", {}) or {}
 
-    # Execute workflow. Measure duration here ourselves — the SDK executor's
-    # return shape varies across versions and may omit `duration_seconds`, so we
-    # never index it directly (a missing key used to 500 the whole request).
-    executor = WorkflowExecutor()
+    # Run via the v2 manifest engine when the workflow is in app.yaml (same engine
+    # the platform uses), else the legacy v1 executor. Measure duration here — the
+    # executor's return shape varies and may omit `duration_seconds`.
     started_at = datetime.utcnow()
     try:
-        result = await executor.execute_workflow(
+        result = await _run_workflow(
+            db,
             workflow_id=workflow_id,
-            trigger_data=body,
             user_id=user_id,
-            integrations=integrations,
+            trigger_data=body,
             agent_context=agent_context,
         )
 

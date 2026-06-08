@@ -163,6 +163,10 @@ gate will block the build**. Decide the app's *own* identity now:
 - **Palette**: pick a primary/accent color + a heading color that fit the app's
   purpose (calm finance ≠ playful kids ≠ earthy travel). You'll set these as
   `--brand-accent`, `--brand-accent-600`, `--brand-primary` in `frontend/src/theme.css`.
+  Pick an accent **dark enough that WHITE text on it clears WCAG-AA (~4.5:1)** — a
+  light accent fails the rendered contrast gate on the primary button. Use the
+  accent for **fills / large headings, never body or nav text** (a single accent
+  rarely clears AA as text in BOTH light and dark themes).
 - **Typography**: a font that matches the voice (e.g. `Sora`, `Inter`, `Space Grotesk`).
   Set `--brand-font` and load it in `index.html`.
 - **Voice/tone**: how copy reads (terse & pro? warm & encouraging?).

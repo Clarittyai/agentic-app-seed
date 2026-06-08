@@ -222,29 +222,14 @@ def test_connection(
     if not status.get("connected"):
         return {"ok": False, "detail": "Not connected."}
 
-    # Provider-specific liveness check where the framework ships a client.
-    if integration_id == "gmail":
-        from backend.integrations.gmail_client import GmailClient
+    # Per-provider liveness via the shared adapter registry (gmail, slack, …).
+    # Returns None when no adapter ships a check; then "connected" is the best
+    # signal we have.
+    from backend.shared.adapters import run_liveness
 
-        creds = store.get_credentials(db, user_id, integration_id) or {}
-        try:
-            client = GmailClient(creds)
-            email = client.profile_email()
-            # Persist any refreshed access token.
-            store.merge_credentials(
-                db,
-                user_id,
-                integration_id,
-                {
-                    "access_token": client.credentials.get("access_token"),
-                    "token_expiry": client.credentials.get("token_expiry"),
-                },
-                connected=True,
-            )
-            return {"ok": True, "account": email}
-        except Exception as e:  # noqa: BLE001 - surface a friendly message
-            return {"ok": False, "detail": str(e)}
-
+    result = run_liveness(db, user_id, integration_id)
+    if result is not None:
+        return result
     return {"ok": True}
 
 

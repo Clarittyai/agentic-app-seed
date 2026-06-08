@@ -16,6 +16,28 @@ def validate_environment():
         'DATABASE_URL': 'PostgreSQL connection string',
     }
 
+    # SECURITY: in production these MUST be set, or the app silently degrades to
+    # an open / shared-identity state — ALB_AUTH_SECRET is what require_user uses
+    # to reject forged X-User-Id (without it, identity can't be trusted), and
+    # APP_ENCRYPTION_KEY encrypts per-user integration credentials. Treat the app
+    # as production when NODE_ENV says so, or when the platform proxy is wired
+    # (CLARITTY_PLATFORM_URL) and we're not explicitly in dev. Fail fast there.
+    node_env = os.getenv('NODE_ENV', '').lower()
+    is_dev = node_env in ('development', 'dev', 'local', 'test')
+    is_prod = node_env in ('production', 'prod') or (
+        bool(os.getenv('CLARITTY_PLATFORM_URL')) and not is_dev
+    )
+    prod_required = {
+        'ALB_AUTH_SECRET': 'edge admission secret — trusted multi-tenant identity',
+        'APP_ENCRYPTION_KEY': 'integration credential encryption key',
+    }
+    if is_prod:
+        required_vars.update(prod_required)
+    else:
+        for var, description in prod_required.items():
+            if not os.getenv(var):
+                print(f"  ⚠️  {var} not set — REQUIRED in production ({description})")
+
     missing = []
     for var, description in required_vars.items():
         if not os.getenv(var):

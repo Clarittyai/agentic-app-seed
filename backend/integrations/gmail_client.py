@@ -97,5 +97,35 @@ class GmailClient:
     def trash(self, message_id: str) -> Dict[str, Any]:
         return self._request("POST", f"/users/me/messages/{message_id}/trash")
 
+    def send(
+        self,
+        to: str,
+        subject: str,
+        body: str,
+        *,
+        thread_id: Optional[str] = None,
+        in_reply_to: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Send a plain-text email; returns Gmail's response (incl. the message id).
+
+        Builds a minimal RFC 2822 message, base64url-encodes it, and POSTs to
+        users/me/messages/send. Pass thread_id/in_reply_to to keep a reply in
+        the original conversation.
+        """
+        import base64
+        from email.mime.text import MIMEText
+
+        mime = MIMEText(body or "", _charset="utf-8")
+        mime["To"] = to
+        mime["Subject"] = subject or ""
+        if in_reply_to:
+            mime["In-Reply-To"] = in_reply_to
+            mime["References"] = in_reply_to
+        raw = base64.urlsafe_b64encode(mime.as_bytes()).decode("ascii")
+        payload: Dict[str, Any] = {"raw": raw}
+        if thread_id:
+            payload["threadId"] = thread_id
+        return self._request("POST", "/users/me/messages/send", json=payload)
+
     def profile_email(self) -> Optional[str]:
         return self._request("GET", "/users/me/profile").get("emailAddress")

@@ -274,6 +274,23 @@ Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `
 
 ## 🎯 Common Tasks (Quick Reference)
 
+> ⚠️ **Authoring model — read this first.** The Task examples below show the
+> legacy **v1** shape (`@agent(...)` kwargs + `async def execute() -> AgentResult`).
+> The runtime is **v2 manifest-first**: declare agents/tools/workflows/triggers in
+> **`app.yaml`** (schema lives there), and write the class as
+> `@agent(id="…") class Agent(BaseAgent): system_prompt = "…"` plus an optional
+> `fallback(ctx)` (the no-LLM local path). Source of truth: `app.yaml` +
+> `.claude/skills/agentic-app-authoring.md`.
+>
+> - **Multi-agent apps:** chain 2–3 agents as workflow **steps** with
+>   `${steps.<id>.output.<key>}` piping + per-step `onError` (retry/skip). Only
+>   reference `${input.x}` for inputs you actually pass — a missing reference
+>   **fails the run** (no silent default).
+> - **Honest external actions:** the shared factory (`backend/shared/` — spine +
+>   `make_item_router` + adapters) gives the 409-not-connected / 5xx-failure /
+>   publish-only-on-real-id contract for free; prefer it over hand-rolling an
+>   approve route.
+
 ### Task 1: Add a New Agent
 
 **Steps:**
@@ -705,6 +722,9 @@ Before deployment, ensure:
 - [ ] If it shouldn't act autonomously: a **draft → approve → act** lifecycle with an approve action
 - [ ] `app-config.json` `core_action.definition_of_done` is filled, and that end-to-end path is verified
 - [ ] The problem the app solves is delivered end-to-end (agent → workflow → widget → real action)
+- [ ] **Rendered design gate**: `npm run check:design:score` passes — no rubric
+      criterion scores 0 (contrast + mobile are HARD). The identity gate,
+      type-check, and build do NOT catch contrast — run this too.
 - [ ] Tested locally (`docker compose up --build`, curl endpoints)
 - [ ] No hardcoded localhost URLs
 - [ ] Multi-tenancy: every user-data query filters by `user_id` (X-User-ID)

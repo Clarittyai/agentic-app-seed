@@ -74,7 +74,7 @@ export default function SetupChecklist({ compact = false }: { compact?: boolean 
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Plug className="h-5 w-5 text-accent" />
+          <Plug className="h-5 w-5 text-muted-foreground" />
           {status.all_connected ? 'Connections' : 'Finish setup'}
         </CardTitle>
         <CardDescription>
@@ -96,7 +96,7 @@ export default function SetupChecklist({ compact = false }: { compact?: boolean 
                   <Check className="mr-1 h-3 w-3" /> Connected
                 </Badge>
               ) : (
-                <Badge tone="warning">Not connected</Badge>
+                <Badge tone="muted">Not connected</Badge>
               )}
             </div>
             {!i.connected && (
