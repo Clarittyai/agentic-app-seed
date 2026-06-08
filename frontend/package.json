@@ -21,7 +21,7 @@
     "test:all": "npm run check:identity && npm run validate:widgets && npm run test:widgets && npm run test:visual && npm run check:design && npm run check:design:score"
   },
   "dependencies": {
-    "@clarittyai/app-ui": "^0.1.0",
+    "@clarittyai/app-ui": "^0.2.0",
     "@clarittyai/widget-toolkit": "^1.2.3",
     "axios": "^1.6.2",
     "clsx": "^2.1.0",
