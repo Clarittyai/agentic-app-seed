@@ -1,11 +1,9 @@
 /**
- * App UI primitives — reusable building blocks for full-app PAGES, styled with
- * the app's semantic tokens (matches Claritty: rounded, accent, glass-ready,
- * dark-mode). For dashboard WIDGETS use @clarittyai/widget-toolkit instead.
+ * App UI primitives for full-app PAGES. This now re-exports the published,
+ * canonical kit `@clarittyai/app-ui` so there is ONE source of truth — the older
+ * local impls in this folder are deprecated. NEW code should import from
+ * `@clarittyai/app-ui` directly (that's what the generation rules mandate); this
+ * alias only keeps any older `@/components/ui` imports working. For dashboard
+ * WIDGETS use `@clarittyai/widget-toolkit` instead.
  */
-export { Button, type ButtonProps } from './button';
-export { Input, Textarea, Label } from './input';
-export { Card, CardHeader, CardTitle, CardDescription, CardContent } from './card';
-export { Dialog } from './dialog';
-export { Table, THead, TBody, TR, TH, TD } from './table';
-export { EmptyState, Skeleton, Badge } from './feedback';
+export * from '@clarittyai/app-ui';

@@ -4,7 +4,7 @@ import {
   Button,
   Input,
   Textarea,
-  Label,
+  Field,
   Card,
   Dialog,
   Table,
@@ -16,7 +16,8 @@ import {
   EmptyState,
   Skeleton,
   Badge,
-} from '@/components/ui';
+  type BadgeTone,
+} from '@clarittyai/app-ui';
 import {
   getTasks,
   createTask,
@@ -28,16 +29,17 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * A REAL app screen (list → create → toggle → delete) built from the app UI kit
- * (@/components/ui) against the Task API. This is the pattern to copy for your
- * own pages: page-level loading / empty / error states, a form dialog, a table.
+ * A REAL app screen (list → create → toggle → delete) built from the
+ * @clarittyai/app-ui kit against the Task API. This is the pattern to copy for
+ * your own pages: page-level loading / empty / error states, a form dialog
+ * (<Field> + <Input>), and a <Table>.
  */
 
-const PRIORITY_TONE: Record<TaskPriority, 'destructive' | 'warning' | 'accent' | 'muted'> = {
+const PRIORITY_TONE: Record<TaskPriority, BadgeTone> = {
   urgent: 'destructive',
   high: 'warning',
   medium: 'accent',
-  low: 'muted',
+  low: 'neutral',
 };
 
 export default function Tasks() {
@@ -176,7 +178,7 @@ export default function Tasks() {
                   )}
                 </TD>
                 <TD>
-                  <Badge tone={PRIORITY_TONE[t.priority] ?? 'muted'} className="capitalize">
+                  <Badge tone={PRIORITY_TONE[t.priority] ?? 'neutral'} className="capitalize">
                     {t.priority}
                   </Badge>
                 </TD>
@@ -197,8 +199,7 @@ export default function Tasks() {
 
       <Dialog open={creating} onClose={() => setCreating(false)} title="New task" description="It'll be prioritized by the agent on create.">
         <form onSubmit={submit} className="space-y-4">
-          <div>
-            <Label htmlFor="t-title">Title</Label>
+          <Field label="Title" htmlFor="t-title">
             <Input
               id="t-title"
               value={title}
@@ -206,11 +207,10 @@ export default function Tasks() {
               placeholder="e.g. Reply to the partnership email"
               autoFocus
             />
-          </div>
-          <div>
-            <Label htmlFor="t-notes">Notes (optional)</Label>
+          </Field>
+          <Field label="Notes (optional)" htmlFor="t-notes">
             <Textarea id="t-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any context…" />
-          </div>
+          </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setCreating(false)}>
               Cancel

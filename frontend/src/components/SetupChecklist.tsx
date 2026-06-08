@@ -96,7 +96,7 @@ export default function SetupChecklist({ compact = false }: { compact?: boolean 
                   <Check className="mr-1 h-3 w-3" /> Connected
                 </Badge>
               ) : (
-                <Badge tone="muted">Not connected</Badge>
+                <Badge tone="neutral">Not connected</Badge>
               )}
             </div>
             {!i.connected && (
