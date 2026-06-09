@@ -731,6 +731,10 @@ Before deployment, ensure:
 - [ ] Schema changes via Alembic migration (not bare `create_all`)
 - [ ] Required env vars kept: `DATABASE_URL`, `CLARITTY_PLATFORM_URL`, `CLARITTY_AUTH_TOKEN`
 
+**Deploy metadata — `claritty deploy` reads these from the app and sends them to the platform; its submission requires them, so a missing/too-short field fails the deploy with HTTP 400:**
+- [ ] `frontend/src/lib/app-meta.ts`: `appName` (3–100 chars) + `appDescription` (**20+ chars**) → become the app's **name** + **description**.
+- [ ] `app-config.json` → `clarity_marketplace.category` (a real category for your domain, e.g. `finance` / `sales` / `support` — not the seed's `templates`) + `clarity_marketplace.tags` (a short list). The deploy normalizes your git remote to its https form automatically.
+
 ---
 
 ## 🎯 Your Mission as AI Assistant
