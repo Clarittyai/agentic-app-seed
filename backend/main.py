@@ -28,7 +28,9 @@ from claritty_sdk import (
     build_graph,
     use_user_context,
 )
-from claritty_sdk.executor import WorkflowExecutor
+# NOTE: WorkflowExecutor (heavy — pulls the LLM/agent runtime) is imported lazily
+# at its single use site in the workflow-execute handler, NOT here, so the cold
+# start for the widget/health hot path stays lean.
 
 # Configure logging
 logging.basicConfig(
@@ -43,6 +45,75 @@ app = FastAPI(
     description="AI-powered application with user-configurable triggers",
     version="1.0.0"
 )
+
+# --- Widget-data cache (platform speed heuristic) --------------------------
+# The dashboard polls GET /api/widget every ~30s and the data tolerates a few
+# seconds of staleness. Cache the serialized response per (user, query) in-process
+# for a short TTL so warm invocations skip the DB round-trips, and stamp
+# Cache-Control so a CDN/browser can reuse it too. App-agnostic (lives here, not in
+# the replaceable handler), fail-open, and only touches GET /api/widget. Disable
+# with WIDGET_CACHE=off; tune WIDGET_CACHE_TTL (seconds).
+import time as _time
+from starlette.requests import Request as _Request
+from starlette.responses import Response as _Response
+
+_WIDGET_CACHE_ON = os.getenv("WIDGET_CACHE", "on").lower() != "off"
+_WIDGET_TTL = float(os.getenv("WIDGET_CACHE_TTL", "10") or 10)
+_WIDGET_CC = "public, max-age=10, stale-while-revalidate=20"
+_widget_cache: Dict[tuple, tuple] = {}  # (user, query) -> (expiry, body, media_type)
+
+
+@app.middleware("http")
+async def _widget_cache_mw(request: _Request, call_next):
+    # Fast path: everything that isn't the widget GET passes straight through.
+    if not (
+        _WIDGET_CACHE_ON
+        and request.method == "GET"
+        and request.url.path == "/api/widget"
+    ):
+        return await call_next(request)
+
+    user = request.headers.get("x-user-id") or ""  # edge-stamped, trusted
+    key = (user, request.url.query)
+    now = _time.monotonic()
+
+    # Serve from cache without touching the handler / DB.
+    if user:
+        hit = _widget_cache.get(key)
+        if hit and hit[0] > now:
+            return _Response(
+                content=hit[1],
+                media_type=hit[2],
+                headers={"Cache-Control": _WIDGET_CC, "X-Claritty-Cache": "hit"},
+            )
+
+    resp = await call_next(request)
+
+    # Buffer the body so we can both cache it and re-emit it.
+    body = b""
+    async for chunk in resp.body_iterator:
+        body += chunk
+
+    # Cache only successful, user-scoped responses (never errors / empty user).
+    if user and resp.status_code == 200:
+        if len(_widget_cache) > 1000:  # cheap unbounded-growth guard
+            _widget_cache.clear()
+        _widget_cache[key] = (
+            now + _WIDGET_TTL,
+            body,
+            resp.media_type or "application/json",
+        )
+
+    headers = dict(resp.headers)
+    headers.pop("content-length", None)  # body re-set below
+    headers["Cache-Control"] = _WIDGET_CC
+    headers["X-Claritty-Cache"] = "miss"
+    return _Response(
+        content=body,
+        status_code=resp.status_code,
+        headers=headers,
+        media_type=resp.media_type,
+    )
 
 # Include infrastructure routers (health checks, etc.)
 from backend.infrastructure import health_router
@@ -486,6 +557,10 @@ async def _run_workflow(
     integrations = _load_user_integrations(db, user_id)
     body = dict(trigger_data or {})
     ac = agent_context if agent_context is not None else (body.pop("agent_context", {}) or {})
+    # Imported lazily (not at module load) so a cold start serving only the
+    # widget / health path doesn't pay to import the executor (and its heavy LLM
+    # deps). Only an actual workflow run pulls it in.
+    from claritty_sdk.executor import WorkflowExecutor
     executor = WorkflowExecutor()
     return await executor.execute_workflow(
         workflow_id=workflow_id,
