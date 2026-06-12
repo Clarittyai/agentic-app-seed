@@ -1,27 +1,22 @@
 """
-Triggers Package
+Triggers Package (DEPRECATED for v2 — triggers live in app.yaml)
 
-Add your trigger template files here - they will be auto-discovered on startup!
+In the v2 manifest-first runtime a trigger is YAML declared in
+app.yaml#triggers — there are NO python trigger files and NO @trigger_template
+decorators (the runtime ignores them). The platform fires triggers; the app has
+no in-process scheduler.
 
-No need to edit this file. Just create your triggers.py files in this directory:
+Example (in app.yaml, NOT here):
+    triggers:
+      - id: my-trigger
+        type: SCHEDULE                 # or WEBHOOK
+        workflow: my-workflow
+        configFields:
+          - { key: time, type: time, required: true, default: "09:00" }
+          - { key: timezone, type: timezone, required: true }
 
-Example:
-    backend/triggers/my_triggers.py
-
-    from claritty_sdk import trigger_template, TriggerTemplateType
-
-    @trigger_template(
-        id="my-trigger",
-        name="My Trigger",
-        template_type=TriggerTemplateType.SCHEDULE_DAILY,
-        workflow_id="my-workflow",
-        config_fields=[...]
-    )
-    class MyTrigger:
-        pass
-
-That's it! Your trigger template will be automatically registered on app startup.
+This package is kept only so legacy auto-discovery imports don't crash.
 """
 
-# No imports needed - auto-discovery handles it!
+# No imports needed - triggers are declared in app.yaml.
 __all__ = []

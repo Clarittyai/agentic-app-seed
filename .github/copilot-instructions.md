@@ -173,62 +173,58 @@ The Clarity Platform deploys ONLY ONE container per app. This template provides:
 - Use Docker Compose multi-service pattern in production
 - Proxy to `backend:8000` (use `localhost:8000`)
 
-### Required Patterns
+### Required Patterns (v2 manifest-first — declare everything in `app.yaml`)
 
-#### 1. All Agents Use Decorators
+#### 1. Agents are a system PROMPT, not an `execute()` method
+```yaml
+# app.yaml — schema lives here
+agents:
+  - id: my-agent
+    source: custom
+    promptFile: backend/custom/agents/my_agent/prompt.md   # zero-Python (preferred)
+    model: claude-sonnet-4-6
+    tools: [app.save_item]
+    input:  { user_id: { type: string, required: true } }
+    output: { output: { type: string, required: true } }
+```
 ```python
-from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
-
-@agent(
-    id="my-agent",
-    name="My Agent",
-    description="What it does",
-    inputs={"input": {"type": "string", "required": True}},
-    outputs={"output": {"type": "string"}}
-)
+# Only if you need before/after/fallback hooks — NEVER def execute()/AgentResult:
+from claritty_sdk import agent, AgentContext, BaseAgent
+@agent(id="my-agent")
 class MyAgent(BaseAgent):
-    async def execute(self, context: AgentContext) -> AgentResult:
-        # Implementation
-        return AgentResult(success=True, data={"output": result})
+    system_prompt = "…call tools by id, then __finish with {output}…"
+    def fallback(self, ctx: AgentContext) -> dict: ...
 ```
 
-#### 2. All Execute Methods Are Async
+#### 2. NEVER write the v1 shape
 ```python
-# ✅ CORRECT
-async def execute(self, context: AgentContext) -> AgentResult:
-    return result
-
-# ❌ WRONG
-def execute(self, context):  # Not async
-    return result
+# ❌ WRONG — the v2 runtime never calls execute() and rejects it at boot (app does nothing)
+async def execute(self, context): return AgentResult(...)
+# ❌ WRONG — agents don't drive the LLM or do HTTP; the tool-use loop does
+get_llm_client(); import requests
 ```
 
-#### 3. All Components Must Be Registered
-```python
-# backend/agents/__init__.py
-from backend.agents.my_agent import MyAgent
-__all__ = ["MyAgent", "OtherAgent"]  # Add to __all__
+#### 3. Workflows + triggers are YAML in `app.yaml` (no Python files)
+```yaml
+workflows:
+  - id: my-workflow
+    inputs: { user_id: { type: string, required: true } }
+    steps:
+      - id: run
+        agent: my-agent
+        input: { user_id: "${input.user_id}" }
+    outputs: { output: "${steps.run.output.output}" }
 ```
 
-#### 4. User-Configurable Triggers (Not Hardcoded)
-```python
-# ❌ WRONG - hardcoded schedule
-@cron("0 9 * * *")
-def daily_task():
-    pass
-
-# ✅ CORRECT - user-configurable
-@trigger_template(
-    id="daily-task",
-    template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="my-workflow",
-    config_fields=[
-        {"key": "time", "label": "What time?", "type": "time", "required": True},
-        {"key": "timezone", "label": "Timezone", "type": "timezone", "required": True}
-    ]
-)
-class DailyTaskTrigger:
-    pass
+#### 4. User-Configurable Triggers (YAML, not hardcoded cron)
+```yaml
+triggers:
+  - id: daily-task
+    type: SCHEDULE                 # platform fires it; NO in-process cron/scheduler
+    workflow: my-workflow
+    configFields:
+      - { key: time, type: time, required: true, label: "What time?" }
+      - { key: timezone, type: timezone, required: true, label: "Timezone" }
 ```
 
 ## 📚 When Developer Needs Help
@@ -251,9 +247,10 @@ If developer asks about modifying protected files:
 ## 🎓 Code Suggestion Guidelines
 
 ### DO Suggest:
-- ✅ New agents in `backend/agents/`
-- ✅ New workflows in `backend/workflows/`
-- ✅ New trigger templates in `backend/triggers/`
+- ✅ New agents declared in `app.yaml#agents` (prompt in `backend/custom/agents/<id>/prompt.md`)
+- ✅ New workflows as YAML in `app.yaml#workflows` (NOT `backend/workflows/*.py`)
+- ✅ New trigger templates as YAML in `app.yaml#triggers` (NOT `backend/triggers/*.py`)
+- ✅ New custom tools in `backend/custom/tools/<id>/impl.py` (`@tool(id)` `def run(input, ctx)`)
 - ✅ New React components in `frontend/src/components/`
 - ✅ New API methods in `frontend/src/lib/api.ts`
 - ✅ Environment variables for app logic

@@ -133,14 +133,13 @@ frontend/
 **Traditional apps:** User does the work manually
 **Agentic apps:** AI agents work automatically
 
-**Example** (the seed's `example-agent`):
+**Example** (the seed's `example-agent`) — v2: the agent is a system prompt; the SDK's
+tool-use loop runs it. No `execute()` method.
 ```python
-@agent(id="example-agent")
+@agent(id="example-agent")            # schema lives in app.yaml
 class ExampleAgent(BaseAgent):
-    async def execute(self, context):
-        # Calls Claude via the SDK proxy to triage a task
-        # → { priority, suggested_action }
-        return AgentResult(...)
+    system_prompt = "You triage a task… call __finish with {priority, suggested_action}."
+    def fallback(self, ctx): ...      # optional no-LLM local result
 ```
 
 ### 2. Widgets = Primary Interface
@@ -154,20 +153,18 @@ Users interact mainly through dashboard widgets (Apple HIG 3-size standard):
 
 ### 3. User-Configurable Triggers
 
-**You define templates, users create instances:**
-```python
-@trigger_template(
-    config_fields=[
-        {"key": "time", "type": "time"},      # User picks time
-        {"key": "timezone", "type": "timezone"}  # User picks timezone
-    ]
-)
-class DailyReview:
-    pass
-
-# User A: 9am EST
-# User B: 6pm PST
-# Both run automatically!
+**You define templates (YAML in `app.yaml`), users create instances:**
+```yaml
+triggers:
+  - id: daily-review
+    type: SCHEDULE
+    workflow: my-workflow
+    configFields:
+      - { key: time, type: time, required: true }       # User picks time
+      - { key: timezone, type: timezone, required: true } # User picks timezone
+```
+```
+# User A: 9am EST   ·   User B: 6pm PST   ·   both run automatically (platform fires them)
 ```
 
 ---
@@ -186,54 +183,23 @@ class DailyReview:
 
 ## 🔧 Common Tasks
 
+Everything below is declared in **`app.yaml`** (the v2 manifest the SDK runs). There are NO
+`backend/workflows/*.py` or `backend/triggers/*.py` files.
+
 ### Add a New Agent
-1. Create `backend/agents/my_agent.py`:
-```python
-from claritty_sdk import agent, BaseAgent, AgentResult
-
-@agent(id="my-agent", name="My Agent")
-class MyAgent(BaseAgent):
-    async def execute(self, context):
-        # Your logic here
-        return AgentResult(success=True, data={...})
-```
-
-2. Register in `backend/agents/__init__.py`
-3. Restart backend - done!
+1. Declare it in `app.yaml#agents` (schema here) with `promptFile: backend/custom/agents/my_agent/prompt.md`.
+2. Write the agent's instructions as prose in that `prompt.md` (call tools by id, end with `__finish`).
+3. (Optional) a handler class for hooks/offline `fallback` — `@agent(id)` + `system_prompt`, never `execute()`.
 
 ### Add a New Workflow
-1. Create `backend/workflows/my_workflow.py`:
-```python
-from claritty_sdk import workflow, uses_agent
-
-@workflow(id="my-workflow")
-@uses_agent("agent-1", output_key="step1")
-@uses_agent("agent-2", input_from="step1")
-async def my_workflow(context):
-    pass
-```
-
-2. Register in `backend/workflows/__init__.py`
-3. Test via API or frontend
+1. Declare it in `app.yaml#workflows`: `steps` with `agent:`/`tool:`, pipe data via
+   `${steps.<id>.output.<key>}` / `${input.<x>}`, add `onError` where needed.
 
 ### Add a New Trigger Template
-1. Create `backend/triggers/my_trigger.py`:
-```python
-from claritty_sdk import trigger_template, TriggerTemplateType
+1. Declare it in `app.yaml#triggers`: `type: SCHEDULE|WEBHOOK`, `workflow`, `configFields`.
+   The platform fires it and renders the config UI.
 
-@trigger_template(
-    id="my-trigger",
-    template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="my-workflow",
-    config_fields=[...]
-)
-class MyTrigger:
-    pass
-```
-
-2. Frontend automatically generates UI!
-
-**📖 See [CLAUDE.md](CLAUDE.md) for complete examples**
+**📖 See [CLAUDE.md](CLAUDE.md) Tasks 1–3 + `.claude/prompts/implement-{agent,workflow}.md` for full examples**
 
 ---
 

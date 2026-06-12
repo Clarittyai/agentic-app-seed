@@ -1,23 +1,26 @@
 """
-Workflows Package
+Workflows Package (DEPRECATED for v2 — workflows live in app.yaml)
 
-Add your workflow files here - they will be auto-discovered on startup!
+In the v2 manifest-first runtime a workflow is a YAML DAG declared in
+app.yaml#workflows — there are NO python workflow files and NO @workflow/
+@uses_agent decorators (the runtime ignores them).
 
-No need to edit this file. Just create your workflow.py files in this directory:
+Example (in app.yaml, NOT here):
+    workflows:
+      - id: my-workflow
+        inputs: { user_id: { type: string, required: true } }
+        steps:
+          - id: step1
+            agent: agent-1
+            input: { user_id: "${input.user_id}" }
+          - id: step2
+            agent: agent-2
+            input: { user_id: "${input.user_id}", data: "${steps.step1.output.data}" }
+            onError: { strategy: skip }
+        outputs: { result: "${steps.step2.output.result}" }
 
-Example:
-    backend/workflows/my_workflow.py
-
-    from claritty_sdk import workflow, uses_agent, ExecutionMode
-
-    @workflow(id="my-workflow", name="My Workflow", execution_mode=ExecutionMode.SEQUENTIAL)
-    @uses_agent("agent-1", output_key="step1")
-    @uses_agent("agent-2", input_from="step1", output_key="step2")
-    async def my_workflow(context):
-        pass
-
-That's it! Your workflow will be automatically registered on app startup.
+This package is kept only so legacy auto-discovery imports don't crash.
 """
 
-# No imports needed - auto-discovery handles it!
+# No imports needed - workflows are declared in app.yaml.
 __all__ = []

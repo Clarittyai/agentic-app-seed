@@ -1,280 +1,115 @@
-# Agent Implementation Prompt
+# Agent Implementation Prompt (v2 manifest-first)
 
-**Quick reference for implementing new agents**
+**Quick reference for adding an agent.** The runtime is v2: an agent's "code" is a
+**system prompt**, not a Python method. The SDK's tool-use loop drives the model and
+invokes tools; the agent class NEVER implements `execute()`.
 
----
-
-## 📂 File Location
-
-Create: `backend/agents/{your_agent_name}.py`
+> Canonical reference: `.claude/skills/agentic-app-authoring.md` and the seed's `app.yaml`.
 
 ---
 
-## 🎯 Agent Template
+## 1. Declare the agent in `app.yaml` (schema lives here)
+
+```yaml
+agents:
+  - id: your-agent-id                 # kebab-case, unique
+    source: custom
+    # ONE instruction source — prefer promptFile (zero-Python):
+    promptFile: backend/custom/agents/your_agent_id/prompt.md
+    # …or a Python handler class (only when you need before/after/fallback hooks):
+    # handler: backend.agents.your_agent:YourAgent
+    description: What this agent does in one sentence.
+    model: claude-sonnet-4-6
+    integrations: []                  # ids the agent's tools need (e.g. [gmail])
+    tools: [app.save_item]            # tool ids the agent may call
+    input:
+      user_id: { type: string, required: true }
+      limit:   { type: integer, required: false }
+    output:
+      saved_count: { type: integer, required: true }
+      summary:     { type: string,  required: true }
+    timeout: 120
+```
+
+## 2a. Zero-Python agent (PREFERRED) — author a prompt
+
+Create `backend/custom/agents/your_agent_id/prompt.md` — pure prose, no code:
+
+```markdown
+You are <role>. On each run you <goal> for the user to review.
+
+Steps on every invocation:
+1. Call <tool-id> to read/act on the user's data (reference tools by their app.yaml id).
+2. For each item, <decide/draft> grounded ONLY in that data — never fabricate.
+3. Call app.save_item per item with {…} (it persists a PENDING_APPROVAL item).
+4. Call __finish with {saved_count, summary} matching the agent's output schema.
+
+Rules: be conservative; never invent a value; finish calmly with the schema fields.
+```
+
+The SDK binds its `GenericAgent` and runs the tool-use loop from this prompt. No Python.
+
+## 2b. Handler-class agent (only when you need hooks/offline fallback)
 
 ```python
-"""
-[Agent Name] Agent
+"""Your agent — v2: a system_prompt + optional hooks. NO execute()."""
+from claritty_sdk import agent, AgentContext, BaseAgent
 
-[Brief description of what this agent does]
-"""
+SYSTEM_PROMPT = """You are <role>. … call <tool-id> … then call __finish with {…}."""
 
-from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
-from typing import Dict, Any
-import logging
-import os
+@agent(id="your-agent-id")            # id ONLY — schema is in app.yaml
+class YourAgent(BaseAgent):
+    system_prompt = SYSTEM_PROMPT
 
-logger = logging.getLogger(__name__)
-
-
-@agent(
-    id="your-agent-id",  # kebab-case, unique
-    name="Your Agent Name",  # Human-readable
-    description="What this agent does in one sentence",
-    category="productivity",  # or "communication", "analytics", etc.
-    inputs={
-        "input_field_1": {
-            "type": "string",  # string, number, boolean, array, object
-            "description": "What this input is for",
-            "required": True
-        },
-        "input_field_2": {
-            "type": "number",
-            "description": "Optional input",
-            "required": False
-        }
-    },
-    outputs={
-        "output_field_1": {
-            "type": "string",
-            "description": "What this output contains"
-        },
-        "output_field_2": {
-            "type": "array",
-            "description": "List of results"
-        }
-    },
-    timeout=30  # seconds (default: 30)
-)
-class YourAgentName(BaseAgent):
-    """
-    Detailed agent description.
-
-    This agent:
-    1. Does X
-    2. Then does Y
-    3. Returns Z
-    """
-
-    async def execute(self, context: AgentContext) -> AgentResult:
-        """
-        Main execution logic.
-        """
-        try:
-            # Step 1: Get inputs
-            input1 = context.get_input("input_field_1")
-            input2 = context.get_input("input_field_2", default_value=None)
-
-            context.log("info", f"Processing: {input1}")
-
-            # Step 2: Your logic here
-            # - Call Claude API
-            # - Fetch external data
-            # - Process information
-            # - Generate results
-            result = await self._process(input1, input2, context)
-
-            # Step 3: Return success
-            return AgentResult(
-                success=True,
-                data={
-                    "output_field_1": result["field1"],
-                    "output_field_2": result["field2"]
-                },
-                metadata={
-                    "agent_id": "your-agent-id",
-                    "processing_time_ms": 123
-                }
-            )
-
-        except Exception as e:
-            logger.error(f"Agent execution failed: {e}")
-            return AgentResult(
-                success=False,
-                error=f"Failed to process: {str(e)}"
-            )
-
-    async def _process(
-        self,
-        input1: str,
-        input2: Any,
-        context: AgentContext
-    ) -> Dict[str, Any]:
-        """
-        Helper method for processing logic.
-        """
-        # Your implementation here
-        return {
-            "field1": "result1",
-            "field2": ["item1", "item2"]
-        }
+    def fallback(self, ctx: AgentContext) -> dict:
+        """No-LLM local path: deterministic result matching the output schema.
+        The SDK calls this instead of the model when the proxy is unconfigured."""
+        return {"saved_count": 0, "summary": "Local run (no LLM proxy)."}
 ```
 
 ---
 
-## 🔌 Common Patterns
+## ❌ FORBIDDEN (this is the v1 shape — the runtime rejects it at boot; the app does nothing)
 
-### Pattern 1: Claude via the Claritty LLM proxy (NO API keys)
+- `def execute(self, ...)` / returning `AgentResult` — the v2 runtime never calls `execute()`.
+- `get_llm_client()`, `from claritty_sdk.llm import …`, `run_tool(...)` — the loop drives the
+  model and invokes tools; the agent must not.
+- `import openai|anthropic|aiohttp|requests|httpx` inside an agent — agents do NO HTTP/LLM I/O.
+  Reach external services ONLY from `@tool` functions via `ctx.integration(...)`.
+- Schema in the `@agent(...)` decorator — schema lives in `app.yaml`. The decorator takes `id` only.
 
-Never use a raw `Anthropic(api_key=...)` client — apps hold no provider keys.
-Always call the model through `claritty_sdk.llm.get_llm_client`, which routes to
-the platform's metered, BYOK-aware proxy (auth is injected at deploy):
+---
 
-```python
-from claritty_sdk.llm import get_llm_client
-import asyncio
+## Tools (how an agent does real work)
 
-async def _call_claude(self, prompt: str) -> str:
-    """Call Claude through the Claritty proxy (no ANTHROPIC_API_KEY)."""
-    client = get_llm_client("claude-sonnet-4-6")
-    # chat() is sync; off-load it so the event loop isn't blocked.
-    result = await asyncio.to_thread(
-        client.chat,
-        [{"role": "user", "content": prompt}],
-        max_tokens=1024,
-    )
-    return result.content
-```
-
-### Pattern 2: Database Query (Multi-Tenant!)
+Agents act through tools declared in `app.yaml#tools` and listed in the agent's `tools:`.
+A custom tool is `backend/custom/tools/<id>/impl.py`:
 
 ```python
-from backend.database import get_db
-from backend.models import YourModel
+from claritty_sdk import tool, ToolCtx
 
-async def _fetch_data(self, context: AgentContext):
-    """
-    Fetch data from database (multi-tenant aware).
-    """
-    db = get_db()
-
-    # ✅ CRITICAL: Always filter by the caller's user_id (context.user_id,
-    # which the platform resolves from the X-User-ID header).
-    items = db.query(YourModel).filter(
-        YourModel.user_id == context.user_id
-    ).all()
-
-    return items
+@tool(id="app.save_item")
+def run(input: dict, ctx: ToolCtx) -> dict:
+    # scope by ctx.user_id; reach a connected service via ctx.integration("gmail")
+    return {"item_id": "..."}
 ```
 
-### Pattern 3: External API Call
-
-```python
-import httpx
-
-async def _fetch_external_data(self, api_key: str):
-    """
-    Call external API.
-    """
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            "https://api.example.com/data",
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=10.0
-        )
-
-        if response.status_code != 200:
-            raise Exception(f"API call failed: {response.status_code}")
-
-        return response.json()
-```
-
-### Pattern 4: Error Handling
-
-```python
-async def execute(self, context: AgentContext) -> AgentResult:
-    try:
-        # Your logic
-        result = await self._process()
-
-        return AgentResult(success=True, data=result)
-
-    except ValueError as e:
-        # User input errors
-        context.log("warning", f"Invalid input: {e}")
-        return AgentResult(
-            success=False,
-            error=f"Invalid input: {str(e)}"
-        )
-
-    except httpx.TimeoutException:
-        # Network timeouts
-        context.log("error", "External API timeout")
-        return AgentResult(
-            success=False,
-            error="External service timeout - please try again"
-        )
-
-    except Exception as e:
-        # Unexpected errors
-        logger.exception("Unexpected error in agent")
-        return AgentResult(
-            success=False,
-            error=f"Unexpected error: {str(e)}"
-        )
-```
+Multi-tenancy: every tool/route/model scopes data by a single `user_id` (the X-User-ID key).
+The workflow passes it as `${input.user_id}`.
 
 ---
 
 ## ✅ Checklist
 
-Before marking agent complete:
-
-- [ ] Decorator has unique `id` (kebab-case)
-- [ ] All inputs defined with type and description
-- [ ] All outputs defined with type and description
-- [ ] Database queries filter by the caller's `user_id` (X-User-ID)
-- [ ] AI via `get_llm_client` (no provider keys)
-- [ ] Error handling for common failure cases
-- [ ] Logging at key steps (`context.log()`)
-- [ ] Timeout set appropriately (default: 30s)
-- [ ] Returns `AgentResult` with `success` + `data`/`error`
-
----
-
-## 🧪 Testing
-
-```python
-# Test locally
-import asyncio
-from backend.agents.your_agent import YourAgentName
-
-async def test_agent():
-    agent = YourAgentName()
-
-    # Mock context
-    class MockContext:
-        def get_input(self, key, default_value=None):
-            inputs = {
-                "input_field_1": "test value",
-                "input_field_2": 42
-            }
-            return inputs.get(key, default_value)
-
-        def log(self, level, message):
-            print(f"[{level}] {message}")
-
-    result = await agent.execute(MockContext())
-    print(f"Success: {result.success}")
-    print(f"Data: {result.data}")
-
-asyncio.run(test_agent())
-```
-
----
+- [ ] Agent declared in `app.yaml#agents` with full input/output schema + tools + integrations.
+- [ ] Exactly ONE instruction source: `promptFile` (preferred) or a `handler` class.
+- [ ] NO `execute()` / `AgentResult` / `get_llm_client` / `run_tool` / HTTP-LLM imports.
+- [ ] System prompt tells the agent which tools to call and to end with `__finish` matching the output schema.
+- [ ] Handler-class agents needing the model ship a `fallback(ctx) -> dict`.
+- [ ] All data access scoped by `user_id`.
 
 ## 📚 Related
 
-- `backend/agents/example_agent.py` - Reference implementation
-- `CLAUDE.md` - Full agent development guide
-- `LLM_PROXY.md` - calling Claude via the SDK proxy
+- `backend/agents/example_agent.py` — v2 reference (system_prompt + fallback)
+- `app.yaml` — the manifest the SDK runs
+- `.claude/skills/agentic-app-authoring.md` — canonical authoring guide

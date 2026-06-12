@@ -291,108 +291,84 @@ Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `
 >   publish-only-on-real-id contract for free; prefer it over hand-rolling an
 >   approve route.
 
-### Task 1: Add a New Agent
+### Task 1: Add a New Agent (v2 — a prompt, not an `execute()` method)
 
 **Steps:**
-1. Create `backend/agents/my_agent.py`:
-```python
-from claritty_sdk import agent, BaseAgent, AgentResult, AgentContext
-
-@agent(
-    id="my-agent",
-    name="My Agent",
-    description="Does something useful",
-    inputs={"task": {"type": "string", "required": True}},
-    outputs={"result": {"type": "string"}}
-)
-class MyAgent(BaseAgent):
-    async def execute(self, context: AgentContext) -> AgentResult:
-        task = context.get_input("task")
-
-        # Your AI logic here (use Claude, process data, etc.)
-        result = f"Processed: {task}"
-
-        return AgentResult(
-            success=True,
-            data={"result": result}
-        )
+1. Declare the agent in `app.yaml#agents` (schema lives here):
+```yaml
+agents:
+  - id: my-agent
+    source: custom
+    promptFile: backend/custom/agents/my_agent/prompt.md   # zero-Python (preferred)
+    description: Does something useful in one sentence.
+    model: claude-sonnet-4-6
+    integrations: []
+    tools: [app.save_item]
+    input:
+      user_id: { type: string, required: true }
+    output:
+      result: { type: string, required: true }
+    timeout: 60
 ```
-
-2. Register in `backend/agents/__init__.py`:
-```python
-from backend.agents.my_agent import MyAgent
-__all__ = ["MyAgent", ...]  # Add to list
+2. Write the agent's instructions as PROSE in `backend/custom/agents/my_agent/prompt.md`:
+```markdown
+You are <role>. Call app.save_item with the processed result, then call
+__finish with {result: <the result>} matching the output schema. Never invent values.
 ```
+3. (Only if you need a `before/after` hook or an offline `fallback`) write a handler class
+   instead — `@agent(id="my-agent")` + `system_prompt`, NO `execute()` (the v2 runtime never
+   calls it and rejects it at boot). See `backend/agents/example_agent.py`.
 
-3. Restart backend - done!
+**📚 See**: `backend/agents/example_agent.py` (v2: `system_prompt` + `fallback`, no `execute()`).
 
-**📚 See**: `backend/agents/example_agent.py` for complete minimal example
-
-### Task 2: Add a New Workflow
+### Task 2: Add a New Workflow (v2 — YAML DAG in `app.yaml`)
 
 **Steps:**
-1. Create `backend/workflows/my_workflow.py`:
-```python
-from claritty_sdk import workflow, uses_agent, ExecutionMode
-
-@workflow(
-    id="my-workflow",
-    name="My Workflow",
-    description="Chains agents together",
-    execution_mode=ExecutionMode.SEQUENTIAL  # or PARALLEL, DAG
-)
-@uses_agent("agent-1", output_key="step1")
-@uses_agent("agent-2", input_from="step1", output_key="step2")
-async def my_workflow(context):
-    """Workflow automatically chains agents"""
-    pass  # Execution handled by decorator
+1. Declare it under `app.yaml#workflows` (NO `backend/workflows/*.py`):
+```yaml
+workflows:
+  - id: my-workflow
+    inputs:
+      user_id: { type: string, required: true }
+    steps:
+      - id: step1
+        agent: agent-1
+        input: { user_id: "${input.user_id}" }
+      - id: step2
+        agent: agent-2
+        input:
+          user_id: "${input.user_id}"
+          data: "${steps.step1.output.data}"   # pipe step1's output
+        onError: { strategy: skip }
+    outputs:
+      result: "${steps.step2.output.result}"
 ```
+2. A missing `${...}` reference FAILS the run — only reference values you pass. Steps with no
+   data dependency run in parallel; the engine derives order from the `${steps...}` refs.
 
-2. Register in `backend/workflows/__init__.py`
+**📚 See**: `app.yaml` (the seed's `example-workflow`) + `.claude/prompts/implement-workflow.md`.
 
-3. Test via API or frontend
-
-**📚 See**: `backend/workflows/example_workflow.py` for complete example
-
-### Task 3: Add a User-Configurable Trigger
+### Task 3: Add a User-Configurable Trigger (v2 — YAML in `app.yaml`)
 
 **Steps:**
-1. Create `backend/triggers/my_trigger.py`:
-```python
-from claritty_sdk import trigger_template, TriggerTemplateType
-
-@trigger_template(
-    id="my-trigger",
-    name="My Daily Trigger",
-    description="User configures when this runs daily",
-    template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="my-workflow",  # Links to your workflow
-    config_fields=[
-        {
-            "key": "time",
-            "label": "What time should this run?",
-            "type": "time",
-            "required": True,
-            "default": "09:00"
-        },
-        {
-            "key": "timezone",
-            "label": "Your timezone",
-            "type": "timezone",
-            "required": True
-        }
-    ],
-    max_instances_per_user=5  # Optional limit
-)
-class MyTrigger:
-    pass  # Just a template, platform handles execution
+1. Declare it under `app.yaml#triggers` (NO `backend/triggers/*.py`):
+```yaml
+triggers:
+  - id: my-trigger
+    type: SCHEDULE
+    workflow: my-workflow              # the workflow id it fires
+    name: My daily trigger
+    supportedSchedules: [DAILY]
+    maxInstancesPerUser: 5
+    configFields:
+      - { key: time, type: time, required: true, label: "Run at", default: "09:00" }
+      - { key: timezone, type: timezone, required: true, label: "Timezone" }
 ```
+2. The platform fires it on schedule (calls `/internal/run-due-triggers`) and renders the
+   config UI from `configFields`. The app has NO in-process scheduler. For WEBHOOK triggers,
+   set `type: WEBHOOK`; the payload arrives in the workflow's `trigger_data.webhook_payload`.
 
-2. Register in `backend/triggers/__init__.py`
-
-3. Frontend automatically generates configuration UI!
-
-**📚 See**: `backend/triggers/example_trigger.py` for complete example
+**📚 See**: `app.yaml` (the seed's `example_manual` trigger).
 
 ### Task 4: Customize Widgets
 

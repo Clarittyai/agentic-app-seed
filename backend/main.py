@@ -463,6 +463,11 @@ async def _run_workflow(
     if boot is not None and _manifest_has_workflow(boot, workflow_id):
         inputs = dict(trigger_data or {})
         inputs.pop("agent_context", None)
+        # A workflow that declares inputs.user_id (and steps that reference
+        # ${input.user_id}) would otherwise fail input validation + raise an
+        # ExpressionError on a manual Run / trigger dispatch that sends no body
+        # (0 runs). The caller's identity is authenticated here — supply it.
+        inputs.setdefault("user_id", user_id)
         result = await boot.engine.run(
             workflow_id, inputs=inputs, trigger=inputs, user_id=user_id
         )
@@ -723,6 +728,16 @@ async def startup_event():
     logger.info(f"✅ Registered {len(agents)} agents")
     logger.info(f"✅ Registered {len(workflows)} workflows")
     logger.info(f"✅ Registered {len(templates)} trigger templates")
+
+    # Eagerly load the v2 manifest so build_graph() (and GET /api/graph) reflect
+    # the manifest's agents/tools/integrations + YAML workflows/triggers, not the
+    # partial v1 decorator-registry view. Without this, /api/graph could be hit
+    # before the first workflow run (which lazy-loads boot) and serve a graph with
+    # no tools/integrations/triggers — which the platform then caches.
+    try:
+        _get_boot()
+    except Exception as _e:
+        logger.warning(f"⚠️  v2 manifest eager-load skipped: {_e}")
 
     # Cache the graph for the platform's build-time / unreachable fallback
     # (same build_graph() the /api/graph endpoint serves on demand). This is a

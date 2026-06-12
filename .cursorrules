@@ -24,9 +24,14 @@ for exactly two things:
 - `backend/routes/app.py` — the app's HTTP API (`@router.get/post(...)`). Read the
   caller from the **`X-User-ID`** header (`_resolve_user`) — there is NO
   `CLARITY_WORKSPACE_ID`.
-- `backend/agents/*.py` — `@agent` classes; do work + call the LLM via the SDK.
-- `backend/workflows/*.py` — `@workflow` + `@uses_agent` orchestration.
-- `backend/triggers/*.py` — `@trigger_template` (schedule / webhook).
+- `app.yaml` — the v2 MANIFEST: declares agents, tools, workflows, triggers (schema lives
+  here). The SDK runs THIS. Agents are a system prompt (`promptFile` → zero-Python, or a
+  `@agent(id)` + `system_prompt` class — NEVER `def execute()`/`AgentResult`). Workflows +
+  triggers are YAML. Do NOT create `backend/workflows/*.py` or `backend/triggers/*.py` — the
+  runtime ignores them and rejects v1 `execute()` at boot.
+- `backend/custom/agents/<id>/prompt.md` — a custom agent's instructions (prose).
+  `backend/custom/tools/<id>/impl.py` — `@tool(id)` `def run(input, ctx)`; agents reach
+  external services only through tools via `ctx.integration(...)`.
 - `frontend/src/components/Widget.tsx` — the dashboard widget (uses the UI kit).
 - `frontend/src/pages/*` + `frontend/src/components/ui/*` — full-app screens.
   `components/ui/` has app primitives (Button/Input/Card/Dialog/Table/...).
