@@ -21,6 +21,12 @@ python-multipart==0.0.9
 # `claritty_sdk` module; <2.0.0 predates the v2 runtime this seed depends on.)
 claritty-sdk>=2.0.0,<3.0.0
 
+# Encryption — backend/integrations/crypto.py imports Fernet DIRECTLY for
+# at-rest encryption of integration credentials. Not a transitive dep of
+# anything pinned above, so without this line uvicorn crashes at boot with
+# `ModuleNotFoundError: No module named 'cryptography'` and every /api/* 502s.
+cryptography>=42.0,<46.0
+
 # Database
 sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
