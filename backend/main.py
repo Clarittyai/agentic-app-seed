@@ -318,18 +318,20 @@ async def list_workflows():
 
 
 def _workflows_from_app_yaml() -> list:
-    """Read v2 workflow declarations from app.yaml (id/name/steps). Best-effort:
-    returns [] if app.yaml is absent or unreadable."""
+    """Read v2 workflow declarations from the manifest (id/name/steps). Best-effort:
+    returns [] if the manifest is absent or unreadable. Accepts intelligence.yaml
+    (preferred) or app.yaml (legacy)."""
     try:
         import yaml  # FastAPI app already depends on pyyaml via the SDK
+        from backend.manifest_path import resolve_manifest_path
 
-        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app.yaml")
-        if not os.path.isfile(path):
-            path = os.path.join(os.getcwd(), "app.yaml")
+        path = resolve_manifest_path()
+        if not path:
+            return []
         with open(path, "r", encoding="utf-8") as fh:
             manifest = yaml.safe_load(fh) or {}
     except Exception as exc:  # noqa: BLE001
-        logger.warning(f"could not read app.yaml workflows: {exc}")
+        logger.warning(f"could not read manifest workflows: {exc}")
         return []
     out = []
     for wf in manifest.get("workflows") or []:
@@ -503,8 +505,14 @@ def _get_boot():
     _BOOT_TRIED = True
     try:
         from claritty_sdk.runtime.bootstrap import load as _bootstrap_load
-        _BOOT = _bootstrap_load("app.yaml")
-        logger.info("v2 manifest engine ready (app.yaml).")
+        from backend.manifest_path import resolve_manifest_name
+
+        # Load the app's manifest by its ACTUAL name — intelligence.yaml for new
+        # apps, app.yaml legacy. Hardcoding "app.yaml" loaded NOTHING for an
+        # intelligence.yaml app (empty engine → empty /api/graph → no agents run).
+        manifest_name = resolve_manifest_name()
+        _BOOT = _bootstrap_load(manifest_name)
+        logger.info(f"v2 manifest engine ready ({manifest_name}).")
     except Exception as e:  # legacy v1 app, or SDK without bootstrap → v1 path
         logger.warning(f"v2 manifest engine unavailable; using v1 executor ({e}).")
         _BOOT = None

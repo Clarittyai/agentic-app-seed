@@ -34,13 +34,11 @@ def _required_integrations() -> List[Dict[str, str]]:
     Returns a list of ``{"id", "name"}``. Empty when the app declares none (a
     self-contained app) or app.yaml is absent (local seed dev) — both fine.
     """
-    # app.yaml is materialized next to the backend package in generated apps.
-    candidates = [
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "app.yaml"),
-        os.path.join(os.getcwd(), "app.yaml"),
-        os.path.join(os.getcwd(), "backend", "app.yaml"),
-    ]
-    path = next((p for p in candidates if os.path.isfile(p)), None)
+    # The manifest (intelligence.yaml preferred, app.yaml legacy) is materialized
+    # next to the backend package in generated apps.
+    from backend.manifest_path import resolve_manifest_path
+
+    path = resolve_manifest_path()
     if not path:
         return []
     try:
