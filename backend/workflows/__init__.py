@@ -1,11 +1,11 @@
 """
-Workflows Package (DEPRECATED for v2 — workflows live in app.yaml)
+Workflows Package (DEPRECATED for v2 — workflows live in intelligence.yaml)
 
 In the v2 manifest-first runtime a workflow is a YAML DAG declared in
-app.yaml#workflows — there are NO python workflow files and NO @workflow/
+intelligence.yaml#workflows — there are NO python workflow files and NO @workflow/
 @uses_agent decorators (the runtime ignores them).
 
-Example (in app.yaml, NOT here):
+Example (in intelligence.yaml, NOT here):
     workflows:
       - id: my-workflow
         inputs: { user_id: { type: string, required: true } }
@@ -22,5 +22,5 @@ Example (in app.yaml, NOT here):
 This package is kept only so legacy auto-discovery imports don't crash.
 """
 
-# No imports needed - workflows are declared in app.yaml.
+# No imports needed - workflows are declared in intelligence.yaml.
 __all__ = []

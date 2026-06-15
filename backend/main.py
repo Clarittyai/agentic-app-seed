@@ -290,9 +290,9 @@ async def get_agent(agent_id: str):
 async def list_workflows():
     """
     List all registered workflows. v1 workflows come from WorkflowRegistry;
-    in the manifest-first v2 model workflows are declared in app.yaml (the
+    in the manifest-first v2 model workflows are declared in intelligence.yaml (the
     legacy per-file @workflow registry is empty), so fall back to reading them
-    from app.yaml so the endpoint reflects the app's real workflows.
+    from intelligence.yaml so the endpoint reflects the app's real workflows.
     """
     workflows = WorkflowRegistry.list_workflows()
     if workflows:
@@ -487,9 +487,9 @@ def _load_user_integrations(db: Session, user_id: str) -> Dict[str, Any]:
     return integrations
 
 
-# --- v2 manifest execution (app.yaml workflows) with v1 fallback -------------
+# --- v2 manifest execution (intelligence.yaml workflows) with v1 fallback -------------
 # Both the platform AND a local "run now" execute through here. v2 manifest apps
-# (workflows declared in app.yaml, handlers in backend/custom/) run via the SDK
+# (workflows declared in intelligence.yaml, handlers in backend/custom/) run via the SDK
 # WorkflowEngine — the SAME engine the platform uses — so a local trigger never
 # diverges from how the app is managed when hosted. Legacy v1 (decorator-
 # registered) apps fall back to the v1 WorkflowExecutor. The /internal/* contract
@@ -508,7 +508,7 @@ def _get_boot():
         from backend.manifest_path import resolve_manifest_name
 
         # Load the app's manifest by its ACTUAL name — intelligence.yaml for new
-        # apps, app.yaml legacy. Hardcoding "app.yaml" loaded NOTHING for an
+        # apps, app.yaml legacy. Hardcoding "intelligence.yaml" loaded NOTHING for an
         # intelligence.yaml app (empty engine → empty /api/graph → no agents run).
         manifest_name = resolve_manifest_name()
         _BOOT = _bootstrap_load(manifest_name)
@@ -678,7 +678,7 @@ async def execute_workflow(
     body = dict(input_data or {})
     agent_context = body.pop("agent_context", {}) or {}
 
-    # Run via the v2 manifest engine when the workflow is in app.yaml (same engine
+    # Run via the v2 manifest engine when the workflow is in intelligence.yaml (same engine
     # the platform uses), else the legacy v1 executor. Measure duration here — the
     # executor's return shape varies and may omit `duration_seconds`.
     started_at = datetime.utcnow()

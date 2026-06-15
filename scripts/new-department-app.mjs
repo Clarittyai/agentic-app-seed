@@ -221,8 +221,8 @@ if (existsSync(themePath)) {
   writeFileSync(themePath, base + override);
 }
 
-// --- app.yaml: set id + integrations from preset ---------------------------
-const yamlPath = join(target, 'app.yaml');
+// --- intelligence.yaml: set id + integrations from preset ---------------------------
+const yamlPath = join(target, 'intelligence.yaml');
 if (existsSync(yamlPath)) {
   let yaml = readFileSync(yamlPath, 'utf8');
   yaml = yaml.replace(/^id:\s*.*$/m, `id: ${slug}`);
@@ -246,7 +246,7 @@ ${description}
 - Activated the identity gate (\`.claritty-seed-pristine\` removed).
 - Set app name/description (\`frontend/src/lib/app-meta.ts\`) and a starter palette
   (\`frontend/src/theme.css\`).
-- Wired \`app.yaml\`: \`id: ${slug}\`, integrations: ${preset.integrations.join(', ') || '(none)'}.
+- Wired \`intelligence.yaml\`: \`id: ${slug}\`, integrations: ${preset.integrations.join(', ') || '(none)'}.
 
 ## What you still need to do (the gate enforces real work)
 1. **Domain model** — in \`backend/models.py\`, replace \`Task\` with your item:

@@ -14,7 +14,7 @@ assistant know exactly what stays out.
 ┌─ Authoring ─ Claude Code, IDE, planner prompts ─────────┐
 │   sees:    catalog metadata (ids, descriptions,         │
 │            intent hints, authType, providedToolIds),    │
-│            schema, user intent, app.yaml, custom code   │
+│            schema, user intent, intelligence.yaml, custom code   │
 │   NEVER:   client_id, client_secret, OAuth tokens,      │
 │            KMS material, CLARITTY_INTERNAL_SECRET,      │
 │            encrypted credentials                        │
@@ -34,7 +34,7 @@ assistant know exactly what stays out.
 │  │            shaped strings (see scanner rules).    │  │
 │  │                                                   │  │
 │  │  ┌─ Runtime ─ deployed app on ECS ─────────────┐  │  │
-│  │  │   sees:    app.yaml, CLARITTY_INTERNAL_     │  │  │
+│  │  │   sees:    intelligence.yaml, CLARITTY_INTERNAL_     │  │  │
 │  │  │            SECRET (env-injected, never      │  │  │
 │  │  │            logged), CLARITTY_PLATFORM_URL,  │  │  │
 │  │  │            per-invocation ephemeral         │  │  │
@@ -124,7 +124,7 @@ copy-pasting it into a tool file would defeat the gate.
 Per [`Phase 5.8`](.) of the master plan, the CLI runs in pre-commit
 hooks and in CI. It hard-fails on:
 
-1. **Invalid `app.yaml`** — shape, cross-references against the catalog
+1. **Invalid `intelligence.yaml`** — shape, cross-references against the catalog
 2. **Invalid custom-tool / custom-agent source** — signature, decorator,
    banned imports, byte ceiling (rules:
    [`catalog/validators/custom-tools.rules.yaml`](catalog/validators/custom-tools.rules.yaml))
@@ -136,7 +136,7 @@ Exit codes:
 - `0` everything passes
 - `1` invalid shape
 - `2` reference error
-- `3` setup error (no app.yaml, no catalog)
+- `3` setup error (no intelligence.yaml, no catalog)
 - `4` secret-shaped string found
 
 Allowlist legitimate false positives (one regex per line) in

@@ -63,10 +63,10 @@ def main() -> int:
     schema = AppManifest.model_json_schema()
     # Top-level metadata so consumers can tell at a glance which version
     # of the schema they're reading without parsing every $ref.
-    schema["$id"] = "https://claritty.dev/schema/app.yaml/v1"
+    schema["$id"] = "https://claritty.dev/schema/intelligence.yaml/v1"
     schema["title"] = "Claritty AppManifest"
     schema["description"] = (
-        "Canonical schema for the seed's app.yaml. Generated from "
+        "Canonical schema for the seed's intelligence.yaml. Generated from "
         "claritty_sdk.manifest.AppManifest via Pydantic; do not edit by hand."
     )
     out = Path(__file__).resolve().parent.parent / "catalog" / "SCHEMA.json"

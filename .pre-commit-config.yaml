@@ -2,7 +2,7 @@
 #
 # Runs `claritty seed verify` against the working tree before every
 # commit. The CLI hard-fails on:
-#   * Invalid app.yaml
+#   * Invalid intelligence.yaml
 #   * Invalid backend/custom/tools/*/impl.py
 #   * Token-shaped strings under backend/
 #

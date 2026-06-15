@@ -7,7 +7,7 @@ context) -> AgentResult`` that hand-rolled an LLM call and a
 
 In v2 the decorator is a pure binder: id only. The schema (input,
 output, model, tools, integrations, timeout) lives in
-``app.yaml#agents``. The class supplies ``system_prompt`` (or a
+``intelligence.yaml#agents``. The class supplies ``system_prompt`` (or a
 Markdown prompt loaded by the catalog renderer) and optional
 ``before(ctx)`` / ``after(ctx, output)`` hooks; the SDK's
 ``claritty_sdk.runtime.tool_loop.run_agent`` drives the Anthropic
@@ -35,7 +35,7 @@ with a greeting message, then call `__finish` with
         CLARITTY_PLATFORM_URL nor CLARITTY_LLM_PROXY_URL/CLARITTY_AUTH_TOKEN is
         set — the usual local-dev case — so the app still works end-to-end
         without AI. It MUST return a dict matching the agent's `output:` schema
-        in app.yaml (here `{greeting: string}`). Every generated agent whose work
+        in intelligence.yaml (here `{greeting: string}`). Every generated agent whose work
         needs the model should ship one of these.
         """
         name = (ctx.get_input("name") or "there").strip() or "there"

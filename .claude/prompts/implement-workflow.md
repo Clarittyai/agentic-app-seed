@@ -1,14 +1,14 @@
 # Workflow Implementation Prompt (v2 manifest-first)
 
 **Quick reference for adding a workflow.** A workflow is a **YAML DAG declared in
-`app.yaml#workflows`** — there are NO `backend/workflows/*.py` files and NO
+`intelligence.yaml#workflows`** — there are NO `backend/workflows/*.py` files and NO
 `@workflow`/`@uses_agent` decorators. The SDK's workflow engine runs the YAML.
 
-> Canonical reference: `.claude/skills/agentic-app-authoring.md` and the seed's `app.yaml`.
+> Canonical reference: `.claude/skills/agentic-app-authoring.md` and the seed's `intelligence.yaml`.
 
 ---
 
-## Declare the workflow in `app.yaml`
+## Declare the workflow in `intelligence.yaml`
 
 ```yaml
 workflows:
@@ -78,11 +78,11 @@ curl -X POST http://localhost:8000/api/workflows/your-workflow-id/execute \
 ```
 
 (The backend injects `user_id`; the widget updates after a run.) On the platform, a trigger
-in `app.yaml#triggers` fires the workflow on schedule.
+in `intelligence.yaml#triggers` fires the workflow on schedule.
 
 ## ✅ Checklist
 
-- [ ] Workflow declared in `app.yaml#workflows` (id, inputs, steps, outputs).
+- [ ] Workflow declared in `intelligence.yaml#workflows` (id, inputs, steps, outputs).
 - [ ] Each step uses `agent:` or `tool:` + an `input:` map.
 - [ ] Data piped via `${input.*}` / `${steps.*.output.*}`; every reference resolves.
 - [ ] `user_id` declared in inputs and passed to each step.
@@ -91,6 +91,6 @@ in `app.yaml#triggers` fires the workflow on schedule.
 
 ## 📚 Related
 
-- `app.yaml` — the manifest the SDK runs (see the workflows section)
+- `intelligence.yaml` — the manifest the SDK runs (see the workflows section)
 - `.claude/prompts/implement-agent.md` — the agents these steps call
 - `.claude/skills/agentic-app-authoring.md` — canonical authoring guide

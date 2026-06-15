@@ -4,11 +4,11 @@
 **system prompt**, not a Python method. The SDK's tool-use loop drives the model and
 invokes tools; the agent class NEVER implements `execute()`.
 
-> Canonical reference: `.claude/skills/agentic-app-authoring.md` and the seed's `app.yaml`.
+> Canonical reference: `.claude/skills/agentic-app-authoring.md` and the seed's `intelligence.yaml`.
 
 ---
 
-## 1. Declare the agent in `app.yaml` (schema lives here)
+## 1. Declare the agent in `intelligence.yaml` (schema lives here)
 
 ```yaml
 agents:
@@ -39,7 +39,7 @@ Create `backend/custom/agents/your_agent_id/prompt.md` — pure prose, no code:
 You are <role>. On each run you <goal> for the user to review.
 
 Steps on every invocation:
-1. Call <tool-id> to read/act on the user's data (reference tools by their app.yaml id).
+1. Call <tool-id> to read/act on the user's data (reference tools by their intelligence.yaml id).
 2. For each item, <decide/draft> grounded ONLY in that data — never fabricate.
 3. Call app.save_item per item with {…} (it persists a PENDING_APPROVAL item).
 4. Call __finish with {saved_count, summary} matching the agent's output schema.
@@ -57,7 +57,7 @@ from claritty_sdk import agent, AgentContext, BaseAgent
 
 SYSTEM_PROMPT = """You are <role>. … call <tool-id> … then call __finish with {…}."""
 
-@agent(id="your-agent-id")            # id ONLY — schema is in app.yaml
+@agent(id="your-agent-id")            # id ONLY — schema is in intelligence.yaml
 class YourAgent(BaseAgent):
     system_prompt = SYSTEM_PROMPT
 
@@ -76,13 +76,13 @@ class YourAgent(BaseAgent):
   model and invokes tools; the agent must not.
 - `import openai|anthropic|aiohttp|requests|httpx` inside an agent — agents do NO HTTP/LLM I/O.
   Reach external services ONLY from `@tool` functions via `ctx.integration(...)`.
-- Schema in the `@agent(...)` decorator — schema lives in `app.yaml`. The decorator takes `id` only.
+- Schema in the `@agent(...)` decorator — schema lives in `intelligence.yaml`. The decorator takes `id` only.
 
 ---
 
 ## Tools (how an agent does real work)
 
-Agents act through tools declared in `app.yaml#tools` and listed in the agent's `tools:`.
+Agents act through tools declared in `intelligence.yaml#tools` and listed in the agent's `tools:`.
 A custom tool is `backend/custom/tools/<id>/impl.py`:
 
 ```python
@@ -101,7 +101,7 @@ The workflow passes it as `${input.user_id}`.
 
 ## ✅ Checklist
 
-- [ ] Agent declared in `app.yaml#agents` with full input/output schema + tools + integrations.
+- [ ] Agent declared in `intelligence.yaml#agents` with full input/output schema + tools + integrations.
 - [ ] Exactly ONE instruction source: `promptFile` (preferred) or a `handler` class.
 - [ ] NO `execute()` / `AgentResult` / `get_llm_client` / `run_tool` / HTTP-LLM imports.
 - [ ] System prompt tells the agent which tools to call and to end with `__finish` matching the output schema.
@@ -111,5 +111,5 @@ The workflow passes it as `${input.user_id}`.
 ## 📚 Related
 
 - `backend/agents/example_agent.py` — v2 reference (system_prompt + fallback)
-- `app.yaml` — the manifest the SDK runs
+- `intelligence.yaml` — the manifest the SDK runs
 - `.claude/skills/agentic-app-authoring.md` — canonical authoring guide

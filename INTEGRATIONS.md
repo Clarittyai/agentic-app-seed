@@ -32,7 +32,7 @@ must actually have a post on LinkedIn. Faking it is the worst possible outcome �
 Inside a `@tool` handler (or an agent's tools), call `ctx.integration("<id>")` — or use the
 integration's **provided catalog tool** directly. The catalog ships real tools; e.g. the `linkedin`
 integration provides `linkedin.fetch_posts` and `linkedin.create_post`. Reference them by their
-dotted id in your agent's `system_prompt` and list them in `app.yaml#agents[].tools`; the tool-use
+dotted id in your agent's `system_prompt` and list them in `intelligence.yaml#agents[].tools`; the tool-use
 loop dispatches them. A provided tool returns `{"error": "<id>_not_connected"}` when the user hasn't
 connected the service — handle that, don't crash.
 
@@ -48,7 +48,7 @@ def publish_draft(input: dict, ctx: ToolCtx) -> dict:
 ```
 
 Agents do **not** call the LLM or import `openai`/`requests` themselves, and do **not** call a
-`run_tool()` helper (there is none). They declare tools in `app.yaml`; the loop invokes them.
+`run_tool()` helper (there is none). They declare tools in `intelligence.yaml`; the loop invokes them.
 
 ---
 

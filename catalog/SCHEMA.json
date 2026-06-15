@@ -516,7 +516,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Canonical schema for the seed's app.yaml. Generated from claritty_sdk.manifest.AppManifest via Pydantic; do not edit by hand.",
+  "description": "Canonical schema for the seed's intelligence.yaml. Generated from claritty_sdk.manifest.AppManifest via Pydantic; do not edit by hand.",
   "properties": {
     "schemaVersion": {
       "const": 1,
@@ -581,5 +581,5 @@
   ],
   "title": "Claritty AppManifest",
   "type": "object",
-  "$id": "https://claritty.dev/schema/app.yaml/v1"
+  "$id": "https://claritty.dev/schema/intelligence.yaml/v1"
 }

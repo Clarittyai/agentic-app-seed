@@ -277,9 +277,9 @@ Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `
 > ⚠️ **Authoring model — read this first.** The Task examples below show the
 > legacy **v1** shape (`@agent(...)` kwargs + `async def execute() -> AgentResult`).
 > The runtime is **v2 manifest-first**: declare agents/tools/workflows/triggers in
-> **`app.yaml`** (schema lives there), and write the class as
+> **`intelligence.yaml`** (schema lives there), and write the class as
 > `@agent(id="…") class Agent(BaseAgent): system_prompt = "…"` plus an optional
-> `fallback(ctx)` (the no-LLM local path). Source of truth: `app.yaml` +
+> `fallback(ctx)` (the no-LLM local path). Source of truth: `intelligence.yaml` +
 > `.claude/skills/agentic-app-authoring.md`.
 >
 > - **Multi-agent apps:** chain 2–3 agents as workflow **steps** with
@@ -294,7 +294,7 @@ Widget buttons MUST use the action contract — `triggerDeepLink({ path })` or `
 ### Task 1: Add a New Agent (v2 — a prompt, not an `execute()` method)
 
 **Steps:**
-1. Declare the agent in `app.yaml#agents` (schema lives here):
+1. Declare the agent in `intelligence.yaml#agents` (schema lives here):
 ```yaml
 agents:
   - id: my-agent
@@ -321,10 +321,10 @@ __finish with {result: <the result>} matching the output schema. Never invent va
 
 **📚 See**: `backend/agents/example_agent.py` (v2: `system_prompt` + `fallback`, no `execute()`).
 
-### Task 2: Add a New Workflow (v2 — YAML DAG in `app.yaml`)
+### Task 2: Add a New Workflow (v2 — YAML DAG in `intelligence.yaml`)
 
 **Steps:**
-1. Declare it under `app.yaml#workflows` (NO `backend/workflows/*.py`):
+1. Declare it under `intelligence.yaml#workflows` (NO `backend/workflows/*.py`):
 ```yaml
 workflows:
   - id: my-workflow
@@ -346,12 +346,12 @@ workflows:
 2. A missing `${...}` reference FAILS the run — only reference values you pass. Steps with no
    data dependency run in parallel; the engine derives order from the `${steps...}` refs.
 
-**📚 See**: `app.yaml` (the seed's `example-workflow`) + `.claude/prompts/implement-workflow.md`.
+**📚 See**: `intelligence.yaml` (the seed's `example-workflow`) + `.claude/prompts/implement-workflow.md`.
 
-### Task 3: Add a User-Configurable Trigger (v2 — YAML in `app.yaml`)
+### Task 3: Add a User-Configurable Trigger (v2 — YAML in `intelligence.yaml`)
 
 **Steps:**
-1. Declare it under `app.yaml#triggers` (NO `backend/triggers/*.py`):
+1. Declare it under `intelligence.yaml#triggers` (NO `backend/triggers/*.py`):
 ```yaml
 triggers:
   - id: my-trigger
@@ -368,7 +368,7 @@ triggers:
    config UI from `configFields`. The app has NO in-process scheduler. For WEBHOOK triggers,
    set `type: WEBHOOK`; the payload arrives in the workflow's `trigger_data.webhook_payload`.
 
-**📚 See**: `app.yaml` (the seed's `example_manual` trigger).
+**📚 See**: `intelligence.yaml` (the seed's `example_manual` trigger).
 
 ### Task 4: Customize Widgets
 

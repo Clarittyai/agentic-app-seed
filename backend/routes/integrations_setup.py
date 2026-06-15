@@ -29,10 +29,10 @@ router = APIRouter()
 
 @lru_cache(maxsize=1)
 def _required_integrations() -> List[Dict[str, str]]:
-    """The integrations this app declares it needs, read once from app.yaml.
+    """The integrations this app declares it needs, read once from intelligence.yaml.
 
     Returns a list of ``{"id", "name"}``. Empty when the app declares none (a
-    self-contained app) or app.yaml is absent (local seed dev) — both fine.
+    self-contained app) or intelligence.yaml is absent (local seed dev) — both fine.
     """
     # The manifest (intelligence.yaml preferred, app.yaml legacy) is materialized
     # next to the backend package in generated apps.
@@ -47,7 +47,7 @@ def _required_integrations() -> List[Dict[str, str]]:
         with open(path, "r", encoding="utf-8") as fh:
             manifest = yaml.safe_load(fh) or {}
     except Exception as exc:  # noqa: BLE001
-        logger.warning("could not read app.yaml integrations: %s", exc)
+        logger.warning("could not read intelligence.yaml integrations: %s", exc)
         return []
 
     out: List[Dict[str, str]] = []

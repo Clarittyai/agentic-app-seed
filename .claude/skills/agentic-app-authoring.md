@@ -13,16 +13,16 @@ Auto-loaded when this seed is open. Read once per session, then act on it.
 - **Integration** — a connected third-party (Gmail, Slack, GitHub…). Catalog-only. Lists provided tools.
 - **Tool** — a typed function the runtime calls. Catalog (provided by an integration or standalone) or **custom** (you write it).
 - **Agent** — an LLM + a toolset. Catalog or custom.
-- **Workflow** — a declarative DAG. Always YAML in `app.yaml`.
+- **Workflow** — a declarative DAG. Always YAML in `intelligence.yaml`.
 - **Trigger** — what fires a workflow (schedule, webhook). Catalog-only.
 
-The single source of truth is **`app.yaml`** at the seed root. Decorators
+The single source of truth is **`intelligence.yaml`** at the seed root. Decorators
 in `claritty_sdk` are binders; the manifest carries the data.
 
 ## Before writing any code: ground yourself
 
 1. Read [`AGENTIC.md`](../../AGENTIC.md) (one-page overview).
-2. Grep [`catalog/INDEX.md`](../../catalog/INDEX.md) for the integration / tool / agent you need. If it's there, reference it by id in `app.yaml`. Don't reinvent.
+2. Grep [`catalog/INDEX.md`](../../catalog/INDEX.md) for the integration / tool / agent you need. If it's there, reference it by id in `intelligence.yaml`. Don't reinvent.
 3. If you must build something new, the **only** custom escape is custom tools and custom agents (custom integrations and custom triggers are refused — the platform owns OAuth and the dispatcher).
 4. Skim [`SECURITY.md`](../../SECURITY.md). Internalize what you must never write.
 
@@ -93,7 +93,7 @@ behind this pattern.
 ## Verify before you push
 
 ```sh
-claritty seed verify   # validates app.yaml, custom tools, scans for secrets
+claritty seed verify   # validates intelligence.yaml, custom tools, scans for secrets
 ```
 
 Pre-commit hook runs it automatically. CI runs it again on the PR. Both

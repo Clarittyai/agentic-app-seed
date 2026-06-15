@@ -2,13 +2,13 @@
 
 Five reusable agent shapes that cover the department portfolio. Each is a custom
 agent (manifest-first SDK v2: a class with a `system_prompt`, driven by the
-tool-use loop) wired in `app.yaml`. They compose the same two reusable pieces:
+tool-use loop) wired in `intelligence.yaml`. They compose the same two reusable pieces:
 
 - **`persist_item`** (`backend/shared/agent_tools.py`) — the agent's save tool
   calls this to drop a PENDING_APPROVAL item on the spine (audit + lifecycle for
   free). Each app's `backend/custom/tools/app_save_<x>/impl.py` is ~10 lines.
 - The integration tools (`gmail.list_messages`, `gmail.send`, …) that
-  materialize from `app.yaml#integrations` at boot.
+  materialize from `intelligence.yaml#integrations` at boot.
 
 Reference implementation: the Sales flagship's `lead-assistant`
 (`sales-lead-triage/backend/custom/agents/lead_assistant/agent.py`).
@@ -56,7 +56,7 @@ voice; never fabricate a recipient; finish calmly when there's nothing to do.
 
 ## Wiring checklist (per app)
 
-- `app.yaml`: declare the integration(s), the `app.save_<x>` custom tool, the
+- `intelligence.yaml`: declare the integration(s), the `app.save_<x>` custom tool, the
   agent (referencing the tool + integration), a workflow, and a daily trigger.
 - `backend/custom/agents/<name>/agent.py`: the class + `system_prompt`.
 - `backend/custom/tools/app_save_<x>/impl.py`: map tool input → `persist_item`.

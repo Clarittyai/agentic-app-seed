@@ -173,11 +173,11 @@ The Clarity Platform deploys ONLY ONE container per app. This template provides:
 - Use Docker Compose multi-service pattern in production
 - Proxy to `backend:8000` (use `localhost:8000`)
 
-### Required Patterns (v2 manifest-first — declare everything in `app.yaml`)
+### Required Patterns (v2 manifest-first — declare everything in `intelligence.yaml`)
 
 #### 1. Agents are a system PROMPT, not an `execute()` method
 ```yaml
-# app.yaml — schema lives here
+# intelligence.yaml — schema lives here
 agents:
   - id: my-agent
     source: custom
@@ -204,7 +204,7 @@ async def execute(self, context): return AgentResult(...)
 get_llm_client(); import requests
 ```
 
-#### 3. Workflows + triggers are YAML in `app.yaml` (no Python files)
+#### 3. Workflows + triggers are YAML in `intelligence.yaml` (no Python files)
 ```yaml
 workflows:
   - id: my-workflow
@@ -247,9 +247,9 @@ If developer asks about modifying protected files:
 ## 🎓 Code Suggestion Guidelines
 
 ### DO Suggest:
-- ✅ New agents declared in `app.yaml#agents` (prompt in `backend/custom/agents/<id>/prompt.md`)
-- ✅ New workflows as YAML in `app.yaml#workflows` (NOT `backend/workflows/*.py`)
-- ✅ New trigger templates as YAML in `app.yaml#triggers` (NOT `backend/triggers/*.py`)
+- ✅ New agents declared in `intelligence.yaml#agents` (prompt in `backend/custom/agents/<id>/prompt.md`)
+- ✅ New workflows as YAML in `intelligence.yaml#workflows` (NOT `backend/workflows/*.py`)
+- ✅ New trigger templates as YAML in `intelligence.yaml#triggers` (NOT `backend/triggers/*.py`)
 - ✅ New custom tools in `backend/custom/tools/<id>/impl.py` (`@tool(id)` `def run(input, ctx)`)
 - ✅ New React components in `frontend/src/components/`
 - ✅ New API methods in `frontend/src/lib/api.ts`

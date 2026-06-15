@@ -136,7 +136,7 @@ frontend/
 **Example** (the seed's `example-agent`) — v2: the agent is a system prompt; the SDK's
 tool-use loop runs it. No `execute()` method.
 ```python
-@agent(id="example-agent")            # schema lives in app.yaml
+@agent(id="example-agent")            # schema lives in intelligence.yaml
 class ExampleAgent(BaseAgent):
     system_prompt = "You triage a task… call __finish with {priority, suggested_action}."
     def fallback(self, ctx): ...      # optional no-LLM local result
@@ -153,7 +153,7 @@ Users interact mainly through dashboard widgets (Apple HIG 3-size standard):
 
 ### 3. User-Configurable Triggers
 
-**You define templates (YAML in `app.yaml`), users create instances:**
+**You define templates (YAML in `intelligence.yaml`), users create instances:**
 ```yaml
 triggers:
   - id: daily-review
@@ -183,20 +183,20 @@ triggers:
 
 ## 🔧 Common Tasks
 
-Everything below is declared in **`app.yaml`** (the v2 manifest the SDK runs). There are NO
+Everything below is declared in **`intelligence.yaml`** (the v2 manifest the SDK runs). There are NO
 `backend/workflows/*.py` or `backend/triggers/*.py` files.
 
 ### Add a New Agent
-1. Declare it in `app.yaml#agents` (schema here) with `promptFile: backend/custom/agents/my_agent/prompt.md`.
+1. Declare it in `intelligence.yaml#agents` (schema here) with `promptFile: backend/custom/agents/my_agent/prompt.md`.
 2. Write the agent's instructions as prose in that `prompt.md` (call tools by id, end with `__finish`).
 3. (Optional) a handler class for hooks/offline `fallback` — `@agent(id)` + `system_prompt`, never `execute()`.
 
 ### Add a New Workflow
-1. Declare it in `app.yaml#workflows`: `steps` with `agent:`/`tool:`, pipe data via
+1. Declare it in `intelligence.yaml#workflows`: `steps` with `agent:`/`tool:`, pipe data via
    `${steps.<id>.output.<key>}` / `${input.<x>}`, add `onError` where needed.
 
 ### Add a New Trigger Template
-1. Declare it in `app.yaml#triggers`: `type: SCHEDULE|WEBHOOK`, `workflow`, `configFields`.
+1. Declare it in `intelligence.yaml#triggers`: `type: SCHEDULE|WEBHOOK`, `workflow`, `configFields`.
    The platform fires it and renders the config UI.
 
 **📖 See [CLAUDE.md](CLAUDE.md) Tasks 1–3 + `.claude/prompts/implement-{agent,workflow}.md` for full examples**

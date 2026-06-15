@@ -15,10 +15,10 @@ A Claritty app composes five things:
 | **Integration** | A connected third-party service (Gmail, Slack, GitHub…). Provides credentials + a set of tools. | `catalog/integrations/<id>/manifest.json` |
 | **Tool** | A typed function the runtime can call: standalone (you author) or provided by an integration (catalog). | `catalog/tools/<id>/` or `backend/custom/tools/<id>/` |
 | **Agent** | An LLM + a toolset. Takes input, runs a tool-use loop, returns output. | `catalog/agents/<id>/` or `backend/custom/agents/<id>/` |
-| **Workflow** | A declarative DAG of steps (each step is `agent:` or `tool:`). Always YAML in `app.yaml`. | `app.yaml#workflows` |
-| **Trigger** | What kicks off a workflow: a schedule, a webhook, an integration push. Catalog-only. | `app.yaml#triggers` |
+| **Workflow** | A declarative DAG of steps (each step is `agent:` or `tool:`). Always YAML in `intelligence.yaml`. | `intelligence.yaml#workflows` |
+| **Trigger** | What kicks off a workflow: a schedule, a webhook, an integration push. Catalog-only. | `intelligence.yaml#triggers` |
 
-The single source of truth for an app's wiring is **`app.yaml` at the
+The single source of truth for an app's wiring is **`intelligence.yaml` at the
 seed root**. Decorators in `claritty_sdk` are *binders* that attach a
 Python symbol to a manifest entry by id — they never carry data the
 manifest doesn't.
@@ -40,7 +40,7 @@ new code. Examples:
   `providedTools[]`.
 - Need a summarizer? `catalog/tools/llm.summarize/manifest.json`.
 
-### Step 2 — write `app.yaml`
+### Step 2 — write `intelligence.yaml`
 
 Reference catalog ids in `integrations:` / `agents:` / `tools:` /
 `workflows:` / `triggers:`. The runtime validates the references at boot
@@ -73,7 +73,7 @@ match the file's directory name. Forbidden: `subprocess`, `eval`,
 ### Step 4 — verify before commit
 
 Run `claritty seed verify` (Phase 5.8 — see
-[`SECURITY.md`](SECURITY.md)). It validates `app.yaml`, applies the same
+[`SECURITY.md`](SECURITY.md)). It validates `intelligence.yaml`, applies the same
 rules the platform uses, and scans for accidentally-committed secrets.
 Pre-commit hook runs it automatically.
 
@@ -85,7 +85,7 @@ Pre-commit hook runs it automatically.
 [`SECURITY.md`](SECURITY.md). Short version:
 
 - **Authoring** (you + your AI assistant) sees: catalog metadata,
-  schema, your prompt, `app.yaml`, custom code. Never: OAuth tokens,
+  schema, your prompt, `intelligence.yaml`, custom code. Never: OAuth tokens,
   client_id, client_secret, KMS material.
 - **Build** (`claritty seed verify`, CI) sees the same. Hard-fails on
   token-shaped strings.
@@ -106,7 +106,7 @@ agentic-app-seed/
 ├── AGENTIC.md            ← you are here
 ├── SECURITY.md           ← three-circle secret contract
 ├── CLAUDE.md             ← AI-assistant narrative guide (older, deeper)
-├── app.yaml              ← single source of truth for this app
+├── intelligence.yaml              ← single source of truth for this app
 ├── .claude/
 │   └── skills/
 │       └── agentic-app-authoring.md   ← auto-loads in Claude Code
@@ -135,7 +135,7 @@ agentic-app-seed/
 
 - **Schema details**: [`catalog/SCHEMA.json`](catalog/SCHEMA.json) +
   `claritty_sdk.manifest`
-- **Examples**: see `app.yaml` in this directory + the catalog templates
+- **Examples**: see `intelligence.yaml` in this directory + the catalog templates
 - **AI-assistant context**:
   [`.claude/skills/agentic-app-authoring.md`](.claude/skills/agentic-app-authoring.md)
   auto-loads when Claude Code opens this directory
