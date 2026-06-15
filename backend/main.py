@@ -411,11 +411,6 @@ async def execute_agent(
     """
     Execute a single agent with provided input data.
     """
-    # Get agent class
-    agent_class = AgentRegistry.get_agent(agent_id)
-    if not agent_class:
-        raise HTTPException(status_code=404, detail="Agent not found")
-
     # Get user integrations
     integrations = {}
     user_integrations = db.query(models.UserIntegration).filter(
@@ -439,7 +434,43 @@ async def execute_agent(
         user_context=user_context,
     )
 
-    # Execute agent
+    # v2 manifest agent → run via the SDK tool-loop (`run_agent`), the SAME path
+    # the hosted WorkflowEngine drives per step. A v2 agent defines a
+    # `system_prompt` (no `execute()`), so calling the legacy `agent.execute()`
+    # raises "execute() is the deprecated v1 agent contract …". Prefer v2; fall
+    # back to v1 only for legacy decorator-registered agents.
+    boot = _get_boot()
+    if boot is not None and any(
+        getattr(a, "id", None) == agent_id for a in (boot.manifest.agents or [])
+    ):
+        try:
+            from claritty_sdk.runtime.tool_loop import run_agent
+            result = await run_agent(
+                manifest=boot.manifest,
+                agent_id=agent_id,
+                user_input=input_data if isinstance(input_data, dict) else {},
+                agent_context=context,
+                integration_resolver=lambda svc: integrations.get(svc),
+            )
+            return {
+                "success": True,
+                "data": result.output,
+                "error": None,
+                "metadata": {
+                    "final_text": result.final_text,
+                    "iterations": result.iterations,
+                },
+            }
+        except Exception as e:
+            logger.error(f"Agent execution failed: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Agent execution failed: {str(e)}"
+            )
+
+    # Legacy v1 path — a decorator-registered agent with an execute() method.
+    agent_class = AgentRegistry.get_agent(agent_id)
+    if not agent_class:
+        raise HTTPException(status_code=404, detail="Agent not found")
     try:
         agent_instance = agent_class()
         with use_user_context(user_context):
