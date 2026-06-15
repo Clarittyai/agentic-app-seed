@@ -45,18 +45,25 @@ export default function SetupChecklist({ compact = false }: { compact?: boolean 
   }, []);
 
   const connect = (integrationId: string) => {
+    // Scope the connection to THIS app. The platform host also trusts its own
+    // known appId, but we pass ours so per-app scoping holds in every context.
+    const appId = status?.app_id;
     // Ask the Claritty platform (the iframe parent) to open the connect flow.
-    // Falls back to the platform integrations settings when opened standalone.
     try {
       window.parent?.postMessage(
-        { type: 'claritty:connect-integration', integrationId },
+        { type: 'claritty:connect-integration', integrationId, appId },
         '*',
       );
     } catch {
       /* no-op */
     }
+    // Standalone (not iframed): deep-link to the app's canvas connect entrypoint
+    // so the connection is scoped to this app — not the global settings page.
     if (window.parent === window) {
-      window.open('https://app.claritty.ai/settings/integrations', '_blank', 'noopener');
+      const url = appId
+        ? `https://app.claritty.ai/apps/${appId}?tab=intelligence&connect=${encodeURIComponent(integrationId)}`
+        : 'https://app.claritty.ai/settings/integrations';
+      window.open(url, '_blank', 'noopener');
     }
   };
 

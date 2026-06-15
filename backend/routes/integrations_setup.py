@@ -96,7 +96,17 @@ def required_integrations(user_id: str = Depends(require_user)) -> Dict[str, Any
         {**entry, "connected": _is_connected(entry["id"], user_id)}
         for entry in required
     ]
+    # app_id lets the setup checklist scope the connect flow to THIS app
+    # (per-app integration connections). None locally / when unset.
+    app_id = None
+    try:
+        from backend.config import get_platform_config
+
+        app_id = get_platform_config().clarity_app_id
+    except Exception:  # pragma: no cover - config import/shape is best-effort
+        app_id = None
     return {
         "integrations": items,
         "all_connected": all(i["connected"] for i in items) if items else True,
+        "app_id": app_id,
     }

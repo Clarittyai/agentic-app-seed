@@ -285,6 +285,8 @@ export interface RequiredIntegration {
 export interface IntegrationsStatus {
   integrations: RequiredIntegration[];
   all_connected: boolean;
+  /** This app's id — used to scope the connect flow to this app. */
+  app_id?: string | null;
 }
 
 /** The app's required integrations + per-user connection status. Powers the
