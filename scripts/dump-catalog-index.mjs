@@ -127,6 +127,14 @@ lines.push(
 lines.push('');
 lines.push(`Generated: ${summary.generatedAt}`);
 lines.push('');
+lines.push(
+  'These integrations are **built in** — the Claritty platform manages OAuth/credentials per user. ' +
+    'To use one: declare it in `intelligence.yaml#integrations`, list its tools in the agent, and ' +
+    'call them (or `ctx.integration("<id>")`). No API keys, no OAuth code; test locally with ' +
+    '`CLARITTY_FAKE_CREDS_<ID>`. See `INTEGRATIONS.md`. A service NOT listed here is not built in — ' +
+    'use a custom tool or a clearly-labeled seed, never a faked one.',
+);
+lines.push('');
 
 function section(title, rows, mkLine) {
   lines.push(`## ${title}`);

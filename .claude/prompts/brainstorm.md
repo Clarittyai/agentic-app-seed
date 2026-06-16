@@ -123,19 +123,28 @@ leads = db.query(Lead).all()
 
 ---
 
-### 6. External action & connection (don't skip this!)
+### 6. External data & actions (don't skip this!)
 
-**Does this app act on an outside system?** post→LinkedIn/X, send→email, charge→Stripe,
-sync→Notion/Sheets, message→Slack… If the core verb hits an external service, "generate the
-content" is only half the app — you must also let the user **connect** that service.
+**Does this app read from or act on an outside system?** read→Gmail/Slack/LinkedIn feed,
+post→LinkedIn/X, send→email, charge→Stripe, sync→Notion, CRM→HubSpot/Salesforce, message→Slack…
 
-- **Which service?** If the user didn't name one, **infer the obvious one and confirm it** — don't
-  silently drop it. (Idea: "auto-post marketing" → assume LinkedIn, ask to confirm.)
-- **How does the user connect it?** Plan a **Connect screen**; the action runs through a real
-  catalog tool via `ctx.integration(...)`, and when the service isn't connected the app shows a
-  **connect prompt (409)** — never a faked/simulated success (see INTEGRATIONS.md). Build this in.
-- **Self-contained?** If the app genuinely touches no external system (like the Tasks example),
-  say so explicitly.
+**Check the catalog FIRST.** Claritty ships ~33 **built-in integrations** (`catalog/INDEX.md`) —
+Gmail, Slack, LinkedIn, X, HubSpot, Salesforce, Stripe, Notion, GitHub, Linear, and more. For each
+service the app touches, grep `catalog/INDEX.md`:
+
+- **In the catalog → use it.** It's a real, platform-managed integration: **the platform handles
+  OAuth/credentials per user — you need NO API keys and write NO OAuth code.** Declare it in
+  `intelligence.yaml#integrations`, put its tools in the agent's `tools:`, and call them via the
+  agent's `system_prompt` or `ctx.integration("<id>")` (see INTEGRATIONS.md). Test locally with
+  `CLARITTY_FAKE_CREDS_<ID>='{"access_token":"…"}'` — that exercises the REAL path, it is not a mock.
+  Do **NOT** ask the user for keys and do **NOT** build a mock data layer for a catalog service.
+- **Not in the catalog** (e.g. reddit, g2, hn) → write a custom read-only `@tool`, or seed
+  **clearly-labeled** sample data — and say which. Never pretend a mock is the real source.
+- When a catalog service isn't connected yet, show a **connect prompt (409)** — never a
+  faked/simulated success.
+- **Which service?** If the user didn't name one, **infer the obvious one and confirm it** (Idea:
+  "auto-post marketing" → LinkedIn, confirm). **Self-contained?** If it truly touches no external
+  system (like the Tasks example), say so explicitly.
 
 AI itself is NOT an integration — it's built in via the Claritty LLM proxy (no API key).
 
@@ -216,9 +225,12 @@ After brainstorming, you should have:
 - **Entity 1**: [Name] - Fields: [list]
 - **Entity 2**: [Name] - Fields: [list]
 
-### External action & connection
-- **Acts on**: [service, or "none — self-contained"]
-- **Connect**: [Connect screen + action via catalog tool / ctx.integration + 409 connect-prompt when not connected — see INTEGRATIONS.md]
+### External data & actions
+- **Sources/actions**: for each outside service, mark it `catalog integration <id>` (in
+  catalog/INDEX.md → declare + use its tools, platform OAuth, no keys), `custom tool` (no catalog
+  match), or `honest seed` (clearly-labeled samples). e.g. "LinkedIn → catalog `linkedin`; Reddit →
+  custom tool", or "none — self-contained".
+- **Connect**: [catalog tool / ctx.integration + 409 connect-prompt when not connected; CLARITTY_FAKE_CREDS locally — see INTEGRATIONS.md]
 
 ### Approval gate
 - [Yes — draft → approve → act, with an approve action] / [No — acts automatically]
@@ -284,10 +296,11 @@ After brainstorming:
 - **Lead**: id, user_id, name, email, score, status, created_at
 - **EmailDraft**: id, user_id, lead_id, subject, body, sent_at
 
-**Integrations**:
-- Claude API (scoring)
-- HubSpot API (fetching leads)
-- SendGrid (sending emails)
+**Integrations** (catalog-first — declare in intelligence.yaml, platform handles OAuth, no keys):
+- Claude (scoring) — built in via the Claritty LLM proxy, not an integration
+- `hubspot` (fetching leads) — catalog integration; use `hubspot.search_contacts`
+- `gmail` (sending outreach) — catalog integration; use `gmail.send`
+  (a service NOT in catalog/INDEX.md → custom read-only tool or a clearly-labeled seed)
 
 ---
 

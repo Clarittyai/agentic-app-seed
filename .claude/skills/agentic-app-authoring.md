@@ -26,6 +26,29 @@ in `claritty_sdk` are binders; the manifest carries the data.
 3. If you must build something new, the **only** custom escape is custom tools and custom agents (custom integrations and custom triggers are refused — the platform owns OAuth and the dispatcher).
 4. Skim [`SECURITY.md`](../../SECURITY.md). Internalize what you must never write.
 
+## Integrations are built in — declare, don't mock (no API keys)
+
+Claritty ships ~33 integrations in [`catalog/INDEX.md`](../../catalog/INDEX.md) (Gmail, Slack,
+LinkedIn, X, HubSpot, Salesforce, Stripe, Notion, GitHub, Linear, …). For ANY external service the
+app reads from or acts on:
+
+1. **Grep `catalog/INDEX.md`.** If the service is there, it's a built-in integration — **the platform
+   manages OAuth/credentials per user. You write NO OAuth code and need NO API keys.**
+2. **Declare it** under `intelligence.yaml#integrations` (`- id: <id>`), and **list its tools in the
+   agent's `tools:`** (e.g. `linkedin.fetch_posts`, `gmail.send`) — declaring the integration alone
+   does NOT grant tool access. The agent calls the tool (named in its `system_prompt`), or a custom
+   tool reaches the live connection via `ctx.integration("<id>")`.
+3. **Local testing:** set `CLARITTY_FAKE_CREDS_<ID>='{"access_token":"…"}'` in `.env` — this drives
+   the REAL integration path without OAuth. It is NOT a mock data layer.
+4. **Honest failure:** when the service isn't connected, return a 409 / connect-prompt; on a real
+   failure, surface it. NEVER fake a success or simulate the external call.
+5. **No catalog match** (e.g. reddit, g2, hn): write a custom read-only `@tool`, or seed
+   **clearly-labeled** sample data — and say which. Never pass a mock off as the real source.
+
+Do NOT, for a catalog service: ask the user for API keys, write OAuth code, `pip install` a provider
+SDK, or build a mock data layer. (Custom *integrations* and custom *triggers* are refused — the
+platform owns OAuth + the dispatcher.) Full pattern + examples: [`INTEGRATIONS.md`](../../INTEGRATIONS.md).
+
 ## Custom tool template — copy/adapt, don't deviate
 
 ```python

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-03T16:40:35.646Z",
+  "generatedAt": "2026-06-16T21:50:53.201Z",
   "integrations": [
     {
       "id": "airtable",
@@ -223,7 +223,7 @@
       "id": "mailchimp",
       "version": "0.1.0",
       "name": "Mailchimp",
-      "description": "Add subscribers and send campaigns via MCP.",
+      "description": "Add subscribers and send campaigns.",
       "category": "marketing",
       "kind": "integration",
       "authType": "apiKey",
@@ -413,7 +413,7 @@
       "id": "trello",
       "version": "0.1.0",
       "name": "Trello",
-      "description": "Create cards and list cards across Trello boards via MCP.",
+      "description": "Create cards and list cards across Trello boards.",
       "category": "productivity",
       "kind": "integration",
       "authType": "apiKey",
@@ -452,6 +452,51 @@
   ],
   "tools": [
     {
+      "id": "llm.classify",
+      "version": "1.0.0",
+      "description": "Classify a piece of text into exactly one of the provided labels using the LLM proxy. The chosen label is snapped to one of the options so workflow branching is safe.",
+      "intentHints": [
+        "categorize this message",
+        "triage by type",
+        "label as urgent or not",
+        "route to the right bucket",
+        "detect sentiment"
+      ]
+    },
+    {
+      "id": "llm.draft",
+      "version": "1.0.0",
+      "description": "Draft a short message (email reply, post, note, summary blurb) from context in a given tone, using the LLM proxy. Returns text only — pair with a human-in-the-loop approval step before sending anything.",
+      "intentHints": [
+        "draft a reply",
+        "write a response",
+        "compose a follow-up email",
+        "draft a post for me"
+      ]
+    },
+    {
+      "id": "llm.extract",
+      "version": "1.0.0",
+      "description": "Extract structured fields from free text into a JSON object using the LLM proxy. Pass the field names (and optional descriptions) you want pulled out.",
+      "intentHints": [
+        "pull the fields out of this email",
+        "extract the amount and due date",
+        "parse the meeting details",
+        "structure this note"
+      ]
+    },
+    {
+      "id": "llm.rank",
+      "version": "1.0.0",
+      "description": "Rank/prioritize a list of items against a stated criterion using the LLM proxy. Returns the items ordered most-important first, each with a score and a one-line reason.",
+      "intentHints": [
+        "prioritize my tasks",
+        "what should I do first",
+        "rank these leads by value",
+        "surface the most urgent items"
+      ]
+    },
+    {
       "id": "llm.summarize",
       "version": "1.0.0",
       "description": "Summarize a list of texts into a short digest using the LLM proxy.",
@@ -478,6 +523,22 @@
       "defaultIntegrations": [
         "linkedin"
       ]
+    },
+    {
+      "id": "triage-agent",
+      "version": "0.1.0",
+      "description": "Triage a list of items: classify each into the given categories, prioritize by urgency/importance, and return the sorted, labeled list with the top items surfaced.",
+      "intentHints": [
+        "triage my inbox",
+        "sort and prioritize incoming items",
+        "categorize and rank these",
+        "what needs attention first"
+      ],
+      "defaultTools": [
+        "llm.classify",
+        "llm.rank"
+      ],
+      "defaultIntegrations": []
     }
   ],
   "triggers": [
