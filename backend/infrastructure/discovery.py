@@ -49,22 +49,17 @@ def discover_and_register_components() -> Tuple[int, int, int]:
     # Discover triggers
     triggers_discovered = _discover_modules(backend_path / "triggers", "backend.triggers")
 
-    # Get registration counts from registries
-    from claritty_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
-
-    agent_count = len(AgentRegistry.list_agents())
-    workflow_count = len(WorkflowRegistry.list_workflows())
-    trigger_count = len(TriggerTemplateRegistry.list_templates())
-
+    # v2 is manifest-first: the authoritative inventory of agents/workflows/
+    # triggers comes from intelligence.yaml (loaded by claritty_sdk.runtime.
+    # bootstrap), NOT a decorator registry (which no longer exists). Importing
+    # the backend/agents/*.py modules above just ensures the @agent handler
+    # classes are importable; we report the file-scan counts here.
     logger.info(f"✅ Auto-discovery complete!")
     logger.info(f"   📁 Scanned {agents_discovered} agent files")
     logger.info(f"   📁 Scanned {workflows_discovered} workflow files")
     logger.info(f"   📁 Scanned {triggers_discovered} trigger files")
-    logger.info(f"   🤖 Registered {agent_count} agents")
-    logger.info(f"   🔄 Registered {workflow_count} workflows")
-    logger.info(f"   ⏰ Registered {trigger_count} trigger templates")
 
-    return agent_count, workflow_count, trigger_count
+    return agents_discovered, workflows_discovered, triggers_discovered
 
 
 def _discover_modules(directory: Path, package_name: str) -> int:
@@ -113,34 +108,33 @@ def _discover_modules(directory: Path, package_name: str) -> int:
 
 def get_discovery_summary() -> dict:
     """
-    Get a summary of all discovered components.
-
-    Useful for debugging and monitoring.
+    Get a summary of the app's components, read from the v2 manifest
+    (intelligence.yaml) — the single source of truth. Useful for debugging.
 
     Returns:
-        dict: Summary with counts and details
+        dict: Summary with counts and ids
     """
-    from claritty_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
+    try:
+        from claritty_sdk.runtime.bootstrap import load as _bootstrap_load
+        from backend.manifest_path import resolve_manifest_name
 
-    agents = AgentRegistry.list_agents()
-    workflows = WorkflowRegistry.list_workflows()
-    templates = TriggerTemplateRegistry.list_templates()
-
-    return {
-        "agents": {
-            "count": len(agents),
-            "ids": [agent.id for agent in agents],
-            "categories": list(set(agent.category for agent in agents if agent.category))
-        },
-        "workflows": {
-            "count": len(workflows),
-            "ids": [wf.id for wf in workflows],
-            "execution_modes": list(set(wf.execution_mode.value for wf in workflows))
-        },
-        "triggers": {
-            "count": len(templates),
-            "ids": [t.id for t in templates],
-            "types": list(set(t.template_type.value for t in templates)),
-            "categories": list(set(t.category for t in templates if t.category))
+        m = _bootstrap_load(resolve_manifest_name()).manifest
+    except Exception:
+        return {
+            "agents": {"count": 0, "ids": []},
+            "workflows": {"count": 0, "ids": []},
+            "triggers": {"count": 0, "ids": []},
         }
+
+    agents = m.agents or []
+    workflows = m.workflows or []
+    triggers = m.triggers or []
+    return {
+        "agents": {"count": len(agents), "ids": [a.id for a in agents]},
+        "workflows": {"count": len(workflows), "ids": [w.id for w in workflows]},
+        "triggers": {
+            "count": len(triggers),
+            "ids": [t.id for t in triggers],
+            "types": list({getattr(t.type, "value", t.type) for t in triggers}),
+        },
     }

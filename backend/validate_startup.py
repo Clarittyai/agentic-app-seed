@@ -83,12 +83,12 @@ def validate_imports():
         import pytz
         print("  ✅ pytz")
 
-        # Clarity SDK
-        from claritty_sdk import agent, workflow, trigger_template
-        print("  ✅ Clarity SDK decorators")
+        # Clarity SDK (v2 manifest-first)
+        from claritty_sdk import agent, tool, build_graph
+        print("  ✅ Clarity SDK (agent, tool)")
 
-        from claritty_sdk.executor import WorkflowExecutor
-        print("  ✅ WorkflowExecutor")
+        from claritty_sdk.runtime.bootstrap import load as _bootstrap_load
+        print("  ✅ Runtime bootstrap (WorkflowEngine)")
 
         print("✅ All imports successful\n")
         return True
@@ -126,34 +126,31 @@ def validate_database():
 
 
 def validate_sdk_registration():
-    """Validate SDK components register correctly"""
-    print("🔍 Validating SDK registration...")
+    """Validate the app's v2 manifest loads and declares components."""
+    print("🔍 Validating manifest (intelligence.yaml)...")
 
     try:
-        from claritty_sdk.registry import AgentRegistry, WorkflowRegistry, TriggerTemplateRegistry
+        from claritty_sdk.runtime.bootstrap import load as _bootstrap_load
+        from backend.manifest_path import resolve_manifest_name
 
-        # Import agents, workflows, triggers
-        from backend import agents, workflows, triggers
+        boot = _bootstrap_load(resolve_manifest_name())
+        m = boot.manifest
 
-        agent_count = len(AgentRegistry.list_agents())
-        workflow_count = len(WorkflowRegistry.list_workflows())
-        template_count = len(TriggerTemplateRegistry.list_templates())
+        agent_count = len(m.agents or [])
+        workflow_count = len(m.workflows or [])
+        template_count = len(m.triggers or [])
 
-        print(f"  ✅ Agents registered: {agent_count}")
-        print(f"  ✅ Workflows registered: {workflow_count}")
-        print(f"  ✅ Trigger templates registered: {template_count}\n")
+        print(f"  ✅ Agents declared: {agent_count}")
+        print(f"  ✅ Workflows declared: {workflow_count}")
+        print(f"  ✅ Trigger templates declared: {template_count}\n")
 
         if agent_count == 0:
-            print("  ⚠️  Warning: No agents registered (expected at least 2)")
-        if workflow_count == 0:
-            print("  ⚠️  Warning: No workflows registered (expected at least 3)")
-        if template_count == 0:
-            print("  ⚠️  Warning: No trigger templates registered (expected at least 4)")
+            print("  ⚠️  Warning: No agents declared in the manifest")
 
         return True
 
     except Exception as e:
-        print(f"\n❌ SDK registration failed: {e}")
+        print(f"\n❌ Manifest validation failed: {e}")
         return False
 
 

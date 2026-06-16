@@ -20,17 +20,14 @@ import logging
 from backend.database import get_db, init_db, seed_example_tasks, engine
 from backend import models
 from claritty_sdk import (
-    AgentRegistry,
-    WorkflowRegistry,
-    TriggerTemplateRegistry,
     AgentContext,
     WorkflowContext,
     build_graph,
     use_user_context,
 )
-# NOTE: WorkflowExecutor (heavy — pulls the LLM/agent runtime) is imported lazily
-# at its single use site in the workflow-execute handler, NOT here, so the cold
-# start for the widget/health hot path stays lean.
+# v2 manifest-first: agents/workflows/triggers are declared in intelligence.yaml
+# and loaded by claritty_sdk.runtime.bootstrap (see _get_boot()). There is no v1
+# decorator registry or WorkflowExecutor anymore — one canonical runtime.
 
 # Configure logging
 logging.basicConfig(
@@ -227,93 +224,51 @@ def get_current_user(
 # DISCOVERY ENDPOINTS
 # ============================================================================
 
+def _manifest_agents():
+    """The loaded v2 manifest's agents (or [] if no manifest booted)."""
+    boot = _get_boot()
+    return list(boot.manifest.agents) if boot is not None else []
+
+
+def _agent_to_dict(a, *, detail: bool = False) -> Dict[str, Any]:
+    """Map a v2 manifest AgentDecl to the discovery response shape."""
+    out = {
+        "id": a.id,
+        "name": getattr(a, "name", None) or a.id,
+        "description": a.description,
+        "category": None,
+        "inputs": a.input,
+        "outputs": a.output,
+        "integrations": [
+            {"service": svc, "required": True, "auth_type": None}
+            for svc in (a.integrations or [])
+        ],
+    }
+    if detail:
+        out["timeout"] = a.timeout
+        out["tools"] = list(a.tools or [])
+        out["model"] = a.model
+    return out
+
+
 @app.get("/api/agents")
 async def list_agents():
-    """
-    List all registered agents.
-    Returns agent metadata for discovery.
-    """
-    agents = AgentRegistry.list_agents()
-    return {
-        "agents": [
-            {
-                "id": agent.id,
-                "name": agent.name,
-                "description": agent.description,
-                "category": agent.category,
-                "inputs": agent.inputs,
-                "outputs": agent.outputs,
-                "integrations": [
-                    {
-                        "service": integration.service,
-                        "required": integration.required,
-                        "auth_type": integration.auth_type
-                    }
-                    for integration in agent.integrations
-                ]
-            }
-            for agent in agents
-        ]
-    }
+    """List the app's agents, read from the v2 manifest (intelligence.yaml)."""
+    return {"agents": [_agent_to_dict(a) for a in _manifest_agents()]}
 
 
 @app.get("/api/agents/{agent_id}")
 async def get_agent(agent_id: str):
-    """
-    Get specific agent metadata.
-    """
-    agent = AgentRegistry.get_metadata(agent_id)
+    """Get one agent's metadata, read from the v2 manifest."""
+    agent = next((a for a in _manifest_agents() if a.id == agent_id), None)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-
-    return {
-        "id": agent.id,
-        "name": agent.name,
-        "description": agent.description,
-        "category": agent.category,
-        "inputs": agent.inputs,
-        "outputs": agent.outputs,
-        "timeout": agent.timeout,
-        "integrations": [
-            {
-                "service": integration.service,
-                "required": integration.required,
-                "auth_type": integration.auth_type,
-                "config_fields": integration.config_fields
-            }
-            for integration in agent.integrations
-        ]
-    }
+    return _agent_to_dict(agent, detail=True)
 
 
 @app.get("/api/workflows")
 async def list_workflows():
-    """
-    List all registered workflows. v1 workflows come from WorkflowRegistry;
-    in the manifest-first v2 model workflows are declared in intelligence.yaml (the
-    legacy per-file @workflow registry is empty), so fall back to reading them
-    from intelligence.yaml so the endpoint reflects the app's real workflows.
-    """
-    workflows = WorkflowRegistry.list_workflows()
-    if workflows:
-        return {
-            "workflows": [
-                {
-                    "id": workflow.id,
-                    "name": workflow.name,
-                    "description": workflow.description,
-                    "execution_mode": workflow.execution_mode.value,
-                    "steps": [
-                        {
-                            "agent_id": step.agent_id,
-                            "output_key": step.output_key,
-                        }
-                        for step in workflow.steps
-                    ],
-                }
-                for workflow in workflows
-            ]
-        }
+    """List the app's workflows, declared in the v2 manifest (intelligence.yaml)."""
     return {"workflows": _workflows_from_app_yaml()}
 
 
@@ -355,37 +310,43 @@ def _workflows_from_app_yaml() -> list:
 
 @app.get("/api/trigger-templates")
 async def list_trigger_templates():
-    """
-    List all available trigger templates.
-    Users can create instances from these templates.
-    """
-    templates = TriggerTemplateRegistry.list_templates()
-    return {
-        "templates": [
+    """List the app's trigger templates, declared in the v2 manifest
+    (intelligence.yaml). Users create instances from these on the platform."""
+    boot = _get_boot()
+    triggers = list(boot.manifest.triggers) if boot is not None else []
+
+    def _cfg(field) -> Dict[str, Any]:
+        ftype = getattr(field, "type", None)
+        return {
+            "key": getattr(field, "key", None),
+            "label": getattr(field, "label", None),
+            "type": getattr(ftype, "value", ftype),
+            "required": getattr(field, "required", False),
+            "default": getattr(field, "default", None),
+            "options": getattr(field, "options", None),
+            "validation": getattr(field, "validation", None),
+        }
+
+    out = []
+    for t in triggers:
+        ttype = getattr(t, "type", None)
+        out.append(
             {
-                "id": template.id,
-                "name": template.name,
-                "description": template.description,
-                "template_type": template.template_type.value,
-                "workflow_id": template.workflow_id,
-                "category": template.category,
-                "config_fields": [
-                    {
-                        "key": field.key,
-                        "label": field.label,
-                        "type": field.type,
-                        "required": field.required,
-                        "default": field.default,
-                        "options": field.options,
-                        "validation": field.validation
-                    }
-                    for field in template.config_fields
+                "id": t.id,
+                "name": getattr(t, "name", None) or t.id,
+                "description": t.description,
+                "template_type": getattr(ttype, "value", ttype),
+                "workflow_id": getattr(t, "workflow", None),
+                "agent_id": getattr(t, "agent", None),
+                "category": None,
+                "supported_schedules": [
+                    getattr(s, "value", s) for s in (getattr(t, "supported_schedules", None) or [])
                 ],
-                "max_instances_per_user": template.max_instances_per_user
+                "config_fields": [_cfg(f) for f in (getattr(t, "config_fields", None) or [])],
+                "max_instances_per_user": getattr(t, "max_instances_per_user", None),
             }
-            for template in templates
-        ]
-    }
+        )
+    return {"templates": out}
 
 
 @app.get("/api/graph")
@@ -435,56 +396,38 @@ async def execute_agent(
     )
 
     # v2 manifest agent → run via the SDK tool-loop (`run_agent`), the SAME path
-    # the hosted WorkflowEngine drives per step. A v2 agent defines a
-    # `system_prompt` (no `execute()`), so calling the legacy `agent.execute()`
-    # raises "execute() is the deprecated v1 agent contract …". Prefer v2; fall
-    # back to v1 only for legacy decorator-registered agents.
+    # the hosted WorkflowEngine drives per step. The agent defines a
+    # `system_prompt`/`prompt_file` (no `execute()`); run_agent drives the loop.
     boot = _get_boot()
-    if boot is not None and any(
+    if boot is None or not any(
         getattr(a, "id", None) == agent_id for a in (boot.manifest.agents or [])
     ):
-        try:
-            from claritty_sdk.runtime.tool_loop import run_agent
-            result = await run_agent(
-                manifest=boot.manifest,
-                agent_id=agent_id,
-                user_input=input_data if isinstance(input_data, dict) else {},
-                agent_context=context,
-                integration_resolver=lambda svc: integrations.get(svc),
-            )
-            return {
-                "success": True,
-                "data": result.output,
-                "error": None,
-                "metadata": {
-                    "final_text": result.final_text,
-                    "iterations": result.iterations,
-                },
-            }
-        except Exception as e:
-            logger.error(f"Agent execution failed: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Agent execution failed: {str(e)}"
-            )
-
-    # Legacy v1 path — a decorator-registered agent with an execute() method.
-    agent_class = AgentRegistry.get_agent(agent_id)
-    if not agent_class:
         raise HTTPException(status_code=404, detail="Agent not found")
     try:
-        agent_instance = agent_class()
-        with use_user_context(user_context):
-            result = await agent_instance.execute(context)
-
+        from claritty_sdk.runtime.tool_loop import run_agent
+        result = await run_agent(
+            manifest=boot.manifest,
+            agent_id=agent_id,
+            user_input=input_data if isinstance(input_data, dict) else {},
+            agent_context=context,
+            integration_resolver=lambda svc: integrations.get(svc),
+        )
         return {
-            "success": result.success,
-            "data": result.data,
-            "error": result.error,
-            "metadata": result.metadata
+            "success": True,
+            "data": result.output,
+            "error": None,
+            "metadata": {
+                "final_text": result.final_text,
+                "iterations": result.iterations,
+            },
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Agent execution failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Agent execution failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Agent execution failed: {str(e)}"
+        )
 
 
 # ============================================================================
@@ -518,12 +461,11 @@ def _load_user_integrations(db: Session, user_id: str) -> Dict[str, Any]:
     return integrations
 
 
-# --- v2 manifest execution (intelligence.yaml workflows) with v1 fallback -------------
-# Both the platform AND a local "run now" execute through here. v2 manifest apps
-# (workflows declared in intelligence.yaml, handlers in backend/custom/) run via the SDK
-# WorkflowEngine — the SAME engine the platform uses — so a local trigger never
-# diverges from how the app is managed when hosted. Legacy v1 (decorator-
-# registered) apps fall back to the v1 WorkflowExecutor. The /internal/* contract
+# --- v2 manifest execution (intelligence.yaml workflows) ----------------------
+# Both the platform AND a local "run now" execute through here. Workflows are
+# declared in intelligence.yaml (handlers in backend/agents|custom/) and run via
+# the SDK WorkflowEngine — the SAME engine the platform uses — so a local trigger
+# never diverges from how the app is managed when hosted. The /internal/* contract
 # is unchanged.
 _BOOT = None
 _BOOT_TRIED = False
@@ -544,8 +486,8 @@ def _get_boot():
         manifest_name = resolve_manifest_name()
         _BOOT = _bootstrap_load(manifest_name)
         logger.info(f"v2 manifest engine ready ({manifest_name}).")
-    except Exception as e:  # legacy v1 app, or SDK without bootstrap → v1 path
-        logger.warning(f"v2 manifest engine unavailable; using v1 executor ({e}).")
+    except Exception as e:  # no manifest / unreadable manifest → empty boot
+        logger.warning(f"v2 manifest engine unavailable ({e}).")
         _BOOT = None
     return _BOOT
 
@@ -568,46 +510,30 @@ async def _run_workflow(
     trigger_data: Dict[str, Any],
     agent_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Run a workflow, preferring the v2 manifest engine (matches hosting)."""
+    """Run a workflow through the v2 manifest engine (the SAME engine the
+    platform uses, so a local 'run now' never diverges from hosting)."""
     boot = _get_boot()
-    if boot is not None and _manifest_has_workflow(boot, workflow_id):
-        inputs = dict(trigger_data or {})
-        inputs.pop("agent_context", None)
-        # A workflow that declares inputs.user_id (and steps that reference
-        # ${input.user_id}) would otherwise fail input validation + raise an
-        # ExpressionError on a manual Run / trigger dispatch that sends no body
-        # (0 runs). The caller's identity is authenticated here — supply it.
-        inputs.setdefault("user_id", user_id)
-        result = await boot.engine.run(
-            workflow_id, inputs=inputs, trigger=inputs, user_id=user_id
-        )
-        status = getattr(result, "status", "")
-        return {
-            "workflow_id": workflow_id,
-            "success": status == "success",
-            "outputs": getattr(result, "outputs", {}) or {},
-            "error": getattr(result, "error", None),
-        }
-    # Legacy v1 path.
-    if not WorkflowRegistry.get_metadata(workflow_id):
+    if boot is None or not _manifest_has_workflow(boot, workflow_id):
         raise HTTPException(
             status_code=404, detail=f"Workflow '{workflow_id}' not found"
         )
-    integrations = _load_user_integrations(db, user_id)
-    body = dict(trigger_data or {})
-    ac = agent_context if agent_context is not None else (body.pop("agent_context", {}) or {})
-    # Imported lazily (not at module load) so a cold start serving only the
-    # widget / health path doesn't pay to import the executor (and its heavy LLM
-    # deps). Only an actual workflow run pulls it in.
-    from claritty_sdk.executor import WorkflowExecutor
-    executor = WorkflowExecutor()
-    return await executor.execute_workflow(
-        workflow_id=workflow_id,
-        trigger_data=body,
-        user_id=user_id,
-        integrations=integrations,
-        agent_context=ac,
+    inputs = dict(trigger_data or {})
+    inputs.pop("agent_context", None)
+    # A workflow that declares inputs.user_id (and steps that reference
+    # ${input.user_id}) would otherwise fail input validation + raise an
+    # ExpressionError on a manual Run / trigger dispatch that sends no body
+    # (0 runs). The caller's identity is authenticated here — supply it.
+    inputs.setdefault("user_id", user_id)
+    result = await boot.engine.run(
+        workflow_id, inputs=inputs, trigger=inputs, user_id=user_id
     )
+    status = getattr(result, "status", "")
+    return {
+        "workflow_id": workflow_id,
+        "success": status == "success",
+        "outputs": getattr(result, "outputs", {}) or {},
+        "error": getattr(result, "error", None),
+    }
 
 
 async def _run_workflow_for_trigger(
@@ -834,24 +760,24 @@ async def startup_event():
         logger.error(f"Failed to discover components: {e}")
         raise
 
-    # Log registered components
-    agents = AgentRegistry.list_agents()
-    workflows = WorkflowRegistry.list_workflows()
-    templates = TriggerTemplateRegistry.list_templates()
-
-    logger.info(f"✅ Registered {len(agents)} agents")
-    logger.info(f"✅ Registered {len(workflows)} workflows")
-    logger.info(f"✅ Registered {len(templates)} trigger templates")
-
     # Eagerly load the v2 manifest so build_graph() (and GET /api/graph) reflect
-    # the manifest's agents/tools/integrations + YAML workflows/triggers, not the
-    # partial v1 decorator-registry view. Without this, /api/graph could be hit
-    # before the first workflow run (which lazy-loads boot) and serve a graph with
-    # no tools/integrations/triggers — which the platform then caches.
+    # the manifest's agents/tools/integrations + YAML workflows/triggers. Without
+    # this, /api/graph could be hit before the first workflow run (which lazy-loads
+    # boot) and serve an empty graph — which the platform then caches.
     try:
         _get_boot()
     except Exception as _e:
         logger.warning(f"⚠️  v2 manifest eager-load skipped: {_e}")
+
+    # Log the manifest's components (the single source of truth in v2).
+    boot = _get_boot()
+    if boot is not None:
+        m = boot.manifest
+        logger.info(f"✅ Manifest: {len(m.agents or [])} agents")
+        logger.info(f"✅ Manifest: {len(m.workflows or [])} workflows")
+        logger.info(f"✅ Manifest: {len(m.triggers or [])} trigger templates")
+    else:
+        logger.warning("⚠️  No v2 manifest loaded — /api/agents will be empty.")
 
     # Cache the graph for the platform's build-time / unreachable fallback
     # (same build_graph() the /api/graph endpoint serves on demand). This is a

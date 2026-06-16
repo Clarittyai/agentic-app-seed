@@ -1,199 +1,78 @@
 """
-Simple example demonstrating the Clarity SDK
+Simple example demonstrating the Clarity SDK (v2, manifest-first)
 
 This example shows:
-1. Defining an agent
-2. Creating a workflow
-3. Setting up a trigger template
+1. Binding an agent class to an `app.yaml#agents[id=...]` entry with `@agent`
+2. Binding a tool function with `@tool`
+3. Where workflows + triggers live now (intelligence.yaml, NOT decorators)
+
+In v2 the manifest (`intelligence.yaml` / `app.yaml`) is the single source of
+truth for schema, model, tools, integrations, workflows, and triggers. Python
+only carries behavior: an agent's `system_prompt` (the runtime drives the
+Anthropic tool-use loop) and tool functions. There is no `execute()` method, no
+`AgentResult`, and no decorator registry — the runtime loads handlers from the
+manifest's `handler:` fields.
 """
 
-import asyncio
-from claritty_sdk import (
-    agent,
-    workflow,
-    uses_agent,
-    trigger_template,
-    BaseAgent,
-    AgentResult,
-    AgentContext,
-    WorkflowContext,
-    TriggerTemplateType,
-    ExecutionMode,
-    AgentRegistry,
-    WorkflowRegistry,
-    TriggerTemplateRegistry
-)
+from claritty_sdk import agent, tool, BaseAgent, ToolCtx
 
 
 # ============================================
-# 1. Define Agents
+# 1. Bind an agent (behavior = a system prompt)
 # ============================================
-
-@agent(
-    id="hello-world",
-    name="Hello World",
-    description="A simple hello world agent",
-    inputs={"name": str},
-    outputs={"greeting": str},
-    category="example"
-)
+# The manifest declares this agent's id/model/tools/input/output:
+#
+#   agents:
+#     - id: hello-world
+#       source: custom
+#       handler: tests.examples.simple_agent_example:HelloWorldAgent
+#       tools: [format.greeting]
+#       input:  { name: { type: string, required: true } }
+#       output: { greeting: { type: string, required: true } }
+#
+@agent(id="hello-world")
 class HelloWorldAgent(BaseAgent):
-    async def execute(self, context: AgentContext) -> AgentResult:
-        name = context.get_input("name", "World")
-        greeting = f"Hello, {name}!"
-
-        context.log("info", f"Generated greeting: {greeting}")
-
-        return AgentResult(
-            success=True,
-            data={"greeting": greeting}
-        )
-
-
-@agent(
-    id="message-formatter",
-    name="Message Formatter",
-    description="Formats messages nicely",
-    inputs={"greeting": str},
-    outputs={"formatted": str},
-    category="example"
-)
-class MessageFormatterAgent(BaseAgent):
-    async def execute(self, context: AgentContext) -> AgentResult:
-        greeting = context.get_input("greeting", "")
-        formatted = f"🎉 {greeting} 🎉"
-
-        return AgentResult(
-            success=True,
-            data={"formatted": formatted}
-        )
-
-
-# ============================================
-# 2. Create Workflow
-# ============================================
-
-@workflow(
-    id="greeting-workflow",
-    name="Greeting Workflow",
-    description="Generates and formats a greeting",
-    execution_mode=ExecutionMode.SEQUENTIAL
-)
-@uses_agent("hello-world", output_key="greeting")
-@uses_agent("message-formatter", input_from="greeting", output_key="formatted")
-async def greeting_workflow(context: WorkflowContext):
-    """
-    This workflow:
-    1. Calls hello-world agent
-    2. Passes result to message-formatter
-    3. Returns formatted greeting
-    """
-    context.log("info", "Greeting workflow started")
-
-
-# ============================================
-# 3. Define Trigger Template
-# ============================================
-
-@trigger_template(
-    id="daily-greeting",
-    name="Daily Greeting",
-    description="Send a greeting at a specific time each day",
-    template_type=TriggerTemplateType.SCHEDULE_DAILY,
-    workflow_id="greeting-workflow",
-    config_fields=[
-        {
-            "key": "time",
-            "label": "What time?",
-            "type": "time",
-            "required": True,
-            "default": "09:00",
-            "help_text": "Choose when to send the greeting"
-        },
-        {
-            "key": "timezone",
-            "label": "Your Timezone",
-            "type": "timezone",
-            "required": True,
-            "default": "UTC"
-        }
-    ],
-    max_instances_per_user=3
-)
-class DailyGreetingTrigger:
-    pass
-
-
-# ============================================
-# 4. Test the SDK
-# ============================================
-
-async def main():
-    print("=" * 60)
-    print("Clarity SDK - Simple Example")
-    print("=" * 60)
-    print()
-
-    # Verify agents registered
-    agents = AgentRegistry.list_agents()
-    print(f"✅ Registered {len(agents)} agents:")
-    for agent in agents:
-        print(f"   - {agent.id}: {agent.name}")
-    print()
-
-    # Verify workflows registered
-    workflows = WorkflowRegistry.list_workflows()
-    print(f"✅ Registered {len(workflows)} workflows:")
-    for wf in workflows:
-        print(f"   - {wf.id}: {wf.name}")
-        print(f"     Steps: {len(wf.steps)}")
-        for step in wf.steps:
-            print(f"       → {step.agent_id} (output: {step.output_key})")
-    print()
-
-    # Verify trigger templates registered
-    templates = TriggerTemplateRegistry.list_templates()
-    print(f"✅ Registered {len(templates)} trigger templates:")
-    for template in templates:
-        print(f"   - {template.id}: {template.name}")
-        print(f"     Type: {template.template_type}")
-        print(f"     Config fields: {len(template.config_fields)}")
-        for field in template.config_fields:
-            print(f"       → {field.key} ({field.type})")
-    print()
-
-    # Test agent execution directly
-    print("=" * 60)
-    print("Testing Direct Agent Execution")
-    print("=" * 60)
-    print()
-
-    agent_class = AgentRegistry.get_agent("hello-world")
-    agent = agent_class()
-
-    context = AgentContext(
-        execution_id="test-123",
-        agent_id="hello-world",
-        workflow_id=None,
-        trigger_id=None,
-        user_id="test-user",
-        input_data={"name": "Clarity"},
-        integrations={},
-        workflow_data={},
-        app_config={}
+    system_prompt = (
+        "You greet the user. Call format.greeting with their name to build a "
+        "nicely formatted greeting, then call __finish with {greeting: <the "
+        "formatted text>}."
     )
 
-    result = await agent.execute(context)
-
-    print(f"Agent execution result:")
-    print(f"  Success: {result.success}")
-    print(f"  Data: {result.data}")
-    print()
-
-    print("=" * 60)
-    print("✅ All tests passed!")
-    print("=" * 60)
+    def fallback(self, ctx) -> dict:
+        """No-LLM local path: build the greeting directly."""
+        name = (ctx.get_input("name") if hasattr(ctx, "get_input") else None) or "World"
+        return {"greeting": f"🎉 Hello, {name}! 🎉"}
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# ============================================
+# 2. Bind a tool (a plain function)
+# ============================================
+@tool(id="format.greeting")
+def format_greeting(input: dict, ctx: ToolCtx) -> dict:
+    name = input.get("name", "World")
+    return {"greeting": f"🎉 Hello, {name}! 🎉"}
+
+
+# ============================================
+# 3. Workflows + triggers live in the manifest
+# ============================================
+# Instead of @workflow / @trigger_template decorators, declare them in
+# intelligence.yaml:
+#
+#   workflows:
+#     - id: greeting-workflow
+#       inputs: { name: { type: string, required: true } }
+#       steps:
+#         - id: greet
+#           agent: hello-world
+#           input: { name: "${input.name}" }
+#       outputs: { greeting: "${steps.greet.output.greeting}" }
+#
+#   triggers:
+#     - id: daily-greeting
+#       type: SCHEDULE
+#       workflow: greeting-workflow
+#       supportedSchedules: [DAILY]
+#       configFields:
+#         - { key: time, type: time, required: true, default: "09:00" }
+#         - { key: timezone, type: timezone, required: true }
