@@ -387,6 +387,13 @@ async def execute_agent(
     # it into the agent's LLM system prompt.
     user_context = input_data.pop("user_context", "") if isinstance(input_data, dict) else ""
 
+    # The Run button / trigger sends only the agent's own inputs, not the caller
+    # identity. Inject the authenticated user_id so an agent whose manifest input
+    # declares `user_id` (the common case) passes run_agent's input validation and
+    # scopes its writes to the caller — mirrors _run_workflow's injection.
+    if isinstance(input_data, dict):
+        input_data.setdefault("user_id", user_id)
+
     context = AgentContext(
         user_id=user_id,
         input_data=input_data,
