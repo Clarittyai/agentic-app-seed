@@ -2,17 +2,14 @@
   "id": "dropbox",
   "kind": "integration",
   "category": "files",
-  "transport": "mcp",
-  "version": "0.1.0",
+  "transport": "native",
+  "version": "1.0.0",
   "name": "Dropbox",
   "vendor": "Dropbox",
-  "description": "List and upload files in Dropbox via MCP.",
+  "description": "List and upload files in Dropbox.",
   "intentHints": ["upload to dropbox", "list dropbox files"],
   "authType": "oauth2",
-  "mcpUrl": "https://mcp.example.com/dropbox",
-  "mcpAuth": { "type": "bearer", "envVar": "CLARITTY_DROPBOX_MCP_TOKEN" },
   "providedTools": [
-    { "id": "dropbox.list_files", "description": "List files in a folder.", "input": { "path": { "type": "string", "required": false } }, "output": { "files": { "type": "array", "required": true } } },
-    { "id": "dropbox.upload_file", "description": "Upload a file.", "input": { "path": { "type": "string", "required": true }, "content_base64": { "type": "string", "required": true } }, "output": { "path": { "type": "string", "required": true } } }
+    { "id": "dropbox.list_files", "description": "List files in a folder.", "input": { "path": { "type": "string", "required": false } }, "output": { "files": { "type": "array", "required": true } } }
   ]
 }

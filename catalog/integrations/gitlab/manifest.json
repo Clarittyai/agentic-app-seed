@@ -2,17 +2,60 @@
   "id": "gitlab",
   "kind": "integration",
   "category": "dev",
-  "transport": "mcp",
-  "version": "0.1.0",
+  "transport": "native",
+  "version": "1.0.0",
   "name": "GitLab",
   "vendor": "GitLab",
-  "description": "List issues + create MRs in GitLab via MCP.",
-  "intentHints": ["gitlab issues", "open a merge request"],
+  "description": "List issues and create merge requests in GitLab.",
+  "intentHints": [
+    "gitlab issues",
+    "open a merge request"
+  ],
   "authType": "apiKey",
-  "mcpUrl": "https://mcp.example.com/gitlab",
-  "mcpAuth": { "type": "bearer", "envVar": "CLARITTY_GITLAB_MCP_TOKEN" },
   "providedTools": [
-    { "id": "gitlab.list_issues", "description": "List issues in a project.", "input": { "project_id": { "type": "string", "required": true } }, "output": { "issues": { "type": "array", "required": true } } },
-    { "id": "gitlab.create_mr", "description": "Create a merge request.", "input": { "project_id": { "type": "string", "required": true }, "source_branch": { "type": "string", "required": true }, "target_branch": { "type": "string", "required": true }, "title": { "type": "string", "required": true } }, "output": { "iid": { "type": "integer", "required": true } } }
+    {
+      "id": "gitlab.list_issues",
+      "description": "List issues in a project.",
+      "input": {
+        "project_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {
+        "issues": {
+          "type": "array",
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "gitlab.create_mr",
+      "description": "Create a merge request.",
+      "input": {
+        "project_id": {
+          "type": "string",
+          "required": true
+        },
+        "source_branch": {
+          "type": "string",
+          "required": true
+        },
+        "target_branch": {
+          "type": "string",
+          "required": true
+        },
+        "title": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {
+        "iid": {
+          "type": "integer",
+          "required": true
+        }
+      }
+    }
   ]
 }
