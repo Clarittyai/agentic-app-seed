@@ -110,7 +110,11 @@ const core = mkt.core_action || {};
 
 const agentFiles = listFiles('backend/agents').filter((f) => f.endsWith('.py') && f !== '__init__.py');
 
-// (a) Acts on an external service but ships no way to connect it.
+// (a) Implies an external action but declares no integration to perform it.
+// Connecting is PLATFORM-OWNED: declaring the integration in intelligence.yaml
+// (mirrored to app-config.json) is the sanctioned path — the Claritty platform
+// lists it + runs OAuth on the app's Intelligence / Settings → Integrations tabs.
+// We never nudge toward an in-app connect surface (the seed ships none).
 const ACTION_RE = /\b(post|publish|send|email|charge|tweet|sync|message|notify|sms|dm)\b/i;
 const declaredIntegration =
   (Array.isArray(mkt.required_integrations) && mkt.required_integrations.length > 0) ||
@@ -118,16 +122,9 @@ const declaredIntegration =
   (Array.isArray(core.external_systems) && core.external_systems.length > 0);
 let backendText = read('backend/routes/app.py') || '';
 for (const f of agentFiles) backendText += '\n' + (read('backend/agents/' + f) || '');
-const actionSignal = declaredIntegration || ACTION_RE.test(backendText);
-const routesTxt = read('backend/routes/app.py') || '';
-const connectSurface =
-  routesTxt.includes('/api/settings/') ||
-  routesTxt.includes('/api/integrations') ||
-  existsSync(join(ROOT, 'frontend/src/pages/Settings.tsx')) ||
-  listFiles('frontend/src/pages').some((f) => /connect/i.test(f));
-if (actionSignal && !connectSurface) {
-  warn('This app looks like it acts on an external service, but ships no way to connect one.',
-    'Add a Connect screen + per-user creds (UserIntegration) + a pluggable/simulated action — see INTEGRATIONS.md. If the app is intentionally self-contained, ignore this.');
+if (ACTION_RE.test(backendText) && !declaredIntegration) {
+  warn('This app looks like it acts on an external service but declares no integration for it.',
+    'Declare it in intelligence.yaml#integrations — the Claritty platform connects it (no in-app connect page needed). If the action is intentionally self-contained, ignore this.');
 }
 
 // (b) No custom agent — does the app do anything?

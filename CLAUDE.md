@@ -640,13 +640,16 @@ The identity gate ensures the app doesn't *look* like the template. These patter
 
 ### External connections (if the app acts on an outside service)
 If the core verb hits an external system — **post** to LinkedIn, **send** email, **charge** with
-Stripe, **sync** to Notion — then generating content is only half the app. You MUST also ship a way
-for the user to **connect** that service. Add it **proactively**, even if the user didn't name the
-platform (infer the obvious one and confirm).
-- Pattern (copy it): a **Connect page** (the platform stores creds encrypted — you store nothing) +
-  the action performed through a real catalog tool (e.g. `linkedin.create_post`) reached via
-  `ctx.integration(...)`. When the service isn't connected, surface a **409 / connect prompt** —
-  **never simulate or fake a success**. Full guide + code: **[INTEGRATIONS.md](INTEGRATIONS.md)**.
+Stripe, **sync** to Notion — then generating content is only half the app. Wire the service the
+Claritty way; add it **proactively**, even if the user didn't name the platform (infer the obvious
+one and confirm).
+- Pattern (copy it): **declare** the integration in `intelligence.yaml#integrations` and call its
+  catalog tool (e.g. `linkedin.create_post`) via `ctx.integration(...)`. **The platform owns
+  connecting it** — it lists the app's declared integrations + runs OAuth on the app's Intelligence /
+  Settings → Integrations tabs. **Do NOT build an in-app Connect page, a "connect N services"
+  banner, or an Integrations nav item** — that duplicates platform UI (the seed ships none). When
+  the service isn't connected, surface an inline **409 / connect prompt** at the action — **never
+  simulate or fake a success**. Full guide: **[INTEGRATIONS.md](INTEGRATIONS.md)**.
 - Locally, set `CLARITTY_FAKE_CREDS_<INTEGRATION>` (JSON) to exercise the path without OAuth.
 
 ### Approval / human-in-the-loop (AI proposes → user approves → system acts)
@@ -694,7 +697,7 @@ Before deployment, ensure:
 - [ ] Created workflow(s) chaining agents
 - [ ] Created trigger template(s) for user configuration
 - [ ] Customized widget (small, medium & large views) using the UI kit
-- [ ] If the app acts on an external service: a **Connect** screen + the action via a real catalog tool / `ctx.integration`, with a 409/connect-prompt when not connected — never simulated (see INTEGRATIONS.md)
+- [ ] If the app acts on an external service: the integration is **declared in `intelligence.yaml`** (the platform owns connecting it — no in-app Connect page/banner) + the action via a real catalog tool / `ctx.integration`, with a 409/connect-prompt when not connected — never simulated (see INTEGRATIONS.md)
 - [ ] If it shouldn't act autonomously: a **draft → approve → act** lifecycle with an approve action
 - [ ] `app-config.json` `core_action.definition_of_done` is filled, and that end-to-end path is verified
 - [ ] The problem the app solves is delivered end-to-end (agent → workflow → widget → real action)

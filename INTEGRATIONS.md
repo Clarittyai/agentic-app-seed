@@ -14,12 +14,17 @@ sees raw OAuth client secrets.
 
 ## The rule (read this — it's the #1 thing apps get wrong)
 
-If the app's **external action** is non-empty, build all three:
-1. a **Connect** surface so the user can link the service (see `frontend/src/pages/Integrations`),
+If the app's **external action** is non-empty, do all three:
+1. **Declare** the integration in `intelligence.yaml#integrations` (`- id: <id>`). That is the whole
+   "connect" surface — the **Claritty platform** owns connecting it: it lists the app's declared
+   integrations and runs OAuth on the app's **Intelligence** and **Settings → Integrations** tabs
+   (and intercepts the `claritty:connect-integration` postMessage). **Do NOT build an in-app
+   Integrations page, a "connect N services" banner, or an Integrations nav item** — that just
+   duplicates platform UI.
 2. the **action**, performed through a real catalog tool (e.g. `linkedin.create_post`),
 3. **honest failure**: when the service isn't connected, surface a clear "connect X to do this"
-   state (HTTP **409** from the route, a banner in the UI) — and when the external call fails, surface
-   the error.
+   state (HTTP **409** from the route, an inline prompt at the action) — and when the external call
+   fails, surface the error.
 
 **NEVER fake success.** Do not "simulate" a post, do not swallow the error and mark the row as done,
 do not downgrade `posted` → `approved` in an `except`. A user who clicks Approve and sees "posted"
@@ -86,13 +91,17 @@ bubbles up as a 5xx with the row left un-posted for retry. Only a genuine `post_
 
 ---
 
-## Frontend
+## Frontend — do NOT build a connect surface
 
-- An **Integrations page** (in the nav) listing each integration the app needs, its connected/not
-  status, and a Connect action. See `frontend/src/pages/Integrations` and `lib/api.ts`'s
-  `/api/integrations/*` helpers.
-- A **connect banner** near the action button: when a required integration isn't connected, show
-  "Connect LinkedIn to publish" (matching the route's 409); hide it once connected.
+The Claritty platform already owns connecting integrations. Once the app **declares** them in
+`intelligence.yaml#integrations`, the platform shows them — with Connect / Bind / Disconnect + OAuth
+— on the app's **Intelligence** tab and **Settings → Integrations** tab. So:
+
+- **Do NOT** ship an in-app Integrations page, a `SetupChecklist` / "Connect N services" banner, or
+  an Integrations nav item. The seed deliberately ships none — don't add one.
+- The only connect-related UI in the app is the **inline 409 prompt** at the action ("LinkedIn isn't
+  connected — connect it on the Integrations tab to publish"), shown when a publish returns the
+  not-connected state. Nothing standalone.
 
 ---
 

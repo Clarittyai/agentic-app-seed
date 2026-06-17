@@ -1,8 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ListTodo, Plug } from 'lucide-react';
+import { Home, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
-import SetupChecklist from '@/components/SetupChecklist';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,10 +10,13 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
+  // Integration connection is owned by the Claritty platform (the app's
+  // Intelligence / Settings → Integrations tabs). The app declares integrations
+  // in intelligence.yaml and ships NO in-app connect surface — so no
+  // Integrations nav item or setup banner here.
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Tasks', href: '/tasks', icon: ListTodo },
-    { name: 'Integrations', href: '/integrations', icon: Plug },
   ];
 
   // App glyph — the app's own initial in a themed tile. Derived from the
@@ -85,9 +87,6 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       <main className="min-h-[calc(100vh-16rem)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
-          {/* First-run setup banner — renders only while a required integration
-              is unconnected; invisible for self-contained / fully-connected apps. */}
-          <SetupChecklist compact />
           {children}
         </div>
       </main>

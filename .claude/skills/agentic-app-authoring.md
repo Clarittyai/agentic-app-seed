@@ -40,14 +40,19 @@ app reads from or acts on:
    tool reaches the live connection via `ctx.integration("<id>")`.
 3. **Local testing:** set `CLARITTY_FAKE_CREDS_<ID>='{"access_token":"…"}'` in `.env` — this drives
    the REAL integration path without OAuth. It is NOT a mock data layer.
-4. **Honest failure:** when the service isn't connected, return a 409 / connect-prompt; on a real
-   failure, surface it. NEVER fake a success or simulate the external call.
+4. **Honest failure:** when the service isn't connected, return a 409 / inline connect-prompt; on a
+   real failure, surface it. NEVER fake a success or simulate the external call.
 5. **No catalog match** (e.g. reddit, g2, hn): write a custom read-only `@tool`, or seed
    **clearly-labeled** sample data — and say which. Never pass a mock off as the real source.
+6. **No in-app connect surface.** Connecting is platform-owned: declaring the integration is all the
+   app does — the platform lists it + runs OAuth on the app's Intelligence / Settings → Integrations
+   tabs. Do NOT build an Integrations page, a `SetupChecklist` / "connect N services" banner, or an
+   Integrations nav route. The seed ships none — don't add one.
 
 Do NOT, for a catalog service: ask the user for API keys, write OAuth code, `pip install` a provider
-SDK, or build a mock data layer. (Custom *integrations* and custom *triggers* are refused — the
-platform owns OAuth + the dispatcher.) Full pattern + examples: [`INTEGRATIONS.md`](../../INTEGRATIONS.md).
+SDK, build a mock data layer, or hand-roll a connect/Integrations UI. (Custom *integrations* and
+custom *triggers* are refused — the platform owns OAuth + the dispatcher.) Full pattern + examples:
+[`INTEGRATIONS.md`](../../INTEGRATIONS.md).
 
 ## Custom tool template — copy/adapt, don't deviate
 

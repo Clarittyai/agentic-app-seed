@@ -231,15 +231,31 @@ import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
 - The helpers no-op when the widget runs standalone (`window.parent === window`) — local dev at `/widget` works without errors.
 - The host verifies `event.origin` matches the widget iframe's origin before acting on the message. Don't try to post from a different origin or the host will drop the message.
 
-### Rules
+### Rules — calls + navigation (the two action kinds, nothing else)
 
-❌ **Never** call `useNavigate()` / `router.push()` / `window.location.href = ...` from inside a widget button. The widget is in an iframe — those calls only change the iframe URL, not the host page, and the user sees a confusing in-place navigation. Use `triggerDeepLink({ path })` instead.
+Every widget action crosses the iframe boundary through the **Claritty connection**. There are
+exactly two kinds, and the widget never does anything else:
 
-❌ **Never** call `window.parent.location` or `top.window`. Sandbox blocks it.
+✅ **Calls → `runQuickAction`.** Wrap the app's own API client (`@/lib/api`) — it already routes
+   through the Claritty connection (the platform proxy in preview, the edge token when deployed). The
+   widget then updates itself in place; `runQuickAction` posts the analytics ping.
+   ❌ **Never** raw `fetch()` / `axios` to an absolute URL, and never hardcode the backend host —
+   that bypasses the Claritty connection (auth + metering) and fails inside the iframe. Always call
+   through the api client *inside* `runQuickAction`.
 
-✅ **Always** use the helpers — they handle the embedded-vs-standalone check and the analytics ping for free.
+✅ **Navigation → `triggerDeepLink({ path })` ONLY.** The host opens the full app in its modal at
+   that path. **The widget itself NEVER moves to another page** — there is no in-widget routing.
+   ❌ **Never** `useNavigate()` / `router.push()` / `<Link to>` / `<a href>` / `window.location` /
+   `window.parent.location` / `top.window` inside the widget. Those navigate the *iframe* (not the
+   host) and the user sees a broken in-place jump — or the sandbox throws. The only way to move the
+   user is `triggerDeepLink`.
 
-✅ **Pure UI state** (modals inside the widget, expanded rows, etc.) doesn't need either action — keep it as plain React state. The contract is for crossing the iframe boundary or touching the backend.
+✅ **Always** use the helpers (`triggerDeepLink` / `runQuickAction` / `notifyWidgetStateChanged`) —
+   never call `window.parent.postMessage` directly. They handle the embedded-vs-standalone check and
+   the analytics ping for free.
+
+✅ **Pure UI state** (a tooltip, an expanded row, a modal *inside* the widget) is plain React state —
+   no action needed. The contract is only for crossing the iframe boundary or touching the backend.
 
 ### Right-click and background-click — handled by the platform, not by you
 
