@@ -478,6 +478,53 @@ _BOOT = None
 _BOOT_TRIED = False
 
 
+def _maybe_fetch_remote_manifest():
+    """Manifest hot-reload: when ``CLARITY_MANIFEST_SOURCE=remote``, fetch the
+    app's CURRENT intelligence.yaml (+ prompt side-files) from the platform into
+    ``/tmp`` and return that dir, so a pure-manifest edit applies on this cold
+    start with NO image rebuild. Best-effort — returns None on any issue and the
+    caller falls back to the manifest bundled in the image. Returns None
+    immediately (no-op) unless the platform opted the app in."""
+    if os.getenv("CLARITY_MANIFEST_SOURCE") != "remote":
+        return None
+    app_id = os.getenv("CLARITY_APP_ID")
+    secret = os.getenv("CLARITY_INTERNAL_SECRET")
+    base = (
+        os.getenv("CLARITTY_PLATFORM_URL")
+        or os.getenv("CLARITY_PLATFORM_URL")
+        or ""
+    ).rstrip("/")
+    if not (app_id and secret and base):
+        return None
+    try:
+        import json
+        import urllib.request
+
+        url = f"{base}/internal/apps/{app_id}/manifest-bundle"
+        req = urllib.request.Request(
+            url, headers={"X-Claritty-Internal": secret}
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:  # noqa: S310
+            data = json.loads(resp.read().decode("utf-8"))
+        out_dir = "/tmp/claritty-manifest"
+        os.makedirs(out_dir, exist_ok=True)
+        manifest_name = data.get("filename") or "intelligence.yaml"
+        with open(os.path.join(out_dir, manifest_name), "w") as f:
+            f.write(data.get("intelligenceYaml") or "")
+        # Prompt side-files, relative paths preserved, so the SDK resolves them
+        # consistently whether it keys off the manifest dir or the app root.
+        for rel, content in (data.get("files") or {}).items():
+            dest = os.path.join(out_dir, rel)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            with open(dest, "w") as f:
+                f.write(content or "")
+        logger.info(f"manifest hot-reload: fetched remote manifest → {out_dir}")
+        return out_dir
+    except Exception as e:  # any failure → use the bundled manifest
+        logger.warning(f"remote manifest fetch failed ({e}); using bundled.")
+        return None
+
+
 def _get_boot():
     global _BOOT, _BOOT_TRIED
     if _BOOT_TRIED:
@@ -487,12 +534,16 @@ def _get_boot():
         from claritty_sdk.runtime.bootstrap import load as _bootstrap_load
         from backend.manifest_path import resolve_manifest_name
 
+        # Manifest hot-reload: prefer a freshly-fetched manifest from the platform
+        # (so a pure-manifest edit applies on this cold start, no rebuild). Falls
+        # back to the image-bundled manifest when not opted in / on any error.
+        remote_dir = _maybe_fetch_remote_manifest()
         # Load the app's manifest by its ACTUAL name — intelligence.yaml for new
         # apps, app.yaml legacy. Hardcoding "intelligence.yaml" loaded NOTHING for an
         # intelligence.yaml app (empty engine → empty /api/graph → no agents run).
-        manifest_name = resolve_manifest_name()
-        _BOOT = _bootstrap_load(manifest_name)
-        logger.info(f"v2 manifest engine ready ({manifest_name}).")
+        manifest_arg = remote_dir or resolve_manifest_name()
+        _BOOT = _bootstrap_load(manifest_arg)
+        logger.info(f"v2 manifest engine ready ({manifest_arg}).")
     except Exception as e:  # no manifest / unreadable manifest → empty boot
         logger.warning(f"v2 manifest engine unavailable ({e}).")
         _BOOT = None
