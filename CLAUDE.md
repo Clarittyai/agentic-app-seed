@@ -230,7 +230,7 @@ The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages
 
 **Allowed:** the `size === 'small'` / `size === 'medium'` / `size === 'large'` branches — those are driven by the `size` prop the host passes, not by the browser window.
 
-**Scope:** this rule applies **only to the Widget surface**. Full app pages (Dashboard, settings, modals, etc.) remain free to use breakpoints for their own layouts.
+**Scope:** this rule applies **only to the Widget surface**. Full app pages (Dashboard, settings, modals, etc.) MAY use breakpoints — but see "App pages are embedded" below: breakpoints that *swap whole layout shells* diverge inside the platform.
 
 **Why:** the widget renders inside a fixed frame at one of the three sizes. Window-dependent styling would make it render differently across host dashboards, breaking the Apple-HIG fixed-frame contract.
 
@@ -242,6 +242,28 @@ grep -nE '\b(sm|md|lg|xl|2xl):|@media|useBreakpoint|window\.innerWidth|matchMedi
 ```
 
 **📚 See**: `WIDGETS.md` → "Window-Size Invariance (Hard Rule)" for the full design rationale.
+
+#### 📐 App pages are embedded — don't swap layout shells on viewport (Hard Rule)
+
+The Claritty platform renders your app **inside a panel / iframe that is often narrower than a full desktop window**. App-page Tailwind breakpoints (`lg:`, etc.) react to *that panel's* width, not the user's monitor. So a layout that fully **swaps shells** at a breakpoint — e.g. a desktop sidebar (`hidden lg:flex`) ⇄ a mobile bottom-tab bar (`lg:hidden`) — renders the **mobile** shell inside the platform, looking nothing like the full-window design you see locally. ("Works on my machine but looks like the phone layout on Claritty" is almost always this.)
+
+**Do:**
+- Prefer a **single fluid layout** that scales with breakpoints (responsive *sizing* — padding, font-size, column counts), not one that swaps the whole shell.
+- If you DO build a mobile⇄desktop shell split, **force the desktop shell when embedded** so the platform view matches the full-window design. Detect the embed once and gate every shell-swap class on it:
+
+```tsx
+// Layout.tsx — embedded (platform iframe/panel) → always the desktop shell.
+const [embedded] = useState(() => {
+  try { return window.self !== window.top; } catch { return true; } // cross-origin access throws → embedded
+});
+// sidebar:    cn('… fixed …', embedded ? 'flex'   : 'hidden lg:flex')
+// mobile bar: cn('… sticky …', embedded ? 'hidden' : 'flex lg:hidden')
+// content:    embedded ? 'pl-14' : 'lg:pl-14'
+```
+
+(Standalone — a real phone opening the app URL directly — is the top window, so it still gets the responsive mobile layout.)
+
+**📚 See**: `WIDGETS.md` → "Window-Size Invariance" (the widget is even stricter: zero breakpoints, fixed frame).
 
 #### 🎬 Widget Button Actions (Hard Rule)
 
