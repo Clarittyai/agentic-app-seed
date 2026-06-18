@@ -246,11 +246,11 @@ grep -nE '\b(sm|md|lg|xl|2xl):|@media|useBreakpoint|window\.innerWidth|matchMedi
   frontend/src/pages/WidgetPage.tsx
 ```
 
-And no global stylesheet may use a **bare element selector** (it leaks into the widget). Every hit here must be scoped to `body:not(.widget-host)`:
+And no global stylesheet may size a **bare interactive-element selector** (it leaks into the widget and inflates fixed controls). Any hit here that sets `min-height`/`min-width`/`height`/`width` (especially inside a `@media`) must be scoped to `body:not(.widget-host)`:
 ```bash
-grep -nE '^[[:space:]]*(a|button|input|select|textarea|label|\*|html|body)[[:space:]]*[,{]' \
-  frontend/src/index.css
+grep -nE '^[[:space:]]*(a|button|input|select|textarea|label)[[:space:]]*[,{]' frontend/src/index.css
 ```
+(Bare `body`/`html`/`*` base rules — background, border-color, reduced-motion — are fine; the danger is element *sizing* leaking into the fixed widget frame.)
 
 **📚 See**: `WIDGETS.md` → "Window-Size Invariance (Hard Rule)" for the full design rationale.
 

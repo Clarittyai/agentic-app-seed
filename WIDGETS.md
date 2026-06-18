@@ -120,10 +120,11 @@ Apply the same `body:not(.widget-host)` scoping to ANY global rule that uses bar
 
 **Alternative** — reset inside the widget (`[data-widget-size] a, [data-widget-size] button { min-height: 0; min-width: 0 }`). This works, but it also flattens *intentional* widget control sizing (e.g. `WidgetButton`'s 44px tap target), so prefer scoping the source rule.
 
-**Verify** no bare element selector exists in global CSS (every hit must be scoped to `body:not(.widget-host)`):
+**Verify** no bare interactive-element selector sizes controls in global CSS (any hit setting `min-height`/`min-width`/`height`/`width` — especially inside `@media` — must be scoped to `body:not(.widget-host)`):
 ```bash
-grep -nE '^[[:space:]]*(a|button|input|select|textarea|label|\*|html|body)[[:space:]]*[,{]' frontend/src/index.css
+grep -nE '^[[:space:]]*(a|button|input|select|textarea|label)[[:space:]]*[,{]' frontend/src/index.css
 ```
+(Bare `body`/`html`/`*` base rules — background, border-color, reduced-motion — are fine; the danger is element *sizing* leaking into the fixed widget frame.)
 
 ### Allowed
 
