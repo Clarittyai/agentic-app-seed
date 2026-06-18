@@ -29,7 +29,9 @@ cryptography>=42.0,<46.0
 
 # Database
 sqlalchemy==2.0.25
-psycopg2-binary==2.9.9
+# 2.9.10 has macOS-ARM64 + manylinux-aarch64 wheels (2.9.9 had none → clang
+# source build failed on dev machines). Keep in sync with clarity-api SEED_REQUIREMENTS.
+psycopg2-binary==2.9.10
 alembic==1.13.1
 
 # AI & LangChain
