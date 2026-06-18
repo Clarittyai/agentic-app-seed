@@ -106,17 +106,24 @@ Static grep of `Widget.tsx` and `WidgetPage.tsx` is **not enough**. Any `@media`
 
 The widget has 18px signal-badge buttons and a 32px VIEW ALL button. At any viewport ≤ 920px (including the marketplace iframe), the rule above forces those to 44px and **the fixed 170×170 / 360×170 / 360×360 widget layout breaks**. Static grep of widget files reports "clean" — yet the widget visibly changes with window size.
 
-**Fix:** scope the global rule away from the widget. The widget root carries `data-widget-size="small"` or `data-widget-size="large"`, so add a reset right after the global rule:
+**Fix (preferred) — scope the global rule to the app** so it can never match widget elements. The widget renders under `body.widget-host`, so exclude that:
 
 ```css
-[data-widget-size] a,
-[data-widget-size] button {
-  min-height: 0;
-  min-width: 0;
+@media (max-width: 920px) {
+  /* app-only touch-target floor — excluded from the widget iframe */
+  body:not(.widget-host) a,
+  body:not(.widget-host) button { min-height: 44px; min-width: 44px; }
 }
 ```
 
-Apply the same pattern for any other global rule that uses bare element selectors inside a `@media` query — `body`, `html`, `input`, `*` are equally dangerous.
+Apply the same `body:not(.widget-host)` scoping to ANY global rule that uses bare element selectors inside a `@media` query — `body`, `html`, `input`, `*` are equally dangerous.
+
+**Alternative** — reset inside the widget (`[data-widget-size] a, [data-widget-size] button { min-height: 0; min-width: 0 }`). This works, but it also flattens *intentional* widget control sizing (e.g. `WidgetButton`'s 44px tap target), so prefer scoping the source rule.
+
+**Verify** no bare element selector exists in global CSS (every hit must be scoped to `body:not(.widget-host)`):
+```bash
+grep -nE '^[[:space:]]*(a|button|input|select|textarea|label|\*|html|body)[[:space:]]*[,{]' frontend/src/index.css
+```
 
 ### Allowed
 

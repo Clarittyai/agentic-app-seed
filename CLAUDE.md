@@ -219,14 +219,19 @@ The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages
 - `useBreakpoint()`, `useMediaQuery()`, `window.innerWidth`, `window.matchMedia`, `ResizeObserver`
 - Any conditional that swaps the `size` prop based on viewport
 
-**⚠️ Also watch out — global CSS leaks:** any `@media` block in `index.css` (or any global stylesheet) that uses a **bare element selector** (`a`, `button`, `*`, `html`, `body`, `input`, …) silently applies to the widget too, because those selectors match elements *inside* the widget root. Real example: `@media (max-width: 920px) { button { min-height: 44px } }` inflates the widget's small signal buttons at narrow viewports and breaks the fixed frame. If such a global rule is needed for the rest of the app, **scope it away from the widget** — the widget root carries `data-widget-size="small"` or `data-widget-size="large"`, so add a reset:
+**⚠️ Also watch out — global CSS leaks (the #1 cause of "widget controls look bigger when deployed"):** any `@media` block in `index.css` (or any global stylesheet) that uses a **bare element selector** (`a`, `button`, `*`, `html`, `body`, `input`, …) silently applies to the widget too, because those selectors match elements *inside* the widget root. And the **widget iframe's viewport IS the widget size** (e.g. 360px), so a `max-width` media query ALWAYS fires inside the widget. Real example shipped in this seed: `@media (max-width: 920px) { a, button { min-height: 44px; min-width: 44px } }` inflated the medium widget's 20px approve dot to a 44px circle.
+
+**Fix (preferred) — scope the rule to the app** so it can never match widget elements; the widget renders under `body.widget-host`:
 
 ```css
-[data-widget-size] a, [data-widget-size] button {
-  min-height: 0;
-  min-width: 0;
+@media (max-width: 920px) {
+  /* app-only touch-target floor — excluded from the widget iframe */
+  body:not(.widget-host) a,
+  body:not(.widget-host) button { min-height: 44px; min-width: 44px; }
 }
 ```
+
+(Alternative — reset inside the widget: `[data-widget-size] a, [data-widget-size] button { min-height: 0; min-width: 0 }`. But that also flattens *intentional* widget control sizing like `WidgetButton`'s 44px tap target, so prefer scoping the source rule.)
 
 **Allowed:** the `size === 'small'` / `size === 'medium'` / `size === 'large'` branches — those are driven by the `size` prop the host passes, not by the browser window.
 
@@ -239,6 +244,12 @@ The Widget surface (`frontend/src/components/Widget.tsx` and `frontend/src/pages
 grep -nE '\b(sm|md|lg|xl|2xl):|@media|useBreakpoint|window\.innerWidth|matchMedia|ResizeObserver' \
   frontend/src/components/Widget.tsx \
   frontend/src/pages/WidgetPage.tsx
+```
+
+And no global stylesheet may use a **bare element selector** (it leaks into the widget). Every hit here must be scoped to `body:not(.widget-host)`:
+```bash
+grep -nE '^[[:space:]]*(a|button|input|select|textarea|label|\*|html|body)[[:space:]]*[,{]' \
+  frontend/src/index.css
 ```
 
 **📚 See**: `WIDGETS.md` → "Window-Size Invariance (Hard Rule)" for the full design rationale.

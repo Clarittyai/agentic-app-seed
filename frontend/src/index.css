@@ -268,7 +268,12 @@
       @apply p-5;
     }
 
-    a, button {
+    /* Touch-target floor for the APP only. Scoped to `body:not(.widget-host)` so
+     * it does NOT leak into the widget iframe (rendered under `body.widget-host`):
+     * a bare `a, button` rule here would inflate fixed-size widget controls to
+     * 44px and break the Apple-HIG fixed frame. (See CLAUDE.md → global CSS leaks.) */
+    body:not(.widget-host) a,
+    body:not(.widget-host) button {
       min-height: 44px;
       min-width: 44px;
     }
