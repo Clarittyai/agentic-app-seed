@@ -567,9 +567,16 @@ async def _run_workflow(
     user_id: str,
     trigger_data: Dict[str, Any],
     agent_context: Optional[Dict[str, Any]] = None,
+    workflow_run_id: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run a workflow through the v2 manifest engine (the SAME engine the
-    platform uses, so a local 'run now' never diverges from hosting)."""
+    platform uses, so a local 'run now' never diverges from hosting).
+
+    ``workflow_run_id`` is the platform-pre-allocated WorkflowRun id. When set,
+    the engine reports each step (checkpoint) + completion back to the platform,
+    so the run + per-agent history actually appear in the UI. Without it the run
+    executes but stays invisible (the platform row sits ``pending`` forever)."""
     boot = _get_boot()
     if boot is None or not _manifest_has_workflow(boot, workflow_id):
         raise HTTPException(
@@ -583,7 +590,12 @@ async def _run_workflow(
     # (0 runs). The caller's identity is authenticated here — supply it.
     inputs.setdefault("user_id", user_id)
     result = await boot.engine.run(
-        workflow_id, inputs=inputs, trigger=inputs, user_id=user_id
+        workflow_id,
+        inputs=inputs,
+        trigger=inputs,
+        user_id=user_id,
+        workflow_run_id=workflow_run_id,
+        idempotency_key=idempotency_key,
     )
     status = getattr(result, "status", "")
     return {
@@ -595,10 +607,21 @@ async def _run_workflow(
 
 
 async def _run_workflow_for_trigger(
-    db: Session, *, workflow_id: str, user_id: str, trigger_data: Dict[str, Any]
+    db: Session,
+    *,
+    workflow_id: str,
+    user_id: str,
+    trigger_data: Dict[str, Any],
+    workflow_run_id: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     return await _run_workflow(
-        db, workflow_id=workflow_id, user_id=user_id, trigger_data=trigger_data
+        db,
+        workflow_id=workflow_id,
+        user_id=user_id,
+        trigger_data=trigger_data,
+        workflow_run_id=workflow_run_id,
+        idempotency_key=idempotency_key,
     )
 
 
@@ -624,6 +647,8 @@ async def run_due_triggers(
                 workflow_id=inst.get("workflowId"),
                 user_id=inst.get("userId"),
                 trigger_data=inst.get("config") or {},
+                workflow_run_id=inst.get("workflowRunId"),
+                idempotency_key=inst.get("idempotencyKey"),
             )
             ok = bool(r.get("success"))
             any_ok = any_ok or ok
@@ -663,7 +688,12 @@ async def run_trigger_webhook(
         },
     }
     result = await _run_workflow_for_trigger(
-        db, workflow_id=workflow_id, user_id=user_id, trigger_data=trigger_data
+        db,
+        workflow_id=workflow_id,
+        user_id=user_id,
+        trigger_data=trigger_data,
+        workflow_run_id=payload.get("workflowRunId"),
+        idempotency_key=payload.get("idempotencyKey"),
     )
     if not result.get("success"):
         raise HTTPException(
@@ -692,6 +722,10 @@ async def execute_workflow(
     # under `agent_context`; the rest of the body is the workflow trigger data.
     body = dict(input_data or {})
     agent_context = body.pop("agent_context", {}) or {}
+    # Platform-pre-allocated run id (canvas direct-run) — thread it through so the
+    # run + per-agent steps report back and show in the UI, same as a trigger.
+    workflow_run_id = body.pop("workflowRunId", None)
+    idempotency_key = body.pop("idempotencyKey", None)
 
     # Run via the v2 manifest engine when the workflow is in intelligence.yaml (same engine
     # the platform uses), else the legacy v1 executor. Measure duration here — the
@@ -704,6 +738,8 @@ async def execute_workflow(
             user_id=user_id,
             trigger_data=body,
             agent_context=agent_context,
+            workflow_run_id=workflow_run_id,
+            idempotency_key=idempotency_key,
         )
 
         success = bool(result.get("success", True))
