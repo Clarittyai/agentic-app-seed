@@ -20,6 +20,73 @@ Help you design a production-ready agentic app for Claritty Platform by answerin
 
 ---
 
+## 🧭 Discovery method — run this FIRST (it's how Claritty itself works)
+
+Claritty's own builder never jumps straight to features. It runs a short, specific
+discovery: **problem → two ideal outcomes → a few focused follow-ups → a brief.**
+Use the SAME method here before you design or write anything. It takes ~2 minutes
+and makes the rest of the build obvious.
+
+> **Parity (hybrid):** if the developer is signed in to the CLI, get the *real*
+> platform output instead of improvising — run
+> `claritty discover outcomes "<their problem>"` and
+> `claritty discover questions "<their problem>"`. Each prints JSON
+> (`{ "outcomes": [...] }` / `{ "questions": [...] }`). If it prints
+> `{"unauthenticated":true}` (or errors), fall back to generating them yourself
+> with the rules below — the method is identical either way.
+
+### Step 1 — Restate the problem (one line)
+Reflect the user's problem back in a single sentence so you're aligned before
+proposing anything.
+
+### Step 2 — Propose TWO ideal outcomes (the user picks/edits)
+Offer **exactly two distinct** end-states a great app could deliver — don't ask
+"what features?", show where this could land:
+- **Distinct in approach:** one **proactive** ("it handles it for me" — the app
+  acts on a schedule/automatically), one **on-demand** ("it helps me when I act" —
+  the app assists in the moment). Not two rewordings of the same idea.
+- **Concrete + value-framed:** ≤6-word title + 1–2 sentences naming the result the
+  user gets and the key thing that delivers it. Written in their voice ("I…").
+- **Self-contained:** realistic for a Claritty widget app (its own data + built-in
+  Claude + schedule/manual triggers; **no external-account connections** unless a
+  catalog integration covers it — see §6).
+
+Present both (in Claude Code, as AskUserQuestion options) and let the user pick one
+or write their own. This chosen outcome is the app's north star.
+
+### Step 3 — Ask 3–5 focused follow-ups (concrete options, plain language)
+Tailor each question to *their* idea, give 3–5 concrete options, and **always**
+include a final "Let me specify…" option. Never use the words *trigger / workflow /
+agent / endpoint* — translate them. Across your questions you MUST cover at least:
+- **Widget glance** (the primary surface): *"When you glance at this on your
+  dashboard, what's the ONE thing you need to see?"* — options should imply the
+  widget's shape (a single number, a short ranked **list**, a **status** indicator,
+  or a small **chart**) AND the one tap-action.
+- **Automation** (cadence **and** autonomy): when should it act, and how
+  independently — **autonomous** (acts on its own), **suggestive** (proposes, you
+  one-tap approve), or **observational** (just reports, you act)?
+- **Data** (where the app's data comes from): its own captured data, or an outside
+  source? If they name Gmail/Slack/LinkedIn/etc., check the catalog (§6) — deliver
+  the value WITHOUT a "connect your account" step when it isn't a catalog integration.
+
+### Step 4 — Write the brief
+Synthesize problem + chosen outcome + the answers into the plan: agents/workflow/
+trigger, the widget per size, the data model, and the design identity (§7). Save it
+to **`docs/plans/0001-brief.md`** and put the one-sentence success line into
+`app-config.json` → `clarity_marketplace.core_action.definition_of_done` (§6c). Only
+then start building.
+
+**Parity invariants** (what these questions must respect — mirrors the platform):
+widget sizes are exactly **170×170 / 360×170 / 360×360**; trigger kinds are
+**schedule / webhook / event / manual**; autonomy is **autonomous / suggestive /
+observational**; the app is **self-contained** (no OAuth/credentials except catalog
+integrations the platform manages). These are fixed — see WIDGETS.md / INTEGRATIONS.md.
+
+The sections below are the detailed reference your Step 3 questions and Step 4 brief
+draw from.
+
+---
+
 ## 📋 Questions to Answer
 
 ### 1. Problem & Users

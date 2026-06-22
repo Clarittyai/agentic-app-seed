@@ -476,6 +476,10 @@ def _load_user_integrations(db: Session, user_id: str) -> Dict[str, Any]:
 # is unchanged.
 _BOOT = None
 _BOOT_TRIED = False
+# Set when a manifest FILE is present but failed to load/validate, or loaded but
+# declares no runnable intelligence (0 agents AND 0 workflows). Drives readiness
+# (GET /health → 503) so a broken app never silently serves an empty manifest.
+_BOOT_ERROR = None
 
 
 def _maybe_fetch_remote_manifest():
@@ -526,7 +530,7 @@ def _maybe_fetch_remote_manifest():
 
 
 def _get_boot():
-    global _BOOT, _BOOT_TRIED
+    global _BOOT, _BOOT_TRIED, _BOOT_ERROR
     if _BOOT_TRIED:
         return _BOOT
     _BOOT_TRIED = True
@@ -543,10 +547,43 @@ def _get_boot():
         # intelligence.yaml app (empty engine → empty /api/graph → no agents run).
         manifest_arg = remote_dir or resolve_manifest_name()
         _BOOT = _bootstrap_load(manifest_arg)
-        logger.info(f"v2 manifest engine ready ({manifest_arg}).")
-    except Exception as e:  # no manifest / unreadable manifest → empty boot
-        logger.warning(f"v2 manifest engine unavailable ({e}).")
+        # Fail LOUD on the silent-empty symptom: a manifest that "loads" but yields
+        # zero agents AND zero workflows is almost always an SDK↔manifest mismatch
+        # (an older claritty-sdk dropped fields, or extra="forbid" rejected part of
+        # it). Serving that as a healthy-but-empty app is exactly the failure this
+        # guards against — mark it not-ready instead.
+        n_agents = len(getattr(_BOOT.manifest, "agents", None) or [])
+        n_workflows = len(getattr(_BOOT.manifest, "workflows", None) or [])
+        if n_agents == 0 and n_workflows == 0:
+            _BOOT_ERROR = (
+                f"manifest '{manifest_arg}' loaded but declares 0 agents and 0 "
+                "workflows — likely an SDK↔manifest version mismatch (check that "
+                "claritty-sdk supports every field in intelligence.yaml)."
+            )
+            logger.error(f"❌ {_BOOT_ERROR}")
+        else:
+            logger.info(
+                f"v2 manifest engine ready ({manifest_arg}): "
+                f"{n_agents} agents, {n_workflows} workflows."
+            )
+    except Exception as e:
         _BOOT = None
+        # Distinguish a genuinely manifest-LESS (legacy) app — which is fine and
+        # stays healthy — from a manifest that is PRESENT but failed to load. The
+        # latter is a real defect (bad YAML / SDK rejected a field) and must fail
+        # loud so the deploy is blocked rather than shipping an empty app.
+        manifest_present = False
+        try:
+            from backend.manifest_path import resolve_manifest_path
+
+            manifest_present = bool(resolve_manifest_path())
+        except Exception:
+            manifest_present = False
+        if manifest_present:
+            _BOOT_ERROR = f"manifest present but failed to load: {e}"
+            logger.error(f"❌ {_BOOT_ERROR}")
+        else:
+            logger.warning(f"v2 manifest engine unavailable (no manifest): {e}")
     return _BOOT
 
 
@@ -598,11 +635,29 @@ async def _run_workflow(
         idempotency_key=idempotency_key,
     )
     status = getattr(result, "status", "")
+    # Return the per-step results too. The platform records them on the
+    # WorkflowRun synchronously from THIS response, so per-agent run history
+    # shows up WITHOUT relying on the async checkpoint callbacks (which post to
+    # the app's CLARITTY_PLATFORM_URL — possibly a different platform than the one
+    # that created the run row). started/ended are epoch seconds → ms.
+    steps = []
+    for s in getattr(result, "steps", []) or []:
+        steps.append(
+            {
+                "id": getattr(s, "id", None),
+                "status": getattr(s, "status", None),
+                "output": getattr(s, "output", None),
+                "error": getattr(s, "error", None),
+                "startedAt": int((getattr(s, "started_at", 0) or 0) * 1000),
+                "endedAt": int((getattr(s, "ended_at", 0) or 0) * 1000),
+            }
+        )
     return {
         "workflow_id": workflow_id,
         "success": status == "success",
         "outputs": getattr(result, "outputs", {}) or {},
         "error": getattr(result, "error", None),
+        "steps": steps,
     }
 
 
@@ -652,13 +707,28 @@ async def run_due_triggers(
             )
             ok = bool(r.get("success"))
             any_ok = any_ok or ok
+            # Echo the run id + per-step results so the platform records run
+            # history from THIS synchronous response (the async checkpoint
+            # callbacks may target a different/unreachable platform).
             results.append(
-                {"instanceId": instance_id, "success": ok, "error": r.get("error")}
+                {
+                    "instanceId": instance_id,
+                    "workflowRunId": inst.get("workflowRunId"),
+                    "success": ok,
+                    "error": r.get("error"),
+                    "outputs": r.get("outputs", {}),
+                    "steps": r.get("steps", []),
+                }
             )
         except Exception as e:
             logger.error(f"run-due-triggers: instance {instance_id} failed: {e}")
             results.append(
-                {"instanceId": instance_id, "success": False, "error": str(e)}
+                {
+                    "instanceId": instance_id,
+                    "workflowRunId": inst.get("workflowRunId"),
+                    "success": False,
+                    "error": str(e),
+                }
             )
     if instances and not any_ok:
         raise HTTPException(status_code=500, detail="all due triggers failed")
@@ -773,6 +843,9 @@ async def execute_workflow(
             "outputs": result.get("outputs", {}),
             "error": result.get("error"),
             "duration_seconds": int(duration),
+            # Per-step results so the platform records run history synchronously
+            # (independent of the async checkpoint callbacks).
+            "steps": result.get("steps", []),
         }
 
     except Exception as e:
@@ -863,15 +936,27 @@ async def startup_event():
     except Exception as _e:
         logger.warning(f"⚠️  v2 manifest eager-load skipped: {_e}")
 
-    # Log the manifest's components (the single source of truth in v2).
+    # Log the manifest's components (the single source of truth in v2) + publish
+    # readiness so GET /health is HONEST: a present-but-broken manifest reports
+    # 503 and the platform's post-deploy smoke gate blocks the deploy.
+    from backend.infrastructure.health import set_readiness
+
     boot = _get_boot()
-    if boot is not None:
+    if boot is not None and _BOOT_ERROR is None:
         m = boot.manifest
-        logger.info(f"✅ Manifest: {len(m.agents or [])} agents")
-        logger.info(f"✅ Manifest: {len(m.workflows or [])} workflows")
+        n_agents, n_workflows = len(m.agents or []), len(m.workflows or [])
+        logger.info(f"✅ Manifest: {n_agents} agents")
+        logger.info(f"✅ Manifest: {n_workflows} workflows")
         logger.info(f"✅ Manifest: {len(m.triggers or [])} trigger templates")
+        set_readiness(True, agents=n_agents, workflows=n_workflows)
+    elif _BOOT_ERROR is not None:
+        # Manifest present but broken (failed load, or loaded empty) → NOT ready.
+        logger.error(f"❌ App NOT READY: {_BOOT_ERROR}")
+        set_readiness(False, reason=_BOOT_ERROR, agents=0, workflows=0)
     else:
+        # Genuinely manifest-less (legacy) app — fine, stays ready.
         logger.warning("⚠️  No v2 manifest loaded — /api/agents will be empty.")
+        set_readiness(True, agents=0, workflows=0)
 
     # Cache the graph for the platform's build-time / unreachable fallback
     # (same build_graph() the /api/graph endpoint serves on demand). This is a

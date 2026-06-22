@@ -39,7 +39,9 @@ workflows:
 
 - `${input.<key>}` — a workflow input.
 - `${steps.<stepId>.output.<key>}` — an upstream step's output.
-- A **missing reference FAILS the run** (no silent default). Only reference values you pass.
+- Reference only values you actually pass. A reference to a step that was **skipped/failed** (via
+  `onError`) resolves to **null** so the rest of the DAG keeps running on partial data — the
+  downstream agent should handle "no data" gracefully.
 
 ### Ordering / parallelism
 
@@ -50,7 +52,38 @@ dependencies and the engine does the rest.
 
 ### Error handling
 
-Per step: `onError: { strategy: skip }` (continue the DAG) or `{ strategy: retry }`.
+Per step: `onError: { strategy: skip }` (continue the DAG) or `{ strategy: retry }`. The DEFAULT is
+to skip a failed step and keep going (one flaky step never kills the whole run); use
+`onError: { strategy: fail }` on a step that MUST succeed for the run to be meaningful.
+
+---
+
+## Two workflow modes: `dag` (default) vs `team`
+
+A workflow is either a **DAG** (the fixed pipeline above — default) or a **TEAM** (an autonomous
+coordinator). Choose by whether the path is known ahead of time:
+
+- **`dag`** — you know the steps (fetch → analyse → act). Deterministic, debuggable. Use this for
+  almost everything.
+- **`team`** — the path depends on the request: you hand a coordinator the request + a **roster** of
+  agents and it decides at runtime who does what until it produces the output. Use ONLY for
+  open-ended jobs ("research X and produce Y"). No `steps` — give a `team` list instead:
+
+  ```yaml
+  workflows:
+    - id: research-and-write
+      type: team
+      inputs:
+        topic: { type: string, required: true }
+      team: [researcher, fact-checker, writer]   # roster the coordinator may delegate to
+      maxIterations: 8                            # coordinator turns before it must finish
+      outputs:
+        article: { type: string }
+  ```
+
+  The coordinator (a deep reasoner) delegates sub-tasks to teammates, collects their results, and
+  finishes — bounded by `maxIterations` + the workflow budget. A failing teammate is surfaced to the
+  coordinator, which can adapt and still finish.
 
 ### Multi-tenancy
 
@@ -82,8 +115,9 @@ in `intelligence.yaml#triggers` fires the workflow on schedule.
 
 ## ✅ Checklist
 
-- [ ] Workflow declared in `intelligence.yaml#workflows` (id, inputs, steps, outputs).
-- [ ] Each step uses `agent:` or `tool:` + an `input:` map.
+- [ ] Workflow declared in `intelligence.yaml#workflows` (id, inputs, outputs) — a `dag` (with
+      `steps`) by default, or a `team` (with a `team` roster, no steps) for open-ended jobs.
+- [ ] Each DAG step uses `agent:` or `tool:` + an `input:` map.
 - [ ] Data piped via `${input.*}` / `${steps.*.output.*}`; every reference resolves.
 - [ ] `user_id` declared in inputs and passed to each step.
 - [ ] `onError` set where a step's failure should not abort the DAG.

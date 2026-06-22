@@ -37,6 +37,11 @@ agents:
       this manifest entry; the agent class only carries the system
       prompt and any before/after hooks.
     model: claude-sonnet-4-6
+    # Reasoning tier: standard | deep | light. A trivial echo is "standard"; an
+    # agent that synthesises multi-source data into the app's valuable output
+    # should be "deep" (→ a strong model + extended thinking + a grounded,
+    # self-critiquing prompt). See .claude/prompts/implement-agent.md.
+    reasoning: standard
     integrations: []
     tools: [app.echo]
     input:

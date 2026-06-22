@@ -12,8 +12,13 @@ Auto-loaded when this seed is open. Read once per session, then act on it.
 
 - **Integration** — a connected third-party (Gmail, Slack, GitHub…). Catalog-only. Lists provided tools.
 - **Tool** — a typed function the runtime calls. Catalog (provided by an integration or standalone) or **custom** (you write it).
-- **Agent** — an LLM + a toolset. Catalog or custom.
-- **Workflow** — a declarative DAG. Always YAML in `intelligence.yaml`.
+- **Agent** — an LLM + a toolset. Catalog or custom. Set a `reasoning` tier — `deep` (Opus +
+  extended thinking + a grounded, self-critiquing prompt) for the agent that synthesises data into
+  the app's valuable output; else `standard`/`light`. See [`implement-agent.md`](../prompts/implement-agent.md).
+- **Workflow** — runs in one of two modes: a **`dag`** (a fixed declarative pipeline of `steps`,
+  the default) or a **`team`** (an autonomous coordinator + a `team` roster that decides the flow at
+  runtime — for open-ended jobs). Always YAML in `intelligence.yaml`. See
+  [`implement-workflow.md`](../prompts/implement-workflow.md).
 - **Trigger** — what fires a workflow (schedule, webhook). Catalog-only.
 
 The single source of truth is **`intelligence.yaml`** at the seed root. Decorators
@@ -21,6 +26,14 @@ in `claritty_sdk` are binders; the manifest carries the data.
 
 ## Before writing any code: ground yourself
 
+0. **Discovery first.** If `docs/plans/0001-brief.md` doesn't exist yet, run
+   Claritty's discovery method before designing anything — restate the problem,
+   **propose two distinct ideal outcomes** (proactive vs on-demand) for the
+   developer to pick, ask 3–5 focused follow-ups (widget glance + automation
+   autonomy + data), then write the brief. Playbook:
+   [`.claude/prompts/brainstorm.md`](../prompts/brainstorm.md). If signed in to the
+   CLI, `claritty discover outcomes "<problem>"` / `claritty discover questions
+   "<problem>"` give the platform's real output (else generate them per the playbook).
 1. Read [`AGENTIC.md`](../../AGENTIC.md) (one-page overview).
 2. Grep [`catalog/INDEX.md`](../../catalog/INDEX.md) for the integration / tool / agent you need. If it's there, reference it by id in `intelligence.yaml`. Don't reinvent.
 3. If you must build something new, the **only** custom escape is custom tools and custom agents (custom integrations and custom triggers are refused — the platform owns OAuth and the dispatcher).

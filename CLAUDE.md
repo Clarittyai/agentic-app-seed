@@ -64,24 +64,30 @@ This is a **minimal template repository** for developers building agentic apps t
 
 ## 🤖 Claude Code Workflow
 
-### Step 1: Brainstorming (ALWAYS START HERE)
+### Step 1: Discovery (ALWAYS START HERE)
 
-When a developer opens this template, **immediately suggest**:
+When a developer opens this template, run Claritty's own discovery method **before**
+designing or writing anything — the full playbook is **`.claude/prompts/brainstorm.md`**:
 
-```
-Let's brainstorm your agentic app idea! Run:
+1. **Restate the problem** in one line.
+2. **Propose TWO ideal outcomes** — distinct approaches (one proactive/automated,
+   one on-demand/assistant), ≤6-word titles, concrete + self-contained. Let the
+   developer pick one or write their own. (Don't ask "what features?" — show where
+   this could land.)
+3. **Ask 3–5 focused follow-ups** with concrete options (+ a "Let me specify…"
+   option), covering at least: the **widget glance** (the ONE thing seen + one tap
+   action), **automation** (cadence + autonomy: autonomous / suggestive /
+   observational), and **data** (its own data, or a catalog integration).
+4. **Write the brief** to `docs/plans/0001-brief.md` and set
+   `app-config.json` → `core_action.definition_of_done`.
 
-/superpowers:brainstorming
-```
+> **Parity (if signed in to the CLI):** run `claritty discover outcomes "<problem>"`
+> and `claritty discover questions "<problem>"` to get the platform's real
+> outcomes/questions as JSON; on `{"unauthenticated":true}` just generate them
+> yourself per the playbook. Same method either way.
 
-**Ask these questions:**
-1. **Problem**: What problem does your app solve?
-2. **Users**: Who will use this app?
-3. **Automation**: What tasks should agents handle automatically?
-4. **Schedule**: When/how often should it run? (user-configurable triggers)
-5. **Widgets**: What should users see at a glance? (small: 170×170px, medium: 360×170px, large: 360×360px)
-
-**Output**: Clear design for agents, workflows, triggers, and widgets.
+**Output**: a chosen ideal outcome + the brief → a clear design for agents,
+workflows, triggers, and widgets (sizes 170×170 / 360×170 / 360×360).
 
 ### Step 2: Implementation Planning
 

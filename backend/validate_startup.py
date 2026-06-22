@@ -125,33 +125,95 @@ def validate_database():
         return False
 
 
+def validate_proxy_host():
+    """Reject a proxy/platform URL that points at the FRONTEND instead of the API.
+
+    The SDK appends ``/api/v1/chat/completions`` (a clarity-api route) to
+    ``CLARITTY_LLM_PROXY_URL`` / ``CLARITTY_PLATFORM_URL``. Pointing it at the
+    web app (app.claritty.ai / :3000) returns an HTML 500 at runtime, not JSON —
+    a silent, confusing failure. Catch it at boot."""
+    print("🔍 Validating LLM proxy host...")
+    target = (
+        os.getenv('CLARITTY_LLM_PROXY_URL')
+        or os.getenv('CLARITTY_PLATFORM_URL')
+        or os.getenv('CLARITY_PLATFORM_URL')
+    )
+    if not target:
+        print("  ⚠️  No proxy/platform URL set — agents will use offline fallbacks.\n")
+        return True
+
+    from urllib.parse import urlparse
+    host = (urlparse(target).netloc or target).lower()
+    if 'app.claritty.ai' in host or host.endswith(':3000'):
+        print(f"  ❌ proxy host '{target}' is the FRONTEND, not the API.")
+        print("     The SDK appends /api/v1/chat/completions (a clarity-api route),")
+        print("     so the frontend returns an HTML 500. Set CLARITTY_PLATFORM_URL to")
+        print("     the API host (https://api.claritty.ai or http://localhost:4000),")
+        print("     or set CLARITTY_LLM_PROXY_URL directly.\n")
+        return False
+
+    print(f"  ✅ proxy host: {host}\n")
+    return True
+
+
 def validate_sdk_registration():
-    """Validate the app's v2 manifest loads and declares components."""
+    """Validate the app's v2 manifest loads, declares components, and passes the
+    SAME semantic rules the platform enforces at deploy.
+
+    Fails LOUD (returns False) on a manifest that is present but broken, or that
+    loaded but declares no runnable intelligence — the silent-empty symptom of an
+    SDK↔manifest version mismatch. A genuinely manifest-less (legacy) app passes."""
     print("🔍 Validating manifest (intelligence.yaml)...")
+
+    from backend.manifest_path import resolve_manifest_name, resolve_manifest_path
+
+    manifest_path = resolve_manifest_path()
+    if not manifest_path:
+        print("  ⚠️  No manifest file found — legacy/non-manifest app (skipping).\n")
+        return True
 
     try:
         from claritty_sdk.runtime.bootstrap import load as _bootstrap_load
-        from backend.manifest_path import resolve_manifest_name
 
         boot = _bootstrap_load(resolve_manifest_name())
         m = boot.manifest
-
         agent_count = len(m.agents or [])
         workflow_count = len(m.workflows or [])
         template_count = len(m.triggers or [])
-
         print(f"  ✅ Agents declared: {agent_count}")
         print(f"  ✅ Workflows declared: {workflow_count}")
-        print(f"  ✅ Trigger templates declared: {template_count}\n")
-
-        if agent_count == 0:
-            print("  ⚠️  Warning: No agents declared in the manifest")
-
-        return True
-
+        print(f"  ✅ Trigger templates declared: {template_count}")
     except Exception as e:
-        print(f"\n❌ Manifest validation failed: {e}")
+        print(f"\n❌ Manifest present but failed to load: {e}")
+        print("   Usually an SDK↔manifest version mismatch — check that claritty-sdk")
+        print("   supports every field in intelligence.yaml.")
         return False
+
+    # Silent-empty symptom: loaded but nothing to run.
+    if agent_count == 0 and workflow_count == 0:
+        print("\n❌ Manifest loaded but declares 0 agents and 0 workflows.")
+        print("   The app would boot 'healthy' yet do nothing — almost always an")
+        print("   SDK↔manifest mismatch (an older SDK dropped fields).")
+        return False
+
+    # Semantic parity — the SAME rules the platform runs at deploy, so a problem
+    # surfaces here (clear) rather than as a cryptic post-upload rejection.
+    try:
+        import yaml as _yaml
+        from claritty_sdk.manifest import validate_manifest_doc
+
+        raw = _yaml.safe_load(Path(manifest_path).read_text("utf-8")) or {}
+        sem = validate_manifest_doc(raw, require_runnable_workflow=False)
+        if not sem.ok:
+            print("\n❌ Manifest semantic errors (the platform would reject these):")
+            for err in sem.errors:
+                print(f"   • {err}")
+            return False
+    except Exception as e:
+        print(f"  ⚠️  semantic check skipped: {e}")
+
+    print()
+    return True
 
 
 def main():
@@ -167,6 +229,7 @@ def main():
 
     validations = [
         ("Environment Variables", validate_environment),
+        ("LLM Proxy Host", validate_proxy_host),
         ("Python Imports", validate_imports),
         ("Database Connection", validate_database),
         ("SDK Registration", validate_sdk_registration),
