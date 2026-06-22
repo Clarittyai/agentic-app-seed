@@ -6,7 +6,7 @@
   "version": "1.0.0",
   "name": "LinkedIn",
   "vendor": "LinkedIn",
-  "description": "Read the authenticated user's LinkedIn feed and post updates.",
+  "description": "Read the authenticated user's LinkedIn feed and publish posts to their personal feed or a Company Page they administer.",
   "intentHints": [
     "summarize my linkedin feed",
     "post a daily linkedin digest",
@@ -29,12 +29,22 @@
     },
     {
       "id": "linkedin.create_post",
-      "description": "Publish a post to the user's LinkedIn feed.",
+      "description": "Publish a post to LinkedIn. Posts to the member's own feed by default; pass org_id to post as a Company Page the member administers (falls back to the personal feed if page posting isn't authorized).",
       "input": {
-        "text": { "type": "string", "required": true }
+        "text": { "type": "string", "required": true },
+        "org_id": { "type": "string", "required": false }
       },
       "output": {
-        "post_id": { "type": "string", "required": true }
+        "post_id": { "type": "string", "required": true },
+        "posted_as": { "type": "string", "required": false }
+      }
+    },
+    {
+      "id": "linkedin.list_organizations",
+      "description": "List the LinkedIn Company Pages the authenticated member administers (for a page picker). Returns [] if Company Page access isn't authorized.",
+      "input": {},
+      "output": {
+        "organizations": { "type": "array", "required": true }
       }
     }
   ],
