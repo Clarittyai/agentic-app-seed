@@ -107,8 +107,8 @@ export interface Agent {
   name: string;
   description: string;
   category: string;
-  inputs: Record<string, any>;
-  outputs: Record<string, any>;
+  inputs: Record<string, unknown>;
+  outputs: Record<string, unknown>;
   integrations: Array<{
     service: string;
     required: boolean;
@@ -165,8 +165,8 @@ export interface GraphNode {
     description?: string;
     templateType?: string;
     workflowId?: string;
-    inputs?: Record<string, any>;
-    outputs?: Record<string, any>;
+    inputs?: Record<string, unknown>;
+    outputs?: Record<string, unknown>;
   };
 }
 
@@ -254,7 +254,7 @@ export const getAgent = async (agentId: string): Promise<Agent> => {
   return response.data;
 };
 
-export const executeAgent = async (agentId: string, inputData: Record<string, any>) => {
+export const executeAgent = async (agentId: string, inputData: Record<string, unknown>) => {
   const response = await api.post(`/api/agents/${agentId}/execute`, inputData);
   return response.data;
 };
@@ -264,7 +264,7 @@ export const listWorkflows = async (): Promise<Workflow[]> => {
   return response.data.workflows;
 };
 
-export const executeWorkflow = async (workflowId: string, inputData?: Record<string, any>) => {
+export const executeWorkflow = async (workflowId: string, inputData?: Record<string, unknown>) => {
   const response = await api.post(`/api/workflows/${workflowId}/execute`, inputData);
   return response.data;
 };

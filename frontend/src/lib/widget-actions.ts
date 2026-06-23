@@ -76,7 +76,7 @@ export interface DeepLinkConfig {
  * field on every WIDGET_ACTION message for host-side analytics.
  */
 export function getWidgetSource(): string {
-  const fromEnv = (import.meta as any).env?.VITE_APP_SLUG;
+  const fromEnv = import.meta.env?.VITE_APP_SLUG;
   if (typeof fromEnv === 'string' && fromEnv.length > 0) return fromEnv;
   if (typeof document !== 'undefined' && document.title) return document.title;
   return 'unknown';
