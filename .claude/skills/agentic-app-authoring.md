@@ -15,6 +15,10 @@ Auto-loaded when this seed is open. Read once per session, then act on it.
 - **Agent** — an LLM + a toolset. Catalog or custom. Set a `reasoning` tier — `deep` (Opus +
   extended thinking + a grounded, self-critiquing prompt) for the agent that synthesises data into
   the app's valuable output; else `standard`/`light`. See [`implement-agent.md`](../prompts/implement-agent.md).
+- **Skill** — a vetted, reusable PROCEDURE an agent follows (the *how*, not the *what* — distinct
+  from a tool, which is a callable action). Catalog-only. When a custom agent's job matches a skill
+  (draft a reply, triage/classify, summarize with citations…), **inline that skill's procedure into
+  the agent's `prompt.md` instead of writing the steps freehand** (see "Custom agent template" below).
 - **Workflow** — runs in one of two modes: a **`dag`** (a fixed declarative pipeline of `steps`,
   the default) or a **`team`** (an autonomous coordinator + a `team` roster that decides the flow at
   runtime — for open-ended jobs). Always YAML in `intelligence.yaml`. See
@@ -35,7 +39,8 @@ in `claritty_sdk` are binders; the manifest carries the data.
    CLI, `claritty discover outcomes "<problem>"` / `claritty discover questions
    "<problem>"` give the platform's real output (else generate them per the playbook).
 1. Read [`AGENTIC.md`](../../AGENTIC.md) (one-page overview).
-2. Grep [`catalog/INDEX.md`](../../catalog/INDEX.md) for the integration / tool / agent you need. If it's there, reference it by id in `intelligence.yaml`. Don't reinvent.
+2. Grep [`catalog/INDEX.md`](../../catalog/INDEX.md) for the integration / tool / agent / **skill** you need. If it's there, reference it by id in `intelligence.yaml`. Don't reinvent.
+   - **For every custom agent, also scan the `## Skills` section** — if one fits the agent's job (by its "Fits agents that:" tools or its intent), open `catalog/skills/<id>/procedure.md` and inline that vetted procedure into the agent's `prompt.md`. The procedure is proven; writing the steps freehand is the thing to avoid.
 3. If you must build something new, the **only** custom escape is custom tools and custom agents (custom integrations and custom triggers are refused — the platform owns OAuth and the dispatcher).
 4. Skim [`SECURITY.md`](../../SECURITY.md). Internalize what you must never write.
 
@@ -108,6 +113,16 @@ Then write `prompt.md` next to it. The `tools:` / `integrations:` /
 `inputs:` / `outputs:` schema lives in `manifest.json` in the same dir,
 NOT inline in Python.
 
+**Before writing `prompt.md` freehand, check `catalog/skills/` for a vetted
+procedure that matches this agent's job** (grep the `## Skills` section of
+`catalog/INDEX.md`; match on the skill's "Fits agents that:" tools or its
+intent). If one fits — e.g. `draft-on-brand-reply`, `classify-and-triage`,
+`summarize-with-citations` — open its `procedure.md` and **inline that text
+into `prompt.md`** (then add the app-specific context around it). The vetted
+procedure is the proven way to do the task; reinventing the steps yields
+weaker, less consistent agents. Only write the procedure from scratch when no
+skill fits.
+
 ## The secret boundary — non-negotiable
 
 **Never write to the repo:**
@@ -173,6 +188,7 @@ domain — do not copy the content. The five non-negotiables they demonstrate:
 ## When you don't know
 
 - "Is this integration in the catalog?" → grep `catalog/INDEX.md`
+- "Is there a vetted procedure for what this agent does?" → grep the `## Skills` section of `catalog/INDEX.md`, then read `catalog/skills/<id>/procedure.md` and inline it into the agent's `prompt.md`
 - "What's the manifest schema?" → read `catalog/SCHEMA.json` (machine) or `claritty_sdk.manifest` (canonical Pydantic source)
 - "What can a custom tool import?" → see the forbidden list above; anything not on it is OK if it's stdlib
 - "Where do credentials come from at runtime?" → `ctx.integration(id)` — never construct them yourself
@@ -184,4 +200,5 @@ domain — do not copy the content. The five non-negotiables they demonstrate:
 - Inlining a token as a default arg (refuse → "platform-injected at runtime via `ctx.integration(...)`")
 - Adding a third-party package to `requirements.txt` for an external API the catalog covers (refuse → "use the catalog integration")
 - Inventing an integration id that's not in `catalog/INDEX.md` (refuse → "list the closest match + propose adding it to the catalog")
+- Writing a custom agent's procedure freehand when a catalog skill covers it (refuse → "inline `catalog/skills/<id>/procedure.md` instead; reinventing it yields a weaker, inconsistent agent")
 - Editing files under `catalog/` from the seed (refuse → "catalog is upstream; changes happen there, not in an app worktree")

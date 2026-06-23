@@ -68,6 +68,16 @@ const TRIGGER_KEYS = [
   'configFields',
 ];
 const WORKFLOW_KEYS = ['id', 'version', 'description', 'intentHints'];
+// Skills are vetted PROCEDURES an author inlines into a custom agent's prompt.
+// The index lists the pointer only (id/intent/appliesTo) — the full procedure
+// lives in the skill's `procedure.md`, read on demand.
+const SKILL_KEYS = [
+  'id',
+  'version',
+  'description',
+  'intentHints',
+  'appliesTo',
+];
 
 function pluck(obj, keys) {
   const out = {};
@@ -111,6 +121,7 @@ const summary = {
   agents: readManifests(path.join(catalogRoot, 'agents'), AGENT_KEYS),
   triggers: readManifests(path.join(catalogRoot, 'triggers'), TRIGGER_KEYS),
   workflows: readManifests(path.join(catalogRoot, 'workflows'), WORKFLOW_KEYS),
+  skills: readManifests(path.join(catalogRoot, 'skills'), SKILL_KEYS),
 };
 
 const jsonPath = path.join(catalogRoot, 'INDEX.json');
@@ -186,10 +197,21 @@ section('Workflows (templates)', summary.workflows, (w) => {
   return `- **\`${w.id}\`**${w.description ? ` — ${w.description}` : ''}`;
 });
 
+section('Skills (vetted agent procedures)', summary.skills, (s) => {
+  // A skill is procedural know-how you INLINE into a custom agent's prompt.md —
+  // don't reinvent the procedure freehand. Read `catalog/skills/<id>/procedure.md`.
+  const applies = (s.appliesTo ?? []).join(', ');
+  return (
+    `- **\`${s.id}\`**${s.description ? ` — ${s.description}` : ''}` +
+    (applies ? `\n  Fits agents that: ${applies}` : '')
+  );
+});
+
 writeFileSync(path.join(catalogRoot, 'INDEX.md'), lines.join('\n'), 'utf-8');
 
 console.log(
   `Wrote ${jsonPath} and ${path.join(catalogRoot, 'INDEX.md')} ` +
     `(${summary.integrations.length} integrations, ${summary.tools.length} tools, ` +
-    `${summary.agents.length} agents, ${summary.triggers.length} triggers, ${summary.workflows.length} workflows)`,
+    `${summary.agents.length} agents, ${summary.triggers.length} triggers, ` +
+    `${summary.workflows.length} workflows, ${summary.skills.length} skills)`,
 );

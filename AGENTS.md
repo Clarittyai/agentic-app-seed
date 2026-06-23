@@ -39,6 +39,12 @@ Only after the brief is written: design the agents/workflow/trigger, the widget 
 size, the data model, and the app's own identity, then implement per `CLAUDE.md`.
 Run `node scripts/check-not-template.mjs` (the identity gate) before calling it done.
 
+**Compose from the catalog — don't reinvent.** Grep `catalog/INDEX.md` for the
+integrations, tools, agents, and **skills** you need. For each custom agent, check the
+`## Skills` section: a skill is a vetted procedure (draft a reply, triage, summarize with
+citations…) — when one fits the agent's job, inline `catalog/skills/<id>/procedure.md` into
+its `prompt.md` instead of writing the steps freehand. Proven procedure beats improvised.
+
 **Invariants:** widget sizes are exactly 170×170 / 360×170 / 360×360; triggers are
 schedule / webhook / event / manual; the app is self-contained (no OAuth/keys except
 catalog integrations the platform manages — see `INTEGRATIONS.md`).

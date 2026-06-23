@@ -34,6 +34,15 @@ agents:
 
 ## 2a. Zero-Python agent (PREFERRED) — author a prompt
 
+**Before you write the prompt: check for a vetted skill.** Grep the `## Skills` section of
+`catalog/INDEX.md` for a procedure matching this agent's job (match on its "Fits agents that:"
+tools or its intent — e.g. `draft-on-brand-reply`, `classify-and-triage`,
+`summarize-with-citations`). If one fits, open `catalog/skills/<id>/procedure.md` and **inline
+that vetted procedure verbatim into the prompt**, then add the app-specific context (role, which
+tool ids to call, the output schema) around it. The procedure is the proven way to do the task —
+reinventing the steps freehand yields a weaker, less consistent agent. Only author the procedure
+from scratch when no skill fits.
+
 Create `backend/custom/agents/your_agent_id/prompt.md` — pure prose, no code:
 
 ```markdown
@@ -128,6 +137,7 @@ The workflow passes it as `${input.user_id}`.
 
 ## ✅ Checklist
 
+- [ ] Checked `catalog/INDEX.md` `## Skills` — inlined a matching skill's `procedure.md` instead of writing the procedure freehand (or confirmed none fit).
 - [ ] Agent declared in `intelligence.yaml#agents` with full input/output schema + tools + integrations.
 - [ ] `reasoning` tier set — `deep` (+ a strong model + a grounded, self-critiquing prompt) for the agent that synthesises data into the app's valuable output; else `standard`/`light`.
 - [ ] Exactly ONE instruction source: `promptFile` (preferred) or a `handler` class.

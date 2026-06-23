@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-06-16T21:50:53.201Z",
+  "generatedAt": "2026-06-23T03:20:49.244Z",
   "integrations": [
     {
       "id": "airtable",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "Airtable",
-      "description": "Read and write records in Airtable bases via MCP.",
+      "description": "Read and write records in Airtable bases.",
       "category": "data",
       "kind": "integration",
       "authType": "apiKey",
@@ -41,23 +41,39 @@
       ]
     },
     {
+      "id": "brave-search",
+      "version": "1.0.0",
+      "name": "Brave Search",
+      "description": "Search the web with Brave Search to ground content in current results. Uses an API key (X-Subscription-Token).",
+      "category": "productivity",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "web search",
+        "search the web",
+        "current results",
+        "ground in web results"
+      ]
+    },
+    {
       "id": "calendly",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "Calendly",
-      "description": "List scheduled meetings and cancel events via a community MCP server.",
+      "description": "List scheduled meetings and cancel events with a Calendly personal access token.",
       "category": "calendar",
       "kind": "integration",
       "authType": "apiKey",
       "intentHints": [
         "calendly meetings",
-        "cancel a calendly event"
+        "cancel a calendly event",
+        "list scheduled events"
       ]
     },
     {
       "id": "clickup",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "ClickUp",
-      "description": "Create and list tasks in ClickUp via MCP.",
+      "description": "Create and list tasks in ClickUp.",
       "category": "productivity",
       "kind": "integration",
       "authType": "apiKey",
@@ -68,9 +84,9 @@
     },
     {
       "id": "discord",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "Discord",
-      "description": "Send messages to Discord channels via a community MCP server.",
+      "description": "Send messages to Discord channels and list guilds.",
       "category": "communication",
       "kind": "integration",
       "authType": "apiKey",
@@ -81,9 +97,9 @@
     },
     {
       "id": "dropbox",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "Dropbox",
-      "description": "List and upload files in Dropbox via MCP.",
+      "description": "List and upload files in Dropbox.",
       "category": "files",
       "kind": "integration",
       "authType": "oauth2",
@@ -108,9 +124,9 @@
     },
     {
       "id": "gitlab",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "GitLab",
-      "description": "List issues + create MRs in GitLab via MCP.",
+      "description": "List issues and create merge requests in GitLab.",
       "category": "dev",
       "kind": "integration",
       "authType": "apiKey",
@@ -138,28 +154,26 @@
       "id": "google-calendar",
       "version": "1.0.0",
       "name": "Google Calendar",
-      "description": "Read events, create events, and check free/busy time on the user's Google Calendar.",
+      "description": "Read events and create events on the user's Google Calendar.",
       "category": "calendar",
       "kind": "integration",
       "authType": "oauth2",
       "intentHints": [
         "what's on my calendar",
-        "schedule a meeting",
-        "find a time"
+        "schedule a meeting"
       ]
     },
     {
       "id": "google-drive",
       "version": "1.0.0",
       "name": "Google Drive",
-      "description": "List, upload, and export files from the user's Google Drive.",
+      "description": "Search and list files in the user's Google Drive.",
       "category": "files",
       "kind": "integration",
       "authType": "oauth2",
       "intentHints": [
         "find a file in drive",
-        "upload to drive",
-        "export a doc"
+        "list drive files"
       ]
     },
     {
@@ -208,7 +222,7 @@
       "id": "linkedin",
       "version": "1.0.0",
       "name": "LinkedIn",
-      "description": "Read the authenticated user's LinkedIn feed and post updates.",
+      "description": "Read the authenticated user's LinkedIn feed and publish posts to their personal feed or a Company Page they administer.",
       "category": "social",
       "kind": "integration",
       "authType": "oauth2",
@@ -260,20 +274,6 @@
       ]
     },
     {
-      "id": "notion-mcp",
-      "version": "0.1.0",
-      "name": "Notion (MCP)",
-      "description": "Search, read, and create Notion pages via a third-party MCP server.",
-      "category": "productivity",
-      "kind": "integration",
-      "authType": "oauth2",
-      "intentHints": [
-        "search my notion workspace",
-        "create a notion page",
-        "summarize my notion docs"
-      ]
-    },
-    {
       "id": "openai",
       "version": "1.0.0",
       "name": "OpenAI",
@@ -315,9 +315,9 @@
     },
     {
       "id": "pipedrive",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "Pipedrive",
-      "description": "List and create deals in Pipedrive via MCP.",
+      "description": "List and create deals in Pipedrive.",
       "category": "crm",
       "kind": "integration",
       "authType": "apiKey",
@@ -327,44 +327,17 @@
       ]
     },
     {
-      "id": "postgres",
-      "version": "1.0.0",
-      "name": "Postgres",
-      "description": "Run read + write queries against a user-supplied Postgres connection.",
-      "category": "data",
-      "kind": "integration",
-      "authType": "apiKey",
-      "intentHints": [
-        "query my database",
-        "look up a row",
-        "describe a postgres table"
-      ]
-    },
-    {
       "id": "posthog",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "PostHog",
-      "description": "Capture events and query event data via MCP.",
+      "description": "Capture events and run HogQL queries against your PostHog project.",
       "category": "analytics",
       "kind": "integration",
       "authType": "apiKey",
       "intentHints": [
         "track an event",
-        "query posthog"
-      ]
-    },
-    {
-      "id": "s3",
-      "version": "1.0.0",
-      "name": "AWS S3",
-      "description": "Read and write objects in S3 buckets using IAM credentials.",
-      "category": "files",
-      "kind": "integration",
-      "authType": "apiKey",
-      "intentHints": [
-        "put to s3",
-        "list s3 objects",
-        "fetch from s3"
+        "query posthog",
+        "capture analytics event"
       ]
     },
     {
@@ -438,9 +411,9 @@
     },
     {
       "id": "x-twitter",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "name": "X (Twitter)",
-      "description": "Post tweets and search via a community MCP server.",
+      "description": "Post tweets and search recent tweets.",
       "category": "social",
       "kind": "integration",
       "authType": "oauth2",
@@ -573,6 +546,61 @@
         "morning digest",
         "daily summary",
         "send me a morning email"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "classify-and-triage",
+      "version": "0.1.0",
+      "description": "Classify each item into the given categories and rank by importance then urgency, with a grounded one-line reason per item, so the highest-leverage work surfaces first.",
+      "intentHints": [
+        "triage",
+        "classify these items",
+        "categorize and prioritize",
+        "what needs attention first",
+        "sort by urgency",
+        "rank incoming items"
+      ],
+      "appliesTo": [
+        "llm.classify",
+        "llm.rank"
+      ]
+    },
+    {
+      "id": "draft-on-brand-reply",
+      "version": "0.1.0",
+      "description": "Draft a reply that matches the brand voice, leads with the answer, is concrete and safe to send (no commitments it wasn't given, no sensitive data).",
+      "intentHints": [
+        "draft a reply",
+        "respond to a message",
+        "write an on-brand response",
+        "draft an email reply",
+        "compose a response",
+        "reply to customers"
+      ],
+      "appliesTo": [
+        "llm.draft",
+        "gmail.send",
+        "slack.send",
+        "outlook.send"
+      ]
+    },
+    {
+      "id": "summarize-with-citations",
+      "version": "0.1.0",
+      "description": "Produce a faithful, grounded summary that cites its sources, separates fact from inference, preserves the source's weighting, and never invents details.",
+      "intentHints": [
+        "summarize",
+        "write a digest",
+        "give me a summary",
+        "summarize with sources",
+        "brief me on",
+        "daily digest"
+      ],
+      "appliesTo": [
+        "llm.summarize",
+        "llm.extract"
       ]
     }
   ]
