@@ -52,19 +52,24 @@ def _uuid() -> str:
 class ItemStatus:
     NEW = "new"                      # ingested, not yet processed by an agent
     TRIAGED = "triaged"             # classified/scored, no draft yet
+    PLANNED = "planned"             # a dated calendar slot reserved, no body yet
     DRAFT = "draft"                 # an agent produced a draft to review
     PENDING_APPROVAL = "pending_approval"  # draft awaiting a human decision
     APPROVED = "approved"           # human said yes; about to act externally
+    SCHEDULED = "scheduled"         # approved + scheduled_for set; awaiting the sweep
     PUBLISHED = "published"         # the real external action succeeded
     FAILED = "failed"               # the external action genuinely failed
     REJECTED = "rejected"           # human said no
 
     #: Statuses an item can be in while it still wants human attention.
-    OPEN = (NEW, TRIAGED, DRAFT, PENDING_APPROVAL, FAILED)
+    OPEN = (NEW, TRIAGED, PLANNED, DRAFT, PENDING_APPROVAL, FAILED)
     #: Terminal statuses — no further action expected.
     CLOSED = (PUBLISHED, REJECTED)
+    #: Transient/automatic states between approval and publish — in neither set
+    #: (the scheduled sweep advances them without human attention).
+    SCHEDULED_PENDING = (APPROVED, SCHEDULED)
 
-    ALL = (NEW, TRIAGED, DRAFT, PENDING_APPROVAL, APPROVED, PUBLISHED, FAILED, REJECTED)
+    ALL = (NEW, TRIAGED, PLANNED, DRAFT, PENDING_APPROVAL, APPROVED, SCHEDULED, PUBLISHED, FAILED, REJECTED)
 
 
 class ItemMixin:
