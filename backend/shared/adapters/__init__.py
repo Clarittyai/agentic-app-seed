@@ -123,16 +123,28 @@ def execute_tool(
         or os.environ.get("CLARITTY_INTERNAL_SECRET")
         or ""
     )
+    # The platform scopes each integration credential to (user, app). Send this
+    # app's id so the platform's findConnected matches the app-scoped connection;
+    # without it the lookup falls back to appId=null and reports NOT_CONNECTED even
+    # after the user connected. Read both spellings (one-t/two-t) defensively.
+    app_id = (
+        os.environ.get("CLARITY_APP_ID")
+        or os.environ.get("CLARITTY_APP_ID")
+        or ""
+    )
     if not base:
         raise IntegrationNotConnected(
             service, "platform executor unavailable (CLARITTY_PLATFORM_URL unset)"
         )
     url = f"{base}/internal/integrations/tools/{service}/{tool}/execute"
+    body = {"userId": user_id, "arguments": arguments}
+    if app_id:
+        body["appId"] = app_id
     try:
         resp = httpx.post(
             url,
             headers={"X-Claritty-Internal": secret},
-            json={"userId": user_id, "arguments": arguments},
+            json=body,
             timeout=30,
         )
     except httpx.HTTPError as e:
