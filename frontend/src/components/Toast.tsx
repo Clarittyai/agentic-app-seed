@@ -65,11 +65,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Access the global toast surface. Must be used under <ToastProvider>. */
+const NOOP_TOAST: ToastContextValue = { show: () => {}, dismiss: () => {} };
+
+/**
+ * Access the global toast surface. Degrades to a NO-OP when no <ToastProvider> is
+ * mounted (e.g. a widget rendered in a bare test or host context) so a missing
+ * provider never crashes the widget. In the app, <ToastProvider> wraps everything
+ * (incl. the /widget route), so toasts render normally.
+ */
 export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast must be used within a <ToastProvider>');
-  return ctx;
+  return useContext(ToastContext) ?? NOOP_TOAST;
 }
 
 function ToastView({
