@@ -684,6 +684,34 @@ by `Model.user_id`. There is no `CLARITY_WORKSPACE_ID`.
 The identity gate ensures the app doesn't *look* like the template. These patterns ensure it
 *does its job* end-to-end. Apply the ones the app needs.
 
+### Surface every error — never silent-catch (applies to EVERY app)
+If an action can fail, the user MUST see why. A swallowed error reads as "nothing happened" —
+the single worst UX (e.g. a publish 409 that shows no message). **Rule: never write a bare
+`catch {}` or `catch { /* resync */ }` around an API call.** Always catch, normalize, and toast.
+- The seed ships the primitives — use them, don't reinvent:
+  - **`useToast()` + `<ToastProvider>`** (`frontend/src/components/Toast.tsx`) — a single global toast
+    surface, already mounted at the app root in `App.tsx` (wraps the `/widget` route too, so widgets
+    can toast).
+  - **`toApiError(err)`** (`frontend/src/lib/api.ts`) — `{ status, code, message }` from any caught error.
+- Pattern (copy it) — every API call / widget `runQuickAction` / form submit:
+  ```tsx
+  const { show } = useToast();
+  try {
+    await runQuickAction({ actionId: 'approve', run: () => approve(id) });
+  } catch (err) {
+    const e = toApiError(err);
+    show({ tone: 'error', text:
+      e.status === 409 || e.code === 'not_connected'
+        ? 'Connect the required integration, then try again.'   // 409 = NOT_CONNECTED
+        : `Couldn’t do that: ${e.message}` });
+  } finally {
+    void fetchData();   // optimistic UI? the refetch restores truth
+  }
+  ```
+- Success that isn't obvious should toast too (`tone: 'success'`), e.g. "Published to LinkedIn."
+- A **409** from the backend means an integration isn't connected — toast a "connect/reconnect
+  <service>" prompt, never a fake success (see "External connections").
+
 ### External connections (if the app acts on an outside service)
 If the core verb hits an external system — **post** to LinkedIn, **send** email, **charge** with
 Stripe, **sync** to Notion — then generating content is only half the app. Wire the service the
@@ -745,6 +773,7 @@ Before deployment, ensure:
 - [ ] Customized widget (small, medium & large views) using the UI kit
 - [ ] If the app acts on an external service: the integration is **declared in `intelligence.yaml`** (the platform owns connecting it — no in-app Connect page/banner) + the action via a real catalog tool / `ctx.integration`, with a 409/connect-prompt when not connected — never simulated (see INTEGRATIONS.md)
 - [ ] If it shouldn't act autonomously: a **draft → approve → act** lifecycle with an approve action
+- [ ] **Every action surfaces its errors** — no silent `catch {}`; failures (esp. 409) toast via `useToast()` + `toApiError()` (see "Surface every error")
 - [ ] `app-config.json` `core_action.definition_of_done` is filled, and that end-to-end path is verified
 - [ ] The problem the app solves is delivered end-to-end (agent → workflow → widget → real action)
 - [ ] **Rendered design gate**: `npm run check:design:score` passes — no rubric

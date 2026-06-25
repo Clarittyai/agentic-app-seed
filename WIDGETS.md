@@ -219,19 +219,30 @@ import { triggerDeepLink, runQuickAction } from '@/lib/widget-actions';
   Open BTC chart
 </button>
 
-// Quick action — runs API inside the iframe, refreshes widget state:
+// Quick action — runs API inside the iframe, refreshes widget state.
+// ALWAYS catch + toast the error (never silent) — see CLAUDE.md "Surface every
+// error". <ToastProvider> wraps the /widget route, so useToast() works here.
+const { show } = useToast(); // from '@/components/Toast'
 <button
   onClick={async () => {
-    await runQuickAction({
-      actionId: 'mark-read',
-      run: () => markEmailsAsRead(),
-    });
-    await fetchData(); // refresh widget
+    try {
+      await runQuickAction({ actionId: 'mark-read', run: () => markEmailsAsRead() });
+    } catch (err) {
+      const e = toApiError(err); // from '@/lib/api'
+      show({ tone: 'error', text:
+        e.status === 409 ? 'Connect the required integration, then try again.'
+                         : `Couldn’t do that: ${e.message}` });
+    } finally {
+      await fetchData(); // refresh widget (restores optimistic UI on failure)
+    }
   }}
 >
   Mark Read
 </button>
 ```
+
+> **Never `catch {}` silently in a widget action.** A swallowed error (e.g. a publish
+> 409) looks like "nothing happened" — the worst widget UX. Catch → `toApiError` → toast.
 
 ### Sandbox / origin notes
 

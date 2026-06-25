@@ -101,6 +101,34 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// ── Error helpers ─────────────────────────────────────────────────────────────
+/**
+ * A typed view of an API error: HTTP status + the backend's machine `error` code
+ * + a human message. ALWAYS run a caught error through this and show the message
+ * in a toast — never swallow it (see "Surface every error" in CLAUDE.md). On a
+ * 409 the backend signals NOT_CONNECTED ("connect <service>"); special-case it.
+ */
+export interface ApiError {
+  status?: number;
+  code?: string;
+  message: string;
+}
+
+export function toApiError(err: unknown): ApiError {
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status;
+    const data = err.response?.data as
+      | { error?: string; detail?: string; message?: string }
+      | undefined;
+    return {
+      status,
+      code: data?.error,
+      message: data?.detail || data?.message || err.message,
+    };
+  }
+  return { message: err instanceof Error ? err.message : 'Something went wrong' };
+}
+
 // Types
 export interface Agent {
   id: string;

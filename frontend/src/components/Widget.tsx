@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
 import { WidgetContainer, WidgetButton, WidgetBadge } from '@clarittyai/widget-toolkit';
-import { getWidgetData, toggleTask, type WidgetData, type TaskPriority, type WidgetTask } from '@/lib/api';
+import { getWidgetData, toggleTask, toApiError, type WidgetData, type TaskPriority, type WidgetTask } from '@/lib/api';
 import { runQuickAction, notifyWidgetStateChanged } from '@/lib/widget-actions';
+import { useToast } from '@/components/Toast';
 import { cn } from '@/lib/utils';
 import type { WidgetSize } from '@/lib/widget-sizes';
 
@@ -36,6 +37,7 @@ export default function Widget({ size = 'medium', className }: WidgetProps) {
   const [data, setData] = useState<WidgetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { show } = useToast();
 
   useEffect(() => {
     void fetchData();
@@ -80,8 +82,18 @@ export default function Widget({ size = 'medium', className }: WidgetProps) {
     try {
       await runQuickAction({ actionId: 'complete-task', run: () => toggleTask(id) });
       notifyWidgetStateChanged();
-    } catch {
-      /* resync below */
+    } catch (err) {
+      // Never fail silently — tell the user why. A 409 means an integration this
+      // action needs isn't connected; everything else shows the real message. The
+      // finally-block refetch restores the optimistic change.
+      const e = toApiError(err);
+      show({
+        tone: 'error',
+        text:
+          e.status === 409 || e.code === 'not_connected'
+            ? 'Connect the required integration, then try again.'
+            : `Couldn’t complete that: ${e.message}`,
+      });
     } finally {
       void fetchData();
     }
