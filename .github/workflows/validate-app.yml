@@ -27,6 +27,13 @@ jobs:
           # No-op on the untouched seed (.claritty-seed-pristine present).
           node scripts/check-not-template.mjs
 
+      - name: Check app coherence (complete + user-scoped)
+        run: |
+          # Fails while the app is incomplete: no Definition of Done, missing
+          # discovery brief, or a domain model without a user_id (tenancy leak).
+          # No-op on the untouched seed (.claritty-seed-pristine present).
+          node scripts/check-coherence.mjs
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
