@@ -25,6 +25,17 @@
     --ring: 227 100% 68%;
     --radius: 0.5rem;
 
+    /* Surface/shape personality — per-app values are injected into theme.css at
+       generation time (from the design brief's radius + surface treatment). The
+       kit reads these via tailwind.config (rounded-xl/2xl, border, shadow-sm), so
+       a generated app's cards/surfaces take on its own corner + elevation
+       language. Defaults below reproduce the prior fixed look. The widget's outer
+       radius (3xl) is intentionally NOT here — it stays canonical. */
+    --ui-radius-xl: 1rem;
+    --ui-radius-2xl: 1.5rem;
+    --ui-border-width: 1px;
+    --ui-shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
     /* Brand tokens (HSL channels). Default = Claritty royal blue #2957FF; each
        generated app may override these in src/theme.css for a unique look.
        NOTE: the accent must stay dark enough that WHITE text on it AND the

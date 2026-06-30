@@ -112,11 +112,24 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        'xl': '1rem',
-        '2xl': '1.5rem',
+        // Card-radius scale — driven by CSS vars so the per-app design brief's
+        // corner language (sharp/soft/rounded/pill) re-skins every card/surface
+        // (the kit's Card/Section/Stat use rounded-xl/2xl). Defaults reproduce
+        // the prior fixed look. NOTE: 3xl is the WIDGET's canonical OUTER radius
+        // — it is intentionally NOT var-ized (the widget validator enforces it).
+        'xl': 'var(--ui-radius-xl, 1rem)',
+        '2xl': 'var(--ui-radius-2xl, 1.5rem)',
         '3xl': '2rem',
       },
+      borderWidth: {
+        // Surface personality: flat surfaces set this to 0 so the kit's `border`
+        // class yields borderless bands; default 1px keeps the hairline look.
+        DEFAULT: 'var(--ui-border-width, 1px)',
+      },
       boxShadow: {
+        // Card elevation personality: the kit's Card uses `shadow-sm`, so driving
+        // it from a var lets the brief choose flat (none) / lifted / glass cards.
+        'sm': 'var(--ui-shadow-card, 0 1px 2px 0 rgb(0 0 0 / 0.05))',
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
         'lift': '0 10px 40px -10px rgba(0, 0, 0, 0.1)',
         'lift-lg': '0 20px 60px -15px rgba(0, 0, 0, 0.15)',

@@ -49,6 +49,33 @@ Opacity utilities work on every token (`bg-accent/10`, `text-foreground/70`).
 - **Font:** the apple/Inter stack is wired via `--brand-font` (Tailwind `font-sans`).
 - **iOS safe areas** on full-bleed mobile layouts: `pt-[env(safe-area-inset-top)]` / `pb-[env(safe-area-inset-bottom)]`.
 
+## Surface & shape personality (make apps look *different*, not recolored)
+
+Color + font alone make every app look like the seed in a new palette. The seed
+also exposes **surface/shape personality tokens** so an app can have its own corner
+language and surface treatment. Generation injects these into `theme.css` from the
+design brief (corner language + surface style); you can set them by hand too. The
+kit's `Card`/`Section`/`Stat` read them automatically through `tailwind.config.js`
+(`rounded-xl`/`rounded-2xl`, `border`, `shadow-sm`), so changing them re-skins the
+whole app — no kit changes.
+
+```css
+/* frontend/src/theme.css — optional; defaults reproduce the seed look */
+:root {
+  --ui-radius-xl: 1rem;      /* card/section radius (rounded-xl)  — sharp≈0.375rem … pill≈1.25rem */
+  --ui-radius-2xl: 1.5rem;   /* card radius (rounded-2xl)         — sharp≈0.5rem  … pill≈1.75rem */
+  --ui-border-width: 1px;    /* surface borders — set 0 for a flat, borderless look */
+  --ui-shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.05); /* card elevation — `none`, lift, or glass */
+}
+```
+
+Pick a coherent set for the app's domain: a dense ops tool → sharp radius + flat
+(`--ui-border-width: 0`, `--ui-shadow-card: none`); an editorial/wellness app →
+rounded radius + soft lift. Keep ONE language across the app. **The widget's outer
+radius (`rounded-3xl`) is canonical and intentionally NOT one of these** — it stays
+fixed (the widget validator enforces it); express widget personality inside the
+content, not on the outer tile.
+
 ## Widgets — three sizes only
 
 Canonical dims live in `src/lib/widget-sizes.ts`. Small **170×170**, Medium
