@@ -115,11 +115,13 @@ export default {
         // Card-radius scale — driven by CSS vars so the per-app design brief's
         // corner language (sharp/soft/rounded/pill) re-skins every card/surface
         // (the kit's Card/Section/Stat use rounded-xl/2xl). Defaults reproduce
-        // the prior fixed look. NOTE: 3xl is the WIDGET's canonical OUTER radius
-        // — it is intentionally NOT var-ized (the widget validator enforces it).
+        // the prior fixed look. NOTE: 3xl is the WIDGET's CANONICAL OUTER radius
+        // (24px = 1.5rem) — WidgetContainer applies `rounded-3xl` and the
+        // widget-constraints gate enforces exactly 24px, so it is a FIXED value,
+        // intentionally NOT var-ized. (Was 2rem/32px — a drift that failed the gate.)
         'xl': 'var(--ui-radius-xl, 1rem)',
         '2xl': 'var(--ui-radius-2xl, 1.5rem)',
-        '3xl': '2rem',
+        '3xl': '1.5rem',
       },
       borderWidth: {
         // Surface personality: flat surfaces set this to 0 so the kit's `border`
