@@ -88,12 +88,33 @@ def test_approve_not_connected_returns_409_and_does_not_publish():
 
     r = client.post(f"/api/items/{lid}/approve")
     assert r.status_code == 409
-    assert r.json()["detail"]["service"] == "gmail"
+    detail = r.json()["detail"]
+    assert detail["service"] == "gmail"
+    # The 409 carries a connect_url key so the frontend can render a Connect CTA
+    # with no extra round-trip (value is None locally without CLARITY_APP_ID).
+    assert "connect_url" in detail
 
     # Status must NOT have advanced — no faked success.
     got = client.get(f"/api/items/{lid}").json()
     assert got["status"] == ItemStatus.PENDING_APPROVAL
     assert got["external_id"] is None
+
+
+def test_not_connected_409_includes_connect_url_when_app_id_set(monkeypatch):
+    monkeypatch.setenv("CLARITY_APP_ID", "app-xyz")
+    monkeypatch.setenv("CLARITTY_PLATFORM_APP_URL", "https://app.claritty.ai")
+
+    def publish(db, user_id, item):
+        raise IntegrationNotConnected("brave-search")
+
+    client, seed, _ = _make_client(publish)
+    lid = seed()
+    r = client.post(f"/api/items/{lid}/approve")
+    assert r.status_code == 409
+    assert (
+        r.json()["detail"]["connect_url"]
+        == "https://app.claritty.ai/connect/app-xyz/brave-search"
+    )
 
 
 def test_approve_real_failure_returns_502_and_marks_failed():

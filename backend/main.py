@@ -143,8 +143,10 @@ try:
 except Exception as _e:  # noqa: BLE001
     logger.warning(f"No app routers package to include: {_e}")
 
-# Generic Connect/OAuth API (catalog + connect + oauth/callback + test + disconnect),
-# prefix /api/integrations — drives the Settings → Integrations UI. Included AFTER
+# Read-only integration status (catalog + per-user status + liveness), prefix
+# /api/integrations. Connecting is platform-brokered: the credential-bearing
+# routes (save-creds / oauth exchange / disconnect) are RETIRED and return 410
+# with a connect_url — the app never stores or exchanges tokens. Included AFTER
 # backend/routes/* so the specific /api/integrations/required route
 # (integrations_setup) registers BEFORE this router's catch-all
 # /api/integrations/{id} — otherwise {id} would shadow /required.

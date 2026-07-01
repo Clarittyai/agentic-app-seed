@@ -198,7 +198,14 @@ def make_item_router(
             db.rollback()
             raise HTTPException(
                 status_code=409,
-                detail={"error": "not_connected", "service": e.service, "message": str(e)},
+                detail={
+                    "error": "not_connected",
+                    "service": e.service,
+                    "message": str(e),
+                    # Ready "Connect {service}" CTA for the frontend (may be null
+                    # locally / on an older SDK).
+                    "connect_url": getattr(e, "connect_url", None),
+                },
             )
         except (IntegrationError, Exception) as e:  # noqa: BLE001 — honest failure
             db.rollback()

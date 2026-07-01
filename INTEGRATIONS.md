@@ -15,12 +15,12 @@ sees raw OAuth client secrets.
 ## The rule (read this — it's the #1 thing apps get wrong)
 
 If the app's **external action** is non-empty, do all three:
-1. **Declare** the integration in `intelligence.yaml#integrations` (`- id: <id>`). That is the whole
-   "connect" surface — the **Claritty platform** owns connecting it: it lists the app's declared
-   integrations and runs OAuth on the app's **Intelligence** and **Settings → Integrations** tabs
-   (and intercepts the `claritty:connect-integration` postMessage). **Do NOT build an in-app
-   Integrations page, a "connect N services" banner, or an Integrations nav item** — that just
-   duplicates platform UI.
+1. **Declare** the integration in `intelligence.yaml#integrations` (`- id: <id>`). Connecting is
+   platform-brokered — OAuth/keys run on the platform and tokens live in the broker; the app **never
+   stores or exchanges a credential**. The end user connects IN-CONTEXT via the seed's shared
+   primitives (`<IntegrationsChecklist>`, `<ConnectButton>`, `toast.showApiError`), which open the
+   platform-hosted connect popup. **Do NOT build your own OAuth exchange, credential storage, or a
+   bespoke Integrations settings page** (see "Frontend — connect IN-CONTEXT" below).
 2. the **action**, performed through a real catalog tool (e.g. `linkedin.create_post`),
 3. **honest failure**: when the service isn't connected, surface a clear "connect X to do this"
    state (HTTP **409** from the route, an inline prompt at the action) — and when the external call
@@ -91,17 +91,27 @@ bubbles up as a 5xx with the row left un-posted for retry. Only a genuine `post_
 
 ---
 
-## Frontend — do NOT build a connect surface
+## Frontend — connect IN-CONTEXT, using the provided primitives
 
-The Claritty platform already owns connecting integrations. Once the app **declares** them in
-`intelligence.yaml#integrations`, the platform shows them — with Connect / Bind / Disconnect + OAuth
-— on the app's **Intelligence** tab and **Settings → Integrations** tab. So:
+The end user connects **inside the app**, but the app **never handles a credential**: connecting
+opens a platform-hosted popup (`app.claritty.ai/connect/{appId}/{integration}`) that runs OAuth / key
+entry on the platform and stores the token in the broker. The app only opens the deep link and
+listens for a "connected" message. Use the SHARED pieces the seed ships — do NOT hand-roll any of it:
 
-- **Do NOT** ship an in-app Integrations page, a `SetupChecklist` / "Connect N services" banner, or
-  an Integrations nav item. The seed deliberately ships none — don't add one.
-- The only connect-related UI in the app is the **inline 409 prompt** at the action ("LinkedIn isn't
-  connected — connect it on the Integrations tab to publish"), shown when a publish returns the
-  not-connected state. Nothing standalone.
+- **First-run checklist:** `<IntegrationsChecklist>` is already mounted in `Layout.tsx`. It reads
+  `GET /api/integrations/required` (each item carries a `connect_url`) and renders a `<ConnectButton>`
+  per unconnected integration. It hides itself once everything is connected.
+- **Inline CTA at the action:** on a not-connected **409**, call `toast.showApiError(err, { onConnected })`
+  — it turns the error into an actionable "Connect {service}" toast (from the 409's `connect_url`) and
+  runs `onConnected` (retry the action) after the popup returns. `toApiError` surfaces `service` +
+  `connectUrl`.
+- **Anywhere else:** `<ConnectButton integrationId name connectUrl onConnected />` (opens the popup via
+  `lib/connect.ts#openConnectPopup`, with a redirect fallback if popups are blocked).
+
+**Do NOT** build your own OAuth exchange, store credentials in the app DB, vendor OAuth client secrets,
+or add a bespoke Integrations settings page. The legacy in-app connect/OAuth routes are retired
+(they now return **410 Gone** with a `connect_url`). Declaring the integration in
+`intelligence.yaml#integrations` + using the primitives above is the whole job.
 
 ---
 

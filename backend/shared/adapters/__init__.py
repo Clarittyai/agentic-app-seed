@@ -23,11 +23,27 @@ from typing import Any, Dict, Optional
 
 
 class IntegrationNotConnected(Exception):
-    """The user has not connected the service this action needs (→ 409)."""
+    """The user has not connected the service this action needs (→ 409).
+
+    Carries a `connect_url` (platform-hosted connect deep link for this app +
+    service, or None locally) so callers can hand the frontend a ready "Connect
+    X" CTA with no extra round-trip."""
 
     def __init__(self, service: str, message: Optional[str] = None):
         self.service = service
+        self.connect_url = _connect_url(service)
         super().__init__(message or f"{service} is not connected.")
+
+
+def _connect_url(service: str) -> Optional[str]:
+    """Best-effort platform connect deep link for `service` (None on older SDK /
+    bare local dev)."""
+    try:
+        from claritty_sdk.integrations.platform_creds import connect_url
+
+        return connect_url(service)
+    except Exception:  # noqa: BLE001
+        return None
 
 
 class IntegrationError(Exception):

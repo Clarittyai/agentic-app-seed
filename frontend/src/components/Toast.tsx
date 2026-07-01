@@ -21,6 +21,8 @@ import {
 } from 'react';
 import { CheckCircle2, AlertCircle, X, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toApiError } from '@/lib/api';
+import { openConnectPopup } from '@/lib/connect';
 
 export type ToastTone = 'success' | 'error';
 
@@ -30,11 +32,31 @@ export interface ToastMessage {
   /** Optional trailing link action (e.g. "View result"). */
   href?: string;
   hrefLabel?: string;
+  /** Optional inline button action (e.g. "Connect Gmail"). A toast with an
+   *  action does NOT auto-dismiss, so the user has time to act. */
+  action?: { label: string; onClick: () => void };
 }
 
 interface ToastContextValue {
   show: (msg: ToastMessage) => void;
+  /**
+   * Surface a caught error. On a NOT_CONNECTED 409 with a connect link it shows
+   * an actionable "Connect {service}" toast that opens the platform connect
+   * popup and runs `onConnected` (default: refresh widgets) after connecting —
+   * so an unconnected integration becomes a one-click fix instead of a dead end.
+   */
+  showApiError: (err: unknown, opts?: { onConnected?: () => void }) => void;
   dismiss: () => void;
+}
+
+/** 'gmail' → 'Gmail', 'brave-search' → 'Brave Search'. */
+function prettyName(id?: string): string {
+  if (!id) return 'the integration';
+  return id
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(' ');
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -52,10 +74,48 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const show = useCallback((msg: ToastMessage) => {
     setToast(msg);
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setToast(null), 6000);
+    // Actionable toasts (e.g. "Connect Gmail") persist so the user can act.
+    if (!msg.action) {
+      timer.current = window.setTimeout(() => setToast(null), 6000);
+    }
   }, []);
 
-  const value = useMemo(() => ({ show, dismiss }), [show, dismiss]);
+  const showApiError = useCallback(
+    (err: unknown, opts?: { onConnected?: () => void }) => {
+      const e = toApiError(err);
+      if (e.code === 'not_connected' && e.connectUrl) {
+        const url = e.connectUrl;
+        const service = e.service;
+        show({
+          tone: 'error',
+          text: `Connect ${prettyName(service)} to continue.`,
+          action: {
+            label: `Connect ${prettyName(service)}`,
+            onClick: () =>
+              openConnectPopup(url, {
+                integrationId: service,
+                onConnected: () => {
+                  dismiss();
+                  if (opts?.onConnected) opts.onConnected();
+                  else
+                    window.dispatchEvent(
+                      new Event('claritty:widget-refresh'),
+                    );
+                },
+              }),
+          },
+        });
+        return;
+      }
+      show({ tone: 'error', text: e.message });
+    },
+    [show, dismiss],
+  );
+
+  const value = useMemo(
+    () => ({ show, showApiError, dismiss }),
+    [show, showApiError, dismiss],
+  );
 
   return (
     <ToastContext.Provider value={value}>
@@ -65,7 +125,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const NOOP_TOAST: ToastContextValue = { show: () => {}, dismiss: () => {} };
+const NOOP_TOAST: ToastContextValue = {
+  show: () => {},
+  showApiError: () => {},
+  dismiss: () => {},
+};
 
 /**
  * Access the global toast surface. Degrades to a NO-OP when no <ToastProvider> is
@@ -115,6 +179,15 @@ function ToastView({
             >
               {toast.hrefLabel ?? 'Open'} <ExternalLink className="h-3 w-3" />
             </a>
+          )}
+          {toast.action && (
+            <button
+              type="button"
+              onClick={toast.action.onClick}
+              className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent/90"
+            >
+              {toast.action.label}
+            </button>
           )}
         </div>
         <button

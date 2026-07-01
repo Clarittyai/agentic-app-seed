@@ -65,6 +65,17 @@ def _humanize(integration_id: str) -> str:
     return integration_id.replace("_", " ").replace("-", " ").title()
 
 
+def _connect_url(integration_id: str) -> str | None:
+    """Platform-hosted connect deep link for this integration (or None when the
+    SDK/app-id isn't available — e.g. bare seed dev)."""
+    try:
+        from claritty_sdk.integrations.platform_creds import connect_url
+
+        return connect_url(integration_id)
+    except Exception:  # noqa: BLE001 — older SDK / not importable ⇒ no CTA link
+        return None
+
+
 def _is_connected(integration_id: str, user_id: str) -> bool:
     """Whether this user has THIS app's connection for the integration.
 
@@ -102,7 +113,15 @@ def required_integrations(user_id: str = Depends(require_user)) -> Dict[str, Any
     """
     required = _required_integrations()
     items = [
-        {**entry, "connected": _is_connected(entry["id"], user_id)}
+        {
+            **entry,
+            "connected": _is_connected(entry["id"], user_id),
+            # Deep link to the platform-hosted connect popup for THIS app +
+            # integration (None locally / when CLARITY_APP_ID is unset). The
+            # checklist opens it so the user connects without the app ever
+            # touching a credential.
+            "connect_url": _connect_url(entry["id"]),
+        }
         for entry in required
     ]
     # app_id lets the setup checklist scope the connect flow to THIS app

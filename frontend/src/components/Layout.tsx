@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
+import { IntegrationsChecklist } from './IntegrationsChecklist';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,10 +11,10 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
-  // Integration connection is owned by the Claritty platform (the app's
-  // Intelligence / Settings → Integrations tabs). The app declares integrations
-  // in intelligence.yaml and ships NO in-app connect surface — so no
-  // Integrations nav item or setup banner here.
+  // Credentials + OAuth are owned by the Claritty platform (the broker holds
+  // tokens; the app never does). But the END USER connects IN-CONTEXT here: the
+  // <IntegrationsChecklist> (first-run) and inline "Connect X" CTAs open the
+  // platform-hosted connect popup. The nav stays minimal — connect is inline.
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Tasks', href: '/tasks', icon: ListTodo },
@@ -87,6 +88,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       <main className="min-h-[calc(100vh-16rem)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
+          <IntegrationsChecklist />
           {children}
         </div>
       </main>

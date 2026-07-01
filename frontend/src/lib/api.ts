@@ -112,18 +112,35 @@ export interface ApiError {
   status?: number;
   code?: string;
   message: string;
+  /** On a NOT_CONNECTED 409: which integration, and a ready connect deep link. */
+  service?: string;
+  connectUrl?: string | null;
 }
 
 export function toApiError(err: unknown): ApiError {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status;
-    const data = err.response?.data as
-      | { error?: string; detail?: string; message?: string }
-      | undefined;
+    const raw = err.response?.data as Record<string, unknown> | undefined;
+    // FastAPI nests a structured HTTPException payload under `detail`; a plain
+    // error uses a string `detail`/`message`. Handle both.
+    const detailObj =
+      raw && typeof raw.detail === 'object' && raw.detail !== null
+        ? (raw.detail as Record<string, unknown>)
+        : null;
+    const body = detailObj ?? raw ?? {};
+    const str = (v: unknown): string | undefined =>
+      typeof v === 'string' ? v : undefined;
     return {
       status,
-      code: data?.error,
-      message: data?.detail || data?.message || err.message,
+      code: str(body.error),
+      message:
+        str(body.message) ||
+        str(raw?.detail) ||
+        str(raw?.message) ||
+        err.message,
+      service: str(body.service),
+      connectUrl:
+        typeof body.connect_url === 'string' ? body.connect_url : null,
     };
   }
   return { message: err instanceof Error ? err.message : 'Something went wrong' };
@@ -338,6 +355,9 @@ export interface RequiredIntegration {
   id: string;
   name: string;
   connected: boolean;
+  /** Platform-hosted connect deep link for this app + integration (null in bare
+   *  local dev / when the app id isn't set). Opened in a popup by ConnectButton. */
+  connect_url?: string | null;
 }
 export interface IntegrationsStatus {
   integrations: RequiredIntegration[];

@@ -62,10 +62,12 @@ app reads from or acts on:
    real failure, surface it. NEVER fake a success or simulate the external call.
 5. **No catalog match** (e.g. reddit, g2, hn): write a custom read-only `@tool`, or seed
    **clearly-labeled** sample data — and say which. Never pass a mock off as the real source.
-6. **No in-app connect surface.** Connecting is platform-owned: declaring the integration is all the
-   app does — the platform lists it + runs OAuth on the app's Intelligence / Settings → Integrations
-   tabs. Do NOT build an Integrations page, a `SetupChecklist` / "connect N services" banner, or an
-   Integrations nav route. The seed ships none — don't add one.
+6. **Connect in-context via the provided primitives — never hand-roll it.** Connecting is
+   platform-brokered (OAuth/keys run on the platform; tokens live in the broker; the app never stores
+   or exchanges a credential). Declare the integration, then use the seed's shared pieces:
+   `<IntegrationsChecklist>` (first-run, already in `Layout.tsx`), `<ConnectButton>`, and
+   `toast.showApiError(err, { onConnected })` on a 409. Do NOT write OAuth code, store credentials, or
+   build a bespoke Integrations settings page (the legacy in-app connect routes are retired → 410).
 
 Do NOT, for a catalog service: ask the user for API keys, write OAuth code, `pip install` a provider
 SDK, build a mock data layer, or hand-roll a connect/Integrations UI. (Custom *integrations* and

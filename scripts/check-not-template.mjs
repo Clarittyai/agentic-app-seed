@@ -111,10 +111,11 @@ const core = mkt.core_action || {};
 const agentFiles = listFiles('backend/agents').filter((f) => f.endsWith('.py') && f !== '__init__.py');
 
 // (a) Implies an external action but declares no integration to perform it.
-// Connecting is PLATFORM-OWNED: declaring the integration in intelligence.yaml
-// (mirrored to app-config.json) is the sanctioned path — the Claritty platform
-// lists it + runs OAuth on the app's Intelligence / Settings → Integrations tabs.
-// We never nudge toward an in-app connect surface (the seed ships none).
+// Connecting is PLATFORM-BROKERED: declaring the integration in intelligence.yaml
+// (mirrored to app-config.json) is the sanctioned path — OAuth/keys run on the
+// platform and tokens live in the broker; the app never stores a credential. The
+// user connects IN-CONTEXT via the seed's shared primitives (IntegrationsChecklist
+// / ConnectButton / toast.showApiError) — never a hand-rolled OAuth/connect page.
 const ACTION_RE = /\b(post|publish|send|email|charge|tweet|sync|message|notify|sms|dm)\b/i;
 const declaredIntegration =
   (Array.isArray(mkt.required_integrations) && mkt.required_integrations.length > 0) ||
@@ -124,7 +125,7 @@ let backendText = read('backend/routes/app.py') || '';
 for (const f of agentFiles) backendText += '\n' + (read('backend/agents/' + f) || '');
 if (ACTION_RE.test(backendText) && !declaredIntegration) {
   warn('This app looks like it acts on an external service but declares no integration for it.',
-    'Declare it in intelligence.yaml#integrations — the Claritty platform connects it (no in-app connect page needed). If the action is intentionally self-contained, ignore this.');
+    'Declare it in intelligence.yaml#integrations — connecting is platform-brokered and the user connects in-context via the built-in primitives (no hand-rolled connect/OAuth page). If the action is intentionally self-contained, ignore this.');
 }
 
 // (b) No custom agent — does the app do anything?

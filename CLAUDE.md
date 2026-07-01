@@ -718,12 +718,14 @@ Stripe, **sync** to Notion — then generating content is only half the app. Wir
 Claritty way; add it **proactively**, even if the user didn't name the platform (infer the obvious
 one and confirm).
 - Pattern (copy it): **declare** the integration in `intelligence.yaml#integrations` and call its
-  catalog tool (e.g. `linkedin.create_post`) via `ctx.integration(...)`. **The platform owns
-  connecting it** — it lists the app's declared integrations + runs OAuth on the app's Intelligence /
-  Settings → Integrations tabs. **Do NOT build an in-app Connect page, a "connect N services"
-  banner, or an Integrations nav item** — that duplicates platform UI (the seed ships none). When
-  the service isn't connected, surface an inline **409 / connect prompt** at the action — **never
-  simulate or fake a success**. Full guide: **[INTEGRATIONS.md](INTEGRATIONS.md)**.
+  catalog tool (e.g. `linkedin.create_post`) via `ctx.integration(...)`. Connecting is
+  **platform-brokered** — OAuth/keys run on the platform and tokens live in the broker; the app
+  **never stores or exchanges a credential**. The user connects IN-CONTEXT via the seed's shared
+  primitives: `<IntegrationsChecklist>` (first-run, already in `Layout.tsx`), `<ConnectButton>`, and
+  `toast.showApiError(err, { onConnected })` on a not-connected **409** (which turns it into a
+  "Connect X" CTA from the 409's `connect_url`). **Do NOT build your own OAuth exchange, credential
+  storage, or a bespoke Integrations settings page** — never simulate or fake a success. Full guide:
+  **[INTEGRATIONS.md](INTEGRATIONS.md)**.
 - Locally, set `CLARITTY_FAKE_CREDS_<INTEGRATION>` (JSON) to exercise the path without OAuth.
 
 ### Approval / human-in-the-loop (AI proposes → user approves → system acts)
