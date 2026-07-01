@@ -652,10 +652,28 @@ async def _run_workflow(
                 "endedAt": int((getattr(s, "ended_at", 0) or 0) * 1000),
             }
         )
+    outputs = getattr(result, "outputs", {}) or {}
+    # Bridge: land the workflow's real output in the app's Result store so the
+    # widget/dashboard can SHOW it (the value path workflow → store → UI). This
+    # runs for BOTH manual runs and platform trigger sweeps (both reach here).
+    # Best-effort + non-fatal — the work already happened; display is secondary.
+    if status == "success" and outputs:
+        try:
+            from backend.shared.results import persist_workflow_results
+
+            n = persist_workflow_results(
+                db, user_id=user_id, workflow_id=workflow_id, outputs=outputs
+            )
+            if n:
+                logger.info("Persisted %d result(s) from workflow %s", n, workflow_id)
+        except Exception as e:  # never fail a run on the display bridge
+            logger.warning(
+                "Result bridge failed for %s (non-fatal): %s", workflow_id, e
+            )
     return {
         "workflow_id": workflow_id,
         "success": status == "success",
-        "outputs": getattr(result, "outputs", {}) or {},
+        "outputs": outputs,
         "error": getattr(result, "error", None),
         "steps": steps,
     }

@@ -19,6 +19,32 @@ from sqlalchemy import Column, String, Integer, Boolean, DateTime, JSON, Text
 from datetime import datetime
 import uuid
 from backend.database import Base
+from backend.shared.spine import ItemMixin, LifecycleMixin
+
+
+class Result(Base, ItemMixin, LifecycleMixin):
+    """
+    The default "what your automation produced" store.
+
+    Every workflow run (Team or DAG) AUTO-PERSISTS its output here — see
+    `_run_workflow` in main.py + `backend/shared/results.py`. That closes the
+    value path (workflow → store → UI) by construction: the widget/dashboard can
+    show the REAL output the intelligence produced out of the box, instead of an
+    empty placeholder, WITHOUT every app hand-wiring `persist_item`. Generated
+    apps may still add richer domain models; this is the user-scoped safety net
+    that guarantees the Team's output is visible.
+
+    Columns come from the spine mixins: ItemMixin (id, user_id, kind, title,
+    body, payload, source, external_id, timestamps) + LifecycleMixin (status,
+    priority, …). `kind` holds the producing workflow id; `source` = "workflow".
+    """
+    __tablename__ = "results"
+
+    def to_dict(self) -> dict:
+        return {**self.base_dict(), **self.lifecycle_dict()}
+
+    def __repr__(self):
+        return f"<Result id={self.id} kind={self.kind} status={self.status}>"
 
 
 class Task(Base):

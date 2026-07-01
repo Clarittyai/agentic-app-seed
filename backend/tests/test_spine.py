@@ -98,5 +98,11 @@ def test_record_audit_requires_user_id():
 
 def test_status_sets_are_disjoint_and_complete():
     assert set(ItemStatus.OPEN).isdisjoint(ItemStatus.CLOSED)
-    # APPROVED is a transient state (mid-publish), intentionally in neither set.
-    assert set(ItemStatus.OPEN) | set(ItemStatus.CLOSED) | {ItemStatus.APPROVED} == set(ItemStatus.ALL)
+    # APPROVED + SCHEDULED are transient states (mid-publish, awaiting the sweep),
+    # intentionally in neither OPEN nor CLOSED — they live in SCHEDULED_PENDING.
+    assert (
+        set(ItemStatus.OPEN)
+        | set(ItemStatus.CLOSED)
+        | set(ItemStatus.SCHEDULED_PENDING)
+        == set(ItemStatus.ALL)
+    )
