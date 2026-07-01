@@ -266,6 +266,36 @@ async def get_agent(agent_id: str):
     return _agent_to_dict(agent, detail=True)
 
 
+@app.get("/api/results")
+async def list_results(
+    limit: int = 20,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Recent output the app's automation (workflows / the Team) produced.
+
+    Every workflow run auto-persists its output into the Result store (see
+    backend/shared/results.py + _run_workflow), so this returns the REAL data the
+    intelligence generated — user-scoped, newest first. The generated app's
+    Dashboard/Widget read this to show live output instead of an empty
+    placeholder. Lives in main.py (stable) so it survives backend/routes/app.py
+    being regenerated per app. Apps that model their own domain entity may read
+    that instead; this is the default that guarantees the value path works.
+    """
+    try:
+        rows = (
+            db.query(models.Result)
+            .filter(models.Result.user_id == user_id)
+            .order_by(models.Result.created_at.desc())
+            .limit(max(1, min(limit, 100)))
+            .all()
+        )
+        return {"results": [r.to_dict() for r in rows], "count": len(rows)}
+    except Exception:
+        logger.exception("results list failed; returning empty payload")
+        return {"results": [], "count": 0}
+
+
 @app.get("/api/workflows")
 async def list_workflows():
     """List the app's workflows, declared in the v2 manifest (intelligence.yaml)."""

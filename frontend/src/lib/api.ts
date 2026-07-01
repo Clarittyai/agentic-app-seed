@@ -245,6 +245,35 @@ export const getWidgetData = async (
   return response.data;
 };
 
+/**
+ * One row of REAL output the app's automation produced. Every workflow / Team
+ * run auto-persists its output into the Result store, so this is the app's live
+ * data — not a placeholder. `kind` is the producing workflow id. Shape mirrors
+ * `Result.to_dict()` (spine item + lifecycle) in backend/models.py.
+ */
+export interface AppResult {
+  id: string;
+  title: string;
+  body?: string | null;
+  kind?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  source?: string | null;
+  payload?: Record<string, unknown> | null;
+  created_at?: string | null;
+}
+
+/**
+ * Recent output the app's automation (workflows / the Team) produced, newest
+ * first — the app's REAL data. Backed by GET /api/results (backend/main.py).
+ * A generated app's Dashboard/Widget read this to show live output instead of
+ * an empty placeholder; swap for a domain-entity endpoint once you model one.
+ */
+export const getResults = async (limit = 20): Promise<AppResult[]> => {
+  const response = await api.get(`/api/results?limit=${limit}`);
+  return response.data.results ?? [];
+};
+
 // Tasks CRUD — mirrors backend/routes/app.py.
 export const getTasks = async (): Promise<Task[]> => {
   const response = await api.get('/api/tasks');

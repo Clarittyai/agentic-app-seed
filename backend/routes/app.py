@@ -260,32 +260,3 @@ async def get_widget_data(
             empty["done_today"] = 0
             empty["tasks"] = []
         return empty
-
-
-@router.get("/api/results")
-async def list_results(
-    limit: int = 20,
-    user_id: str = Depends(require_user),
-    db: Session = Depends(get_db),
-):
-    """Recent output your automation (workflows / the Team) produced.
-
-    Every workflow run auto-persists its output into the Result store (see
-    backend/shared/results.py), so this returns the REAL data the intelligence
-    generated — user-scoped, newest first. The widget/dashboard read this to
-    show live output instead of an empty placeholder. Generated apps that model
-    their own domain entities can read those instead; this is the default that
-    guarantees the value path (workflow → store → UI) works out of the box.
-    """
-    try:
-        rows = (
-            db.query(models.Result)
-            .filter(models.Result.user_id == user_id)
-            .order_by(models.Result.created_at.desc())
-            .limit(max(1, min(limit, 100)))
-            .all()
-        )
-        return {"results": [r.to_dict() for r in rows], "count": len(rows)}
-    except Exception:
-        logger.exception("results list failed; returning empty payload")
-        return {"results": [], "count": 0}
