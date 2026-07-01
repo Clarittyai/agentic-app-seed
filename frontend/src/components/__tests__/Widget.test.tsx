@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import Widget from '../Widget';
 import * as api from '@/lib/api';
+import type { AppResult } from '@/lib/api';
 
 vi.mock('@/lib/api', () => ({
-  getWidgetData: vi.fn(),
-  toggleTask: vi.fn(),
+  getResults: vi.fn(),
 }));
 
 // Canonical dimensions per size. The widget is built on the UI kit's
@@ -19,27 +19,11 @@ const DIMS = {
 
 const SIZES = ['small', 'medium', 'large'] as const;
 
-const mockSmall = {
-  open_count: 3,
-  top_priority: 'high' as const,
-  top_task: 'Ship the release',
-  top_task_id: 't1',
-  last_updated: 'just now',
-};
-
-const mockList = {
-  open_count: 3,
-  done_today: 1,
-  top_priority: 'urgent' as const,
-  tasks: [
-    { id: 't1', title: 'Ship the release', priority: 'urgent' as const, done: false },
-    { id: 't2', title: 'Review the PR', priority: 'high' as const, done: false },
-    { id: 't3', title: 'Water the plants', priority: 'low' as const, done: false },
-  ],
-  last_updated: 'just now',
-};
-
-const dataFor = (size: (typeof SIZES)[number]) => (size === 'small' ? mockSmall : mockList);
+const mockResults: AppResult[] = [
+  { id: 'r1', title: 'Weekly digest ready', body: '5 items summarized', status: 'new', kind: 'digest', created_at: '2026-07-01T09:00:00Z' },
+  { id: 'r2', title: 'Draft reply to Acme', body: 'Proposed a call Thursday', status: 'new', kind: 'reply', created_at: '2026-07-01T08:30:00Z' },
+  { id: 'r3', title: 'Lead scored: 87', body: 'High intent', status: 'new', kind: 'score', created_at: '2026-07-01T08:00:00Z' },
+];
 
 function expectCanonical(el: Element | null, size: keyof typeof DIMS) {
   expect(el).toBeInTheDocument();
@@ -58,7 +42,7 @@ describe('Widget', () => {
 
   describe('canonical dimensions + style invariants (all 3 sizes)', () => {
     it.each(SIZES)('renders %s at exact dims, p-4, rounded-3xl, overflow hidden', async (size) => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(dataFor(size) as any);
+      vi.mocked(api.getResults).mockResolvedValue(mockResults);
       const { container } = render(<Widget size={size} />);
       await waitFor(() => {
         expectCanonical(container.querySelector(`[data-widget-size="${size}"]`), size);
@@ -66,7 +50,7 @@ describe('Widget', () => {
     });
 
     it.each(SIZES)('loading state keeps %s dimensions', (size) => {
-      vi.mocked(api.getWidgetData).mockImplementation(() => new Promise(() => {}));
+      vi.mocked(api.getResults).mockImplementation(() => new Promise(() => {}));
       const { container } = render(<Widget size={size} />);
       const el = container.querySelector('.animate-pulse') as HTMLElement;
       expect(el).toBeInTheDocument();
@@ -76,42 +60,53 @@ describe('Widget', () => {
   });
 
   describe('data loading', () => {
-    it.each(SIZES)('requests data for size=%s', async (size) => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(dataFor(size) as any);
+    it.each(SIZES)('requests results for size=%s', async (size) => {
+      vi.mocked(api.getResults).mockResolvedValue(mockResults);
       render(<Widget size={size} />);
-      await waitFor(() => expect(api.getWidgetData).toHaveBeenCalledWith(size));
+      await waitFor(() => expect(api.getResults).toHaveBeenCalled());
     });
 
-    it('defaults to medium when no size prop is given', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockList as any);
-      render(<Widget />);
-      await waitFor(() => expect(api.getWidgetData).toHaveBeenCalledWith('medium'));
+    it('defaults to the medium frame when no size prop is given', async () => {
+      vi.mocked(api.getResults).mockResolvedValue(mockResults);
+      const { container } = render(<Widget />);
+      await waitFor(() => {
+        expectCanonical(container.querySelector('[data-widget-size="medium"]'), 'medium');
+      });
     });
   });
 
   describe('content', () => {
-    it('small shows the open-task count', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmall as any);
+    it('small shows the result count', async () => {
+      vi.mocked(api.getResults).mockResolvedValue(mockResults);
       render(<Widget size="small" />);
       await waitFor(() => {
         expect(screen.getByText('3')).toBeInTheDocument();
-        expect(screen.getByText(/open task/)).toBeInTheDocument();
+        expect(screen.getByText(/recent result/)).toBeInTheDocument();
       });
     });
 
-    it('large lists task titles', async () => {
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockList as any);
+    it('large lists result titles', async () => {
+      vi.mocked(api.getResults).mockResolvedValue(mockResults);
       render(<Widget size="large" />);
       await waitFor(() => {
-        expect(screen.getByText('Ship the release')).toBeInTheDocument();
-        expect(screen.getByText('Review the PR')).toBeInTheDocument();
+        expect(screen.getByText('Weekly digest ready')).toBeInTheDocument();
+        expect(screen.getByText('Draft reply to Acme')).toBeInTheDocument();
+      });
+    });
+
+    it('shows an empty state when there is no output yet', async () => {
+      vi.mocked(api.getResults).mockResolvedValue([]);
+      render(<Widget size="small" />);
+      await waitFor(() => {
+        expect(screen.getByText('0')).toBeInTheDocument();
+        expect(screen.getByText('Nothing yet')).toBeInTheDocument();
       });
     });
   });
 
   describe('error handling', () => {
     it.each(SIZES)('error state keeps %s dimensions', async (size) => {
-      vi.mocked(api.getWidgetData).mockRejectedValue(new Error('boom'));
+      vi.mocked(api.getResults).mockRejectedValue(new Error('boom'));
       const { container } = render(<Widget size={size} />);
       await waitFor(() => {
         const el = container.querySelector(`[data-widget-size="${size}"]`) as HTMLElement;
@@ -125,11 +120,11 @@ describe('Widget', () => {
   describe('auto-refresh', () => {
     it('refetches every 30s', async () => {
       vi.useFakeTimers();
-      vi.mocked(api.getWidgetData).mockResolvedValue(mockSmall as any);
+      vi.mocked(api.getResults).mockResolvedValue(mockResults);
       render(<Widget size="small" />);
-      await vi.waitFor(() => expect(api.getWidgetData).toHaveBeenCalledTimes(1));
+      await vi.waitFor(() => expect(api.getResults).toHaveBeenCalledTimes(1));
       vi.advanceTimersByTime(30000);
-      await vi.waitFor(() => expect(api.getWidgetData).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(api.getResults).toHaveBeenCalledTimes(2));
       vi.useRealTimers();
     });
   });
