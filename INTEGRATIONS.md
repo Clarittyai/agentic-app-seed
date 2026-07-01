@@ -57,6 +57,69 @@ Agents do **not** call the LLM or import `openai`/`requests` themselves, and do 
 
 ---
 
+## Reaching integrations from plain service/route code (NOT agents)
+
+Sometimes an engine, scheduler, or route needs a provider verb *outside* the agent tool-loop —
+e.g. an inbox-scan service that reads and files mail on a timer. Three hard rules (getting any of
+them wrong is a top production failure):
+
+1. **Go through the BROKER, never raw credentials.** Call the platform executor with
+   `execute_tool("<service>", "<tool>", user_id, args)` (from `backend.shared.adapters`). The
+   platform holds the decrypted token and makes the API call server-side — the token never enters
+   app code. Do **NOT** call `load_credentials(...)` and hit the provider yourself: that pulls the
+   decrypted token into your process and defeats the isolation the platform gives you.
+   (`load_credentials` exists only as a self-host fallback — don't reach for it in app logic.)
+
+2. **Put these verbs in an APP-OWNED module — never in `backend/shared/adapters/*`.** The Claritty
+   build materializes a *canonical* copy of `backend/shared/` at deploy time, so ANY verb you add to
+   a shared adapter is **silently dropped in production**. Classic symptom: it works locally, then
+   prod throws `module 'backend.shared.adapters.gmail' has no attribute 'search'`. Create e.g.
+   `backend/integrations/<service>_ops.py` and call `execute_tool` from there:
+
+   ```python
+   # backend/integrations/gmail_ops.py  — APP-OWNED, survives deploy, broker-only
+   from backend.shared.adapters import execute_tool
+
+   def search(db, user_id: str, query: str, limit: int = 25):
+       res = execute_tool("gmail", "search", user_id, {"query": query, "limit": limit})
+       return res.get("messages") or []
+   ```
+
+3. **If the broker has no tool for the verb you need, ADD THE TOOL to the broker** — don't work
+   around it with a credentials fetch. The provider tools live in the private platform
+   (`clarity-api/src/modules/integrations-v2/executors/<service>.executor.ts`); add the case there,
+   map its scope in `config/integration-tool-scopes.ts`, and declare it in the catalog manifest's
+   `providedTools`. Extending the broker keeps every app on the token-never-touches-the-app contract.
+
+4. **Check connectivity with the credential-free probe, not a credential fetch.** For liveness /
+   setup checklists / `test_connection`, call `is_connected("<service>", user_id)` (from
+   `backend.shared.adapters`) — it hits `POST /internal/integrations/state` → `{connected: bool}`
+   and never touches the token. Don't call `load_credentials` just to see if something is connected.
+
+**The broker endpoints (integrations-v2):**
+- App action → `POST /internal/integrations/tools/{service}/{tool}/execute` (this is what
+  `execute_tool` calls). Result only; token stays on the platform.
+- Connectivity → `POST /internal/integrations/state` (this is what `is_connected` calls).
+- **Deprecated:** `POST /internal/integrations/credentials/fetch`. Under the broker-only model it
+  returns **403 BROKER_ONLY**, and a rotated/undecryptable credential returns **409
+  RECONNECT_REQUIRED**. `load_credentials` uses this legacy route, so on-platform it can 403/409 —
+  another reason to use the broker/state paths instead. (The seed's `load_credentials` degrades a
+  403/404/409 here to `IntegrationNotConnected` so it never surfaces as a raw 500.)
+
+**Scoping:** connections are strict per-(user, app). The internal calls send `CLARITY_APP_ID` (the
+platform injects it); without it the broker reports NOT_CONNECTED.
+
+**Error contract:** `execute_tool` maps NOT_CONNECTED → `IntegrationNotConnected` (→ your route
+returns **409**) and any other failure → `IntegrationError`. A **409** means NOT_CONNECTED in the
+broad sense — not connected, no executor for that integration, **missing scope**, or
+**RECONNECT_REQUIRED** (a rotated credential the user must re-authorize). Surface a "connect **or
+reconnect** X" prompt — never fake success. `execute_tool`/`is_connected` require
+`CLARITTY_PLATFORM_URL` (present on-platform); there's no local direct-to-provider path by design,
+so also catch a generic `Exception` in your scan/route to turn the unexpected into a clean message,
+not a raw 500.
+
+---
+
 ## Publishing from a human-in-the-loop route (the Approve button)
 
 When the user approves a draft, the route should invoke the real publish tool and translate the

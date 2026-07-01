@@ -727,6 +727,23 @@ one and confirm).
   storage, or a bespoke Integrations settings page** — never simulate or fake a success. Full guide:
   **[INTEGRATIONS.md](INTEGRATIONS.md)**.
 - Locally, set `CLARITTY_FAKE_CREDS_<INTEGRATION>` (JSON) to exercise the path without OAuth.
+- **From plain service/route code (not an agent)** — e.g. a scan engine or scheduled job — reach the
+  provider through the **broker**: `execute_tool("<service>", "<tool>", user_id, args)` from
+  `backend.shared.adapters` (the platform holds the token; it never enters app code). Two traps that
+  bite in production, not locally:
+  - **Never add app verbs to `backend/shared/adapters/*`.** That dir is regenerated from a canonical
+    template at deploy, so your additions vanish in prod (`… has no attribute 'search'`). Put them in
+    an **app-owned** module: `backend/integrations/<service>_ops.py`, calling `execute_tool`.
+  - **Never `load_credentials(...)` + call the provider yourself** — that pulls the token into the
+    app. If the broker lacks a verb, **add it to the platform executor** (+ scope + catalog
+    `providedTools`), don't fetch creds. See **[INTEGRATIONS.md](INTEGRATIONS.md) → "Reaching
+    integrations from plain service/route code"**.
+  - **Check connectivity with `is_connected("<service>", user_id)`** (→ `/internal/integrations/state`,
+    credential-free) for liveness/`test_connection` — not a credential fetch. The legacy
+    `/internal/integrations/credentials/fetch` is deprecated (403 BROKER_ONLY / 409
+    RECONNECT_REQUIRED); a **409 = NOT_CONNECTED** (incl. missing-scope / rotated credential) → show a
+    "connect **or reconnect** X" prompt, never fake success. Per-(user,app) scoping needs
+    `CLARITY_APP_ID` (platform-injected).
 
 ### Approval / human-in-the-loop (AI proposes → user approves → system acts)
 Many apps shouldn't act autonomously. Model a lifecycle instead of a bare boolean:

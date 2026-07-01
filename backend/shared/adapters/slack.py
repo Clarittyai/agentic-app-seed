@@ -25,6 +25,7 @@ from backend.shared.adapters import (
     IntegrationError,
     load_credentials,
     execute_tool,
+    is_connected,
     _use_executor,
 )
 
@@ -82,7 +83,10 @@ def post_message(db, user_id: str, *, channel: str, text: str) -> Dict[str, Any]
 
 
 def test_connection(db, user_id: str) -> Dict[str, Any]:
-    """Liveness check via auth.test."""
+    """Liveness check. Broker: credential-free /state probe. Self-host: auth.test."""
+    if _use_executor():
+        return {"ok": is_connected(SERVICE, user_id)}
+
     try:
         data = _call(db, user_id, "auth.test", {})
     except IntegrationNotConnected as e:

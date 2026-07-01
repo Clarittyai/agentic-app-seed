@@ -92,6 +92,16 @@ def load_credentials(db, user_id: str, service: str) -> Dict[str, Any]:
                 creds = fetch_for_user(service, user_id)
             except CredentialsNotAvailable as e:
                 raise IntegrationNotConnected(service, str(e))
+            except Exception as e:  # noqa: BLE001
+                # The new broker deprecates /credentials/fetch: it now answers 403
+                # (BROKER_ONLY) or 409 (RECONNECT_REQUIRED / NOT_CONNECTED), which the
+                # SDK surfaces as a raw HTTP error. Degrade those to a clean
+                # connect/reconnect prompt instead of a 500. On-platform code should
+                # prefer execute_tool() (the broker) over load_credentials.
+                status = getattr(getattr(e, "response", None), "status_code", None)
+                if status in (403, 404, 409):
+                    raise IntegrationNotConnected(service, str(e))
+                raise IntegrationError(service, f"credential fetch failed: {e}")
             data = getattr(creds, "data", None) or {}
             if not data:
                 raise IntegrationNotConnected(service)
@@ -130,6 +140,27 @@ def execute_tool(
     and any other failure → IntegrationError, so honest-publish holds. Requires
     CLARITTY_PLATFORM_URL + CLARITY_INTERNAL_SECRET (Tier-2 local dev, or hosted).
     """
+    # Prefer the canonical SDK broker client so we stay on the current
+    # tools/execute route + 409/back-compat handling as the platform evolves;
+    # fall back to a direct POST only when an older SDK lacks executor_client.
+    try:
+        from claritty_sdk.integrations.executor_client import (
+            execute_tool as _sdk_execute_tool,
+            ExecutorError as _SdkExecutorError,
+        )
+        from claritty_sdk.integrations.platform_creds import (
+            CredentialsNotAvailable as _SdkCredsNotAvailable,
+        )
+    except Exception:  # noqa: BLE001 — older SDK: use the local fallback below
+        _sdk_execute_tool = None
+    if _sdk_execute_tool is not None:
+        try:
+            return _sdk_execute_tool(service, tool, user_id, arguments) or {}
+        except _SdkCredsNotAvailable as e:
+            raise IntegrationNotConnected(service, str(e))
+        except _SdkExecutorError as e:
+            raise IntegrationError(service, str(e))
+
     import os
     import httpx
 
@@ -176,6 +207,26 @@ def execute_tool(
     except Exception:
         raise IntegrationError(service, f"{tool} returned a non-JSON response")
     return data.get("result", data) or {}
+
+
+def is_connected(service: str, user_id: str) -> bool:
+    """Credential-free connection probe via the platform ``/internal/integrations/state``
+    endpoint — checks connectivity WITHOUT fetching the token. Prefer this for
+    liveness / setup checklists / `test_connection` over `load_credentials`
+    (which is deprecated for that use and 403/409s under the broker-only model).
+
+    Fails closed to ``False`` (no SDK, no platform, or any error). Off-platform
+    self-host code should probe its local store instead."""
+    try:
+        from claritty_sdk.integrations.platform_creds import (
+            is_connected as _sdk_is_connected,
+        )
+    except Exception:  # noqa: BLE001 — older SDK / bare local dev
+        return False
+    try:
+        return bool(_sdk_is_connected(service, user_id))
+    except Exception:  # noqa: BLE001 — fail closed
+        return False
 
 
 def persist_refreshed(db, user_id: str, service: str, updates: Dict[str, Any]) -> None:
@@ -230,5 +281,6 @@ __all__ = [
     "persist_refreshed",
     "run_liveness",
     "execute_tool",
+    "is_connected",
     "_use_executor",
 ]

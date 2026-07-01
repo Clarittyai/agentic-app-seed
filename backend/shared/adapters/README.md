@@ -1,5 +1,23 @@
 # Integration adapters (B3)
 
+> ⚠️ **This directory is PLATFORM-MANAGED — do NOT add app-specific verbs here.**
+> The Claritty build materializes a *canonical* copy of `backend/shared/` at deploy
+> time (via `generated-app-deploy.service.ts` → `PLATFORM_INFRA_FILES`), so any
+> function you add to these adapters is **silently dropped in production** (symptom:
+> `module 'backend.shared.adapters.gmail' has no attribute 'search'` in prod, though
+> it's right here locally). App-specific integration verbs belong in an **app-owned**
+> module — e.g. `backend/integrations/<service>_ops.py` — calling the broker via
+> `execute_tool(...)`. Need a verb the broker doesn't have? Add it to the platform
+> executor, don't fetch credentials.
+>
+> **Broker facts:** on-platform, reach a service via `execute_tool(...)`
+> (`/internal/integrations/tools/{service}/{tool}/execute`) and check connectivity via
+> `is_connected(...)` (`/internal/integrations/state`). The legacy
+> `/internal/integrations/credentials/fetch` (used by `load_credentials`) is deprecated
+> and 403/409s under the broker-only model — treat 409 as NOT_CONNECTED / reconnect.
+> **See [`INTEGRATIONS.md`](../../../INTEGRATIONS.md) → "Reaching integrations from
+> plain service/route code".**
+
 Thin, typed wrappers over the per-user encrypted credential store so app code and
 the HITL `/approve` path call `gmail.send(...)` / `slack.post_message(...)`
 instead of re-authoring OAuth/HTTP per app.

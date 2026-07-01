@@ -29,6 +29,7 @@ from backend.shared.adapters import (
     load_credentials,
     persist_refreshed,
     execute_tool,
+    is_connected,
     _use_executor,
 )
 
@@ -52,6 +53,15 @@ def _save(db, user_id: str, client: GmailClient) -> None:
 
 def list_unread(db, user_id: str, max_results: int = 25) -> List[Dict[str, Any]]:
     """Message stubs ({id, threadId}) for unread inbox mail."""
+    # Broker path: the platform reads server-side; the token never enters the app.
+    if _use_executor():
+        res = execute_tool(
+            SERVICE, "list_messages", user_id,
+            {"query": "is:unread in:inbox", "limit": max_results},
+        )
+        return res.get("messages") or []
+
+    # Self-host path: read directly with the locally-stored credential.
     client = _client(db, user_id)
     try:
         msgs = client.list_messages(query="is:unread in:inbox", max_results=max_results)
@@ -62,6 +72,13 @@ def list_unread(db, user_id: str, max_results: int = 25) -> List[Dict[str, Any]]
 
 
 def get_message(db, user_id: str, message_id: str, fmt: str = "full") -> Dict[str, Any]:
+    """One message. On-platform this returns the broker's parsed metadata
+    (id, thread_id, snippet, label_ids, sender, subject, rfc822_msgid); self-host
+    returns the raw Gmail message. Apps needing a stable parsed shape should call
+    their own app-owned `gmail_ops.get_meta` (see INTEGRATIONS.md)."""
+    if _use_executor():
+        return execute_tool(SERVICE, "get_message", user_id, {"message_id": message_id})
+
     client = _client(db, user_id)
     try:
         msg = client.get_message(message_id, fmt=fmt)
@@ -125,6 +142,11 @@ def send(
 
 def test_connection(db, user_id: str) -> Dict[str, Any]:
     """Per-provider liveness check (used by /api/integrations/{id}/test)."""
+    # Broker path: credential-free /state probe — no token fetch, no /credentials/fetch.
+    if _use_executor():
+        return {"ok": is_connected(SERVICE, user_id)}
+
+    # Self-host path: verify by reading the profile with the local credential.
     try:
         client = _client(db, user_id)
         email = client.profile_email()
