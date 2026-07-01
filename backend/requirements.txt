@@ -19,10 +19,12 @@ python-multipart==0.0.32
 
 # Clarity SDK (from PyPI)
 # For local development: pip install -e /path/to/claritty-sdk
-# Floor pinned to 2.0.0: the v2 manifest-first runtime + the agent fallback(ctx)
-# offline-degradation hook ship in 2.0.0. (>=1.0.2 first shipped the two-t
-# `claritty_sdk` module; <2.0.0 predates the v2 runtime this seed depends on.)
-claritty-sdk>=2.0.0,<3.0.0
+# Floor pinned to 2.4.0: `platform_creds.is_connected` (the credential-free
+# connection probe the setup checklist uses) ships in 2.4.0 — required so the app
+# reports integration status correctly under gate-only (INTEGRATIONS_BROKER_ONLY),
+# where the raw-credential fetch is refused. (2.0.0 first shipped the v2 runtime +
+# agent fallback(ctx) hook; <2.0.0 predates the v2 runtime this seed depends on.)
+claritty-sdk>=2.4.0,<3.0.0
 
 # Encryption — backend/integrations/crypto.py imports Fernet DIRECTLY for
 # at-rest encryption of integration credentials. Not a transitive dep of
