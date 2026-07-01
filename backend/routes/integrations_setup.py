@@ -66,14 +66,23 @@ def _humanize(integration_id: str) -> str:
 
 
 def _is_connected(integration_id: str, user_id: str) -> bool:
-    """Probe the platform credential store for this user+integration. A
-    successful fetch ⇒ connected; CredentialsNotAvailable ⇒ not connected.
-    Credentials themselves are discarded here — only the boolean escapes."""
+    """Whether this user has THIS app's connection for the integration.
+
+    Prefers the platform's CREDENTIAL-FREE state probe (``is_connected``) so it
+    never fetches a raw token — which is what lets brokered/gate-only
+    integrations still report status correctly. Falls back to a fetch probe on an
+    OLDER SDK that lacks it. Fail-closed: any error ⇒ not connected (the checklist
+    shows "connect")."""
     try:
         from claritty_sdk.integrations import platform_creds
     except Exception:  # noqa: BLE001 — SDK not importable in bare seed dev
         return False
     try:
+        probe = getattr(platform_creds, "is_connected", None)
+        if probe is not None:
+            return bool(probe(integration_id, user_id))
+        # Legacy SDK without the credential-free probe: a successful fetch ⇒
+        # connected. (Discards the credential — only the boolean escapes.)
         platform_creds.fetch_for_user(integration_id, user_id)
         return True
     except platform_creds.CredentialsNotAvailable:
