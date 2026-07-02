@@ -219,6 +219,34 @@
           "required": true
         }
       }
+    },
+    {
+      "id": "gmail.batch_modify",
+      "description": "Add/remove labels across up to 1000 messages in one call (bulk trash: add TRASH; archive: remove INBOX).",
+      "input": {
+        "ids": {
+          "type": "array",
+          "required": true
+        },
+        "add": {
+          "type": "array",
+          "required": false
+        },
+        "remove": {
+          "type": "array",
+          "required": false
+        }
+      },
+      "output": {
+        "ok": {
+          "type": "boolean",
+          "required": true
+        },
+        "modified": {
+          "type": "integer",
+          "required": true
+        }
+      }
     }
   ]
 }
