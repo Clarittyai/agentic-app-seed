@@ -93,14 +93,14 @@ export function IntegrationsChecklist() {
           >
             <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
               {it.connected ? (
-                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-success" />
               ) : (
                 <span className="h-4 w-4 flex-shrink-0 rounded-full border border-border" />
               )}
               <span className="truncate">{it.name}</span>
             </span>
             {it.connected ? (
-              <span className="flex-shrink-0 text-xs font-medium text-emerald-500">
+              <span className="flex-shrink-0 text-xs font-medium text-success">
                 Connected
               </span>
             ) : (
