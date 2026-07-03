@@ -28,7 +28,7 @@
  * marker the moment you start building (see IDENTITY.md) to turn it on.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
@@ -38,6 +38,15 @@ const PRISTINE_MARKER = join(ROOT, '.claritty-seed-pristine');
 const read = (rel) => {
   const p = join(ROOT, rel);
   return existsSync(p) ? readFileSync(p, 'utf8') : null;
+};
+const listFiles = (rel) => {
+  try {
+    return readdirSync(join(ROOT, rel), { withFileTypes: true })
+      .filter((e) => e.isFile())
+      .map((e) => `${rel}/${e.name}`);
+  } catch {
+    return [];
+  }
 };
 
 const failures = [];
@@ -113,6 +122,36 @@ if (models === null) {
         `Model "${name}" has no user_id column (multi-tenancy leak)`,
         `Add \`user_id = Column(String, nullable=False, index=True)\` to ${name} and filter every ` +
           `query by it (request.headers['X-User-ID']). See backend/models.py Task for the pattern.`,
+      );
+    }
+  }
+}
+
+// ── 4) Declared integrations ⇒ an in-app integrations surface. Every app
+// ships Settings → Integrations + the first-run checklist (broker-only). If
+// intelligence.yaml declares integrations but the frontend has no connect
+// primitives, users can never connect and every run dead-ends at 409.
+{
+  const manifest = read('intelligence.yaml') || '';
+  const integBlock = manifest.match(/^integrations:\s*\n((?:\s+-[^\n]*\n?)*)/m);
+  const declares = !!(integBlock && /-\s*id:\s*\S+/.test(integBlock[1] || ''));
+  if (declares) {
+    const frontendDirs = ['frontend/src/pages', 'frontend/src/components', 'frontend/src/lib'];
+    let hasSurface = false;
+    for (const dir of frontendDirs) {
+      for (const rel of listFiles(dir)) {
+        const content = read(rel) || '';
+        if (/claritty:connect-integration|getRequiredIntegrations\(|IntegrationsChecklist/.test(content)) {
+          hasSurface = true;
+          break;
+        }
+      }
+      if (hasSurface) break;
+    }
+    if (!hasSurface) {
+      fail(
+        'intelligence.yaml declares integrations but the app has no Settings → Integrations surface / connect primitives',
+        "Restore the seed's Settings page + IntegrationsChecklist + ConnectButton (broker-only — see INTEGRATIONS.md). Without them users can never connect and every run dead-ends at 409.",
       );
     }
   }

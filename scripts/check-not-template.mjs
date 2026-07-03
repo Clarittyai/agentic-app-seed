@@ -96,6 +96,29 @@ for (const f of [
   }
 }
 
+// 6) NO MOCK DATA ON FIRST RUN — first run must be a connect-first empty
+// state; data appears only after a real sync or user action. A startup seeder
+// or "sample" rows fake the product and hide a broken value path.
+{
+  const stripComments = (s) => s.replace(/^\s*#.*$/gm, '');
+  const mainPy = stripComments(read('backend/main.py') || '');
+  if (/\bseed_[a-z0-9_]*\s*\(\s*\)/.test(mainPy)) {
+    fail('backend/main.py seeds data on startup — first run must show REAL data or an honest empty state.',
+      'Remove the startup seeder; ship polished empty states + a Connect/first-action CTA instead. Data appears only after a real sync or user action.');
+  }
+  for (const rel of ['backend/database.py', 'backend/models.py', 'backend/main.py']) {
+    const content = stripComments(read(rel) || '');
+    if (/source\s*=\s*["']sample["']/.test(content)) {
+      fail(`${rel} creates rows marked source="sample" — mock data is not allowed.`,
+        'Delete the sample-data path. First run = connect-first empty state; only a real sync/user action creates rows.');
+    }
+    if (/def\s+seed_[a-z0-9_]*\s*\(/.test(content) && /db\.add\(/.test(content)) {
+      fail(`${rel} defines a seeder that inserts rows — mock data is not allowed.`,
+        'Remove the seeder. Empty states + a Connect CTA are the first-run experience.');
+    }
+  }
+}
+
 // ===========================================================================
 // Advisory warnings (NON-BLOCKING) — completeness, not identity. These never
 // change the exit code; they nudge toward an app that actually works end-to-end.
@@ -201,6 +224,46 @@ const widgetTsx = read('frontend/src/components/Widget.tsx') || '';
 if (/\berror\b/i.test(widgetTsx) && /text-muted-foreground/.test(widgetTsx) && !/text-foreground/.test(widgetTsx)) {
   warn('The widget error/empty state uses only text-muted-foreground on the glass surface (~2:1 contrast — invisible).',
     'Render the headline with text-foreground and a themed <WidgetButton> Retry — not muted text or a hardcoded-color button.');
+}
+
+// (f) Data-heavy category but the frontend renders no chart. The domain →
+// design matrix (docs/golden/INDEX.md) says these domains LEAD with a chart.
+const DATA_HEAVY = ['sales', 'gtm', 'revenue', 'crm', 'growth', 'finance', 'accounting',
+  'investing', 'billing', 'analytics', 'reporting', 'data', 'marketing', 'ecommerce'];
+const category = String(mkt.category || '').toLowerCase();
+if (DATA_HEAVY.some((c) => category.includes(c))) {
+  const hasChart = walkTsx('frontend/src').some((rel) => {
+    const c = read(rel) || '';
+    return /components\/charts/.test(c) || /\b(TrendLine|BarList|Sparkline)\b/.test(c);
+  });
+  if (!hasChart) {
+    warn(`Category "${category}" is data-heavy but no chart component is used anywhere under frontend/src.`,
+      "Lead the landing page with a chart — import { TrendLine, BarList, Sparkline } from '@/components/charts' and follow the domain → design matrix in docs/golden/INDEX.md.");
+  }
+}
+
+// (g) "sample data" vocabulary in the UI — usually a leftover mock badge.
+{
+  const sampleFiles = new Set();
+  for (const rel of [...walkTsx('frontend/src/pages'), ...walkTsx('frontend/src/components')]) {
+    const c = read(rel) || '';
+    if (/sample data/i.test(c) || /['"]sample['"]\s*(?:\)|,|:)/.test(c)) sampleFiles.add(rel);
+  }
+  if (sampleFiles.size) {
+    warn(`UI mentions "sample" data (${[...sampleFiles].join(', ')}) — apps show REAL data or an honest empty state, never mock.`,
+      'Remove the sample vocabulary/badges; render connect-first empty states until a real sync/user action produces rows.');
+  }
+}
+
+// (h) Agents exist but no AI onboarding questions — the app can't tailor its
+// intelligence to the user or define their "good progress".
+if (agentFiles.length > 0) {
+  const onboarding = cfg.onboarding || {};
+  const questions = Array.isArray(onboarding.questions) ? onboarding.questions : [];
+  if (questions.length === 0) {
+    warn('No AI onboarding questions (app-config.json → onboarding.questions is empty) — the agents run un-tailored.',
+      'Author 2–4 questions whose answers CHANGE agent behavior (goals, thresholds, priorities) + the progress metric the dashboard tracks. See backend/shared/onboarding.py + .claude/prompts/brainstorm.md.');
+  }
 }
 
 function printWarnings() {
