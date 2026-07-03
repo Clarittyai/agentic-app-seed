@@ -726,11 +726,14 @@ one and confirm).
   catalog tool (e.g. `linkedin.create_post`) via `ctx.integration(...)`. Connecting is
   **platform-brokered** — OAuth/keys run on the platform and tokens live in the broker; the app
   **never stores or exchanges a credential**. The user connects IN-CONTEXT via the seed's shared
-  primitives: `<IntegrationsChecklist>` (first-run, already in `Layout.tsx`), `<ConnectButton>`, and
+  primitives: the **Settings → Integrations page** (`pages/Settings.tsx` + `<IntegrationRow>` —
+  every app ships it; host bridge via `lib/integration-bridge.ts` when embedded, platform popup
+  standalone), `<IntegrationsChecklist>` (first-run, already in `Layout.tsx`), `<ConnectButton>`, and
   `toast.showApiError(err, { onConnected })` on a not-connected **409** (which turns it into a
   "Connect X" CTA from the 409's `connect_url`). **Do NOT build your own OAuth exchange, credential
-  storage, or a bespoke Integrations settings page** — never simulate or fake a success. Full guide:
-  **[INTEGRATIONS.md](INTEGRATIONS.md)**.
+  storage, or BYO key entry — and do NOT delete the shipped Settings page** (the coherence gate
+  requires an integrations surface whenever integrations are declared). Never simulate or fake a
+  success. Full guide: **[INTEGRATIONS.md](INTEGRATIONS.md)**.
 - Locally, set `CLARITTY_FAKE_CREDS_<INTEGRATION>` (JSON) to exercise the path without OAuth.
 - **From plain service/route code (not an agent)** — e.g. a scan engine or scheduled job — reach the
   provider through the **broker**: `execute_tool("<service>", "<tool>", user_id, args)` from
@@ -795,7 +798,9 @@ Before deployment, ensure:
 - [ ] Created workflow(s) chaining agents
 - [ ] Created trigger template(s) for user configuration
 - [ ] Customized widget (small, medium & large views) using the UI kit
-- [ ] If the app acts on an external service: the integration is **declared in `intelligence.yaml`** (the platform owns connecting it — no in-app Connect page/banner) + the action via a real catalog tool / `ctx.integration`, with a 409/connect-prompt when not connected — never simulated (see INTEGRATIONS.md)
+- [ ] If the app acts on an external service: the integration is **declared in `intelligence.yaml`** + the action via a real catalog tool / `ctx.integration`, with a 409/connect-prompt when not connected — never simulated. The shipped **Settings → Integrations page + first-run checklist are KEPT** (broker-only connect; the app never stores a credential) — see INTEGRATIONS.md
+- [ ] **First run seeds NO sample data** — polished empty states + a Connect/first-action CTA until a real sync or user action creates rows (identity gate blocks startup seeders)
+- [ ] **AI onboarding is authored** — `app-config.json → onboarding.questions` (2–4 questions that tailor the agents via `backend/shared/onboarding.py` → `ctx.user_context`) + the progress metric the dashboard tracks
 - [ ] If it shouldn't act autonomously: a **draft → approve → act** lifecycle with an approve action
 - [ ] **Every action surfaces its errors** — no silent `catch {}`; failures (esp. 409) toast via `useToast()` + `toApiError()` (see "Surface every error")
 - [ ] `app-config.json` `core_action.definition_of_done` is filled, and that end-to-end path is verified

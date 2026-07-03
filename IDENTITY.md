@@ -31,13 +31,13 @@ the Claritty platform.
 | Area | What must stay |
 |------|----------------|
 | **Backend endpoints** | `GET /health`, `GET /api/widget?size=`, `GET /api/graph`, `/api/agents*`, `/api/workflows*`, `/api/trigger-templates`, `POST /api/{agents,workflows}/{id}/execute`, `POST /internal/run-due-triggers`, `POST /internal/trigger-webhook` |
-| **Startup** | `backend/main.py` order: `init_db → seed → discover_and_register_components → build_graph`; auto-discovery of `backend/{agents,workflows,triggers}/*.py` and `backend/routes/*.py` exporting `router` |
+| **Startup** | `backend/main.py` order: `init_db → discover_and_register_components → build_graph` (NO startup data seeding — first run is a connect-first empty state); auto-discovery of `backend/{agents,workflows,triggers}/*.py` and `backend/routes/*.py` exporting `router` |
 | **SDK (v2 manifest-first)** | agents/tools/workflows/triggers declared in `intelligence.yaml`; an agent is a `system_prompt` (zero-Python `promptFile`, or an `@agent(id)` class — NEVER `def execute()`/`AgentResult`); workflows + triggers are YAML; AI runs through the SDK tool-use loop (never a raw provider SDK) |
 | **Multi-tenancy** | `X-User-ID` header; every user-data model has `user_id`; every query filters by it |
 | **Infra** | `Dockerfile`, `docker-compose.yml`, `frontend/nginx.conf`, ports 3200/8000, `VITE_API_URL=''` (relative URLs), required env vars `DATABASE_URL` / `CLARITTY_PLATFORM_URL` / `CLARITTY_AUTH_TOKEN` |
 | **Widget contract** | `/widget?size=`, the 3 fixed sizes (170×170 / 360×170 / 360×360), `WidgetContainer` / `WidgetButton` / `WidgetBadge` from `@clarittyai/widget-toolkit`, the `data-widget-size` attribute, `p-4` (content) / `rounded-3xl`, **no responsive prefixes** (`sm:`/`md:`/`@media`/`window.innerWidth`), and **no box-shadow / no host background-padding-margin** (the iframe is exactly the widget size — see WIDGETS.md) |
 | **CSS token NAMES** | Keep the token *names* (`--background`, `--foreground`, `--accent`, `--card`, `--muted`, `--border`, `--ring`, `--brand-font`, `--brand-accent`, `--brand-accent-600`). The UI kit reads them. You change their **values**, not their names. |
-| **Integration store** | `UserIntegration` (in `backend/models.py`) is the sanctioned place to store per-user credentials when your app connects an external service. Keep it. See **[INTEGRATIONS.md](INTEGRATIONS.md)**. |
+| **Integrations surface** | Connecting is platform-brokered — the app NEVER stores or exchanges credentials. KEEP the shipped surface: `pages/Settings.tsx` (Settings → Integrations), `IntegrationsChecklist`, `ConnectButton`, `lib/integration-bridge.ts`, and `backend/routes/integrations_setup.py` (+ the `OnboardingProfile` model). The coherence gate requires an integrations surface whenever `intelligence.yaml` declares integrations. See **[INTEGRATIONS.md](INTEGRATIONS.md)**. |
 
 > **Identity ≠ done.** This file is about how the app *looks*. Making it actually *work* —
 > connecting external services, an approve→act lifecycle, scheduling reality, a definition of

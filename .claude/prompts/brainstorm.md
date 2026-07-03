@@ -76,10 +76,24 @@ agent / endpoint* — translate them. Across your questions you MUST cover at le
 - **Data** (where the app's data comes from): its own captured data, or an outside
   source? If they name Gmail/Slack/LinkedIn/etc., check the catalog (§6) — deliver
   the value WITHOUT a "connect your account" step when it isn't a catalog integration.
+- **Landing lead** (domain-fit design): *"When the app opens, what should the first
+  screen lead with?"* — a trend chart, ranked bars, a KPI row, a dense work table,
+  a board, a calendar, or a map. Pre-select the row from **`docs/golden/INDEX.md`**
+  (the domain → design matrix) that matches the app's category and offer it as the
+  default option; data-heavy domains (sales/GTM, finance, analytics) lead with
+  charts from `frontend/src/components/charts`.
+- **Onboarding & value definition** (tailored intelligence): 2–4 first-run
+  questions whose answers CHANGE agent behavior (goals, thresholds, priorities)
+  plus **the ONE progress metric** the dashboard tracks against the user's stated
+  target. These become `app-config.json → onboarding.questions` and the agents
+  read the profile via `backend/shared/onboarding.py` (`before(ctx)` →
+  `ctx.user_context`).
 
 ### Step 4 — Write the brief
 Synthesize problem + chosen outcome + the answers into the plan: agents/workflow/
-trigger, the widget per size, the data model, and the design identity (§7). Save it
+trigger, the widget per size, the data model, the design identity (§7) — including
+the **Primary visualization** (the docs/golden/INDEX.md matrix row) — and the
+onboarding questions + progress metric. Save it
 to **`docs/plans/0001-brief.md`** and put the one-sentence success line into
 `app-config.json` → `clarity_marketplace.core_action.definition_of_done` (§6c). Only
 then start building.
@@ -256,6 +270,11 @@ gate will block the build**. Decide the app's *own* identity now:
 - **Voice/tone**: how copy reads (terse & pro? warm & encouraging?).
 - **Landing page**: what the app's real home screen shows (NOT the template
   showcase) — replace `frontend/src/pages/Dashboard.tsx`.
+- **Dataviz**: the app's primary visualization(s), chosen from the domain → design
+  matrix (**`docs/golden/INDEX.md`**). Charts come from
+  `frontend/src/components/charts` (BarList / TrendLine / Sparkline) — never a
+  hand-rolled hex-colored SVG. The series hue is `--chart-1` (defaults to the
+  accent; override in `theme.css` if the accent is too light for hairline marks).
 - **App mark + name**: your own logo/wordmark (replace `/claritty-logo.png` in
   `Layout.tsx`) and `appName`/`appDescription` in `lib/app-meta.ts`.
 
@@ -275,6 +294,10 @@ After brainstorming, you should have:
 - Palette: accent `H S% L%`, accent-600 `…`, primary `…`  (→ `frontend/src/theme.css`)
 - Font: `[name]`  (→ `--brand-font` + `index.html`)
 - Landing page concept: [what the real Dashboard shows]
+- Primary visualization: [e.g. TrendLine of pipeline + BarList by stage]  (→ leads
+  `Dashboard.tsx`; matrix row: [category] in `docs/golden/INDEX.md`)
+- Onboarding: [2–4 questions that tailor the agents] + progress metric: [the ONE
+  number tracked vs the user's target]  (→ `app-config.json` → `onboarding`)
 - App name + mark: [name] + [logo idea]  (→ `app-meta.ts`, `Layout.tsx`)
 
 

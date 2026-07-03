@@ -63,18 +63,23 @@ app reads from or acts on:
    the REAL integration path without OAuth. It is NOT a mock data layer.
 4. **Honest failure:** when the service isn't connected, return a 409 / inline connect-prompt; on a
    real failure, surface it. NEVER fake a success or simulate the external call.
-5. **No catalog match** (e.g. reddit, g2, hn): write a custom read-only `@tool`, or seed
-   **clearly-labeled** sample data — and say which. Never pass a mock off as the real source.
-6. **Connect in-context via the provided primitives — never hand-roll it.** Connecting is
+5. **No catalog match** (e.g. reddit, g2, hn): write a custom read-only `@tool`. NEVER auto-seed
+   sample/mock data — first run is a polished, honest empty state (+ a Connect/first-action CTA);
+   rows appear only after a real sync or user action. The identity gate blocks startup seeders.
+6. **Connect via the provided primitives — never hand-roll them.** Connecting is
    platform-brokered (OAuth/keys run on the platform; tokens live in the broker; the app never stores
-   or exchanges a credential). Declare the integration, then use the seed's shared pieces:
-   `<IntegrationsChecklist>` (first-run, already in `Layout.tsx`), `<ConnectButton>`, and
-   `toast.showApiError(err, { onConnected })` on a 409. Do NOT write OAuth code, store credentials, or
-   build a bespoke Integrations settings page (the legacy in-app connect routes are retired → 410).
+   or exchanges a credential). Declare the integration, then KEEP the seed's shared surface:
+   the **Settings → Integrations page** (`pages/Settings.tsx` + `<IntegrationRow>` — every app ships
+   it), `<IntegrationsChecklist>` (first-run, already in `Layout.tsx`), `<ConnectButton>` (host
+   bridge when embedded, platform popup standalone), and `toast.showApiError(err, { onConnected })`
+   on a 409. Do NOT write OAuth code, store credentials, or add BYO key entry (the legacy in-app
+   connect routes are retired → 410) — and do NOT delete the Settings page (the coherence gate
+   requires an integrations surface whenever integrations are declared).
 
 Do NOT, for a catalog service: ask the user for API keys, write OAuth code, `pip install` a provider
-SDK, build a mock data layer, or hand-roll a connect/Integrations UI. (Custom *integrations* and
-custom *triggers* are refused — the platform owns OAuth + the dispatcher.) Full pattern + examples:
+SDK, or build a mock data layer. Keep (don't reinvent, don't delete) the shipped Settings →
+Integrations page + checklist. (Custom *integrations* and custom *triggers* are refused — the
+platform owns OAuth + the dispatcher.) Full pattern + examples:
 [`INTEGRATIONS.md`](../../INTEGRATIONS.md).
 
 ## Platform capabilities — RAG, memory, web (built in, no integration)
@@ -193,9 +198,12 @@ When you build the frontend (`Dashboard.tsx`, `Widget.tsx`, pages), match the
 
 - [`docs/golden/Dashboard.golden.tsx`](../../docs/golden/Dashboard.golden.tsx)
 - [`docs/golden/Widget.golden.tsx`](../../docs/golden/Widget.golden.tsx)
+- Archetype variants exist for both (`Dashboard.{table,kanban,calendar,list-detail,wizard,map-overlay}`,
+  `Widget.{chart,list,status,single-metric}`) — **pick by the app's domain via the matrix in
+  [`docs/golden/INDEX.md`](../../docs/golden/INDEX.md)**.
 
 Study their hierarchy, spacing, and state handling; then ADAPT to this app's
-domain — do not copy the content. The five non-negotiables they demonstrate:
+domain — do not copy the content. The six non-negotiables they demonstrate:
 
 1. **Theme tokens only** — `text-foreground` / `text-muted-foreground` /
    `text-accent` / `bg-card` / `border`. NEVER hardcode hex or a fixed Tailwind
@@ -211,6 +219,13 @@ domain — do not copy the content. The five non-negotiables they demonstrate:
 5. **No AI tells** — no emoji in chrome, no decorative icons glued to headings,
    no rainbow/multi-stop gradients, no "Welcome to…" hero. lucide icons only
    where they aid scanning; sentence case; concise domain copy.
+6. **Domain-fit dataviz** — data-heavy categories (sales/GTM, finance, analytics,
+   marketing, …) LEAD the landing page with a chart from
+   `frontend/src/components/charts` (`BarList` / `TrendLine` / `Sparkline` —
+   single series, `--chart-1` hue, table twin + tooltips included). Never
+   hand-roll an SVG chart with hex colors. Matrix: `docs/golden/INDEX.md`.
+   Apps that track user targets (from AI onboarding) also surface progress vs
+   the stated goal on the landing page.
 
 ## When you don't know
 

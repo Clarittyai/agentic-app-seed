@@ -65,9 +65,14 @@ and the CSS token NAMES.
   `widget-host` body — see index.css). See WIDGETS.md → "Exact-size iframe".
 
 ## Make it actually work (not just compile — see CLAUDE.md "Build patterns" + INTEGRATIONS.md)
-- If the app acts on an external service (post/send/charge/sync…), SHIP a way to connect it: a
-  Connect page + per-user creds in `UserIntegration` + a pluggable action that SIMULATES until
-  connected. Infer the obvious platform if the user didn't name one, and confirm. (INTEGRATIONS.md)
+- If the app acts on an external service (post/send/charge/sync…): declare it in
+  `intelligence.yaml#integrations`. Connecting is PLATFORM-BROKERED via the shipped surface —
+  Settings → Integrations page + first-run checklist + ConnectButton (host bridge embedded,
+  platform popup standalone). The app never stores/exchanges credentials, and not-connected is an
+  honest 409 + connect prompt — NEVER simulate a success. Infer the obvious platform if the user
+  didn't name one, and confirm. (INTEGRATIONS.md)
+- NO mock data: never auto-seed sample rows. First run = polished empty states + a Connect /
+  first-action CTA; rows appear only after a real sync or user action (identity gate enforces).
 - If a human should approve before acting: model `draft → approved → published|failed` + an
   `/approve` endpoint that performs the action + a widget approve quick-action.
 - No local scheduler: `SCHEDULE_*` triggers fire only on the platform. Locally run workflows on

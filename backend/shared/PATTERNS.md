@@ -29,8 +29,9 @@ Reference implementation: the Sales flagship's `lead-assistant`
    columns via `extra`. *(Finance, HR, Operations, Legal.)*
 
 4. **summarize-digest** — read across sources (read-only), produce one digest +
-   highlights; surface via the DigestWidget/KpiMetricWidget. No write side =
-   safest demo. *(Exec daily digest, Support feedback, Finance KPI.)*
+   highlights; surface via the DigestWidget/KpiMetricWidget — for Finance/Sales
+   KPIs include a `trend` series so the widget shows the sparkline. No write
+   side = safest demo. *(Exec daily digest, Support feedback, Finance KPI.)*
 
 5. **schedule-dispatch** — decide timing/recipient for an approved item and hand
    to an adapter. *(Reminders, payment nudges, onboarding sequences.)* Pairs with
@@ -61,4 +62,12 @@ voice; never fabricate a recipient; finish calmly when there's nothing to do.
 - `backend/custom/agents/<name>/agent.py`: the class + `system_prompt`.
 - `backend/custom/tools/app_save_<x>/impl.py`: map tool input → `persist_item`.
 - Frontend: compose the matching widget from `components/widgets/`
-  (ApprovalCard for 1–2/draft-generate, Kpi/Digest for summarize-digest).
+  (ApprovalCard for 1–2/draft-generate, Kpi + `trend` / Digest for
+  summarize-digest). Data-heavy categories also LEAD the landing page with
+  `frontend/src/components/charts` — see `docs/golden/INDEX.md`.
+- Tailor every agent to the user: implement `before(ctx)` appending
+  `profile_context(db, ctx.user_id)` (backend/shared/onboarding.py) to
+  `ctx.user_context`, and let deterministic fallbacks read `get_answers(...)`
+  for thresholds/goals. The onboarding questions live in `app-config.json` →
+  `onboarding.questions`; surface progress vs the user's stated target on the
+  landing page.

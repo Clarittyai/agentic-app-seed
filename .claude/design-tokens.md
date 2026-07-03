@@ -76,6 +76,24 @@ radius (`rounded-3xl`) is canonical and intentionally NOT one of these** — it 
 fixed (the widget validator enforces it); express widget personality inside the
 content, not on the outer tile.
 
+## Dataviz color (`--chart-1`)
+
+Charts (`frontend/src/components/charts` — BarList / TrendLine / Sparkline) draw
+every MARK in one series hue: **`--chart-1`** (an HSL triple, consumed as
+`hsl(var(--chart-1))`). It defaults to `var(--brand-accent)` in `index.css`, so
+charts inherit the app's theme — light AND dark — with zero setup. Override it in
+`theme.css` (both `:root` and `.dark`) only when the accent is too light or
+desaturated to carry 2px lines and 20px bars against `bg-card`; pick a
+chroma-bearing mid-lightness hue and check it against both surfaces.
+
+Rules that keep charts honest:
+- Chart **text never wears `--chart-1`** — values, labels, ticks, and legends stay
+  `text-foreground` / `text-muted-foreground`; the colored mark beside them
+  carries identity.
+- **Status colors are never a series hue** (and vice versa).
+- **One series per chart** — comparison is two chart cards, never a second axis.
+- Which chart fits which domain: `docs/golden/INDEX.md` (the domain → design matrix).
+
 ## Widgets — three sizes only
 
 Canonical dims live in `src/lib/widget-sizes.ts`. Small **170×170**, Medium
