@@ -1,0 +1,24 @@
+{
+  "id": "knowledge.ingest",
+  "kind": "tool",
+  "version": "1.0.0",
+  "broker": true,
+  "description": "Add text to the app's knowledge base for the current user so it can be retrieved later with knowledge.search. Use for notes, extracted facts, or app data the app generates.",
+  "intentHints": [
+    "remember this document",
+    "add to the knowledge base",
+    "index this text for later search",
+    "save reference material"
+  ],
+  "input": {
+    "text": { "type": "string", "required": false },
+    "chunks": { "type": "array", "required": false },
+    "documentId": { "type": "string", "required": false },
+    "metadata": { "type": "object", "required": false }
+  },
+  "output": {
+    "documentId": { "type": "string", "required": false },
+    "ingested": { "type": "integer", "required": true }
+  },
+  "handler": "broker"
+}

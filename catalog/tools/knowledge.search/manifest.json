@@ -1,0 +1,22 @@
+{
+  "id": "knowledge.search",
+  "kind": "tool",
+  "version": "1.0.0",
+  "broker": true,
+  "description": "Semantically search the app's knowledge base (the current user's uploaded documents + app data, embedded server-side) and return the most relevant passages to ground an answer on.",
+  "intentHints": [
+    "answer questions from uploaded documents",
+    "search my files",
+    "look it up in the knowledge base",
+    "cite sources from the docs",
+    "retrieve relevant context"
+  ],
+  "input": {
+    "query": { "type": "string", "required": true },
+    "topK": { "type": "integer", "required": false, "default": 6 }
+  },
+  "output": {
+    "results": { "type": "array", "required": true }
+  },
+  "handler": "broker"
+}
