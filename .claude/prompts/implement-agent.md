@@ -43,6 +43,18 @@ tool ids to call, the output schema) around it. The procedure is the proven way 
 reinventing the steps freehand yields a weaker, less consistent agent. Only author the procedure
 from scratch when no skill fits.
 
+**Give the agent the right tools — including PLATFORM CAPABILITIES.** Beyond catalog
++ integration tools, six always-available capability tools need no integration or key
+(the platform brokers them). Add them to the agent's `tools:` when they fit:
+- **`knowledge.search`** — the app answers over the user's uploaded docs / app data
+  (RAG). The agent calls it FIRST and cites the passages. (+ `knowledge.ingest` to add text.)
+- **`memory.recall` / `memory.save`** — a long-running assistant that should remember the
+  user across runs (recall at start, save durable facts at end with a stable `memKey`).
+- **`web.search` / `web.fetch`** — the agent needs current external facts; require it to
+  cite URLs, never answer time-sensitive questions from memory.
+The matching skill (`ground-answer-in-knowledge`, `research-with-web-citations`,
+`remember-user-preferences`) auto-fits when you add these — inline its procedure too.
+
 Create `backend/custom/agents/your_agent_id/prompt.md` — pure prose, no code:
 
 ```markdown

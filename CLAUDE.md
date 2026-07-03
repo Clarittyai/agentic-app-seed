@@ -349,19 +349,24 @@ agents:
       result: { type: string, required: true }
     timeout: 60
 ```
-2. **First check for a vetted skill.** Grep the `## Skills` section of `catalog/INDEX.md`
+2. **Give it the right tools — including PLATFORM CAPABILITIES (no integration needed).**
+   Six always-available brokered tools make agents genuinely intelligent — add to `tools:` when they fit:
+   - `knowledge.search` — RAG over the user's uploaded docs / app data (call FIRST, cite passages; `knowledge.ingest` to add text).
+   - `memory.recall` / `memory.save` — remember the user across runs (recall at start, save durable facts with a stable `memKey`).
+   - `web.search` / `web.fetch` — current external facts; cite URLs, never answer time-sensitive questions from memory.
+3. **Then check for a vetted skill.** Grep the `## Skills` section of `catalog/INDEX.md`
    for a procedure matching this agent's job (by its "Fits agents that:" tools or its intent —
-   e.g. `draft-on-brand-reply`, `classify-and-triage`, `summarize-with-citations`). If one fits,
+   e.g. `ground-answer-in-knowledge`, `research-with-web-citations`, `draft-on-brand-reply`). If one fits,
    open `catalog/skills/<id>/procedure.md` and **inline that vetted procedure into `prompt.md`**
    rather than writing the steps freehand — it's the proven way to do the task and yields more
    consistent agents. Only write from scratch when no skill fits.
-3. Write the agent's instructions as PROSE in `backend/custom/agents/my_agent/prompt.md`
+4. Write the agent's instructions as PROSE in `backend/custom/agents/my_agent/prompt.md`
    (the inlined skill procedure first, if any, then the app-specific context):
 ```markdown
 You are <role>. Call app.save_item with the processed result, then call
 __finish with {result: <the result>} matching the output schema. Never invent values.
 ```
-4. (Only if you need a `before/after` hook or an offline `fallback`) write a handler class
+5. (Only if you need a `before/after` hook or an offline `fallback`) write a handler class
    instead — `@agent(id="my-agent")` + `system_prompt`, NO `execute()` (the v2 runtime never
    calls it and rejects it at boot). See `backend/agents/example_agent.py`.
 

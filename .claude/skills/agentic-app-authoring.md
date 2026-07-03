@@ -74,6 +74,28 @@ SDK, build a mock data layer, or hand-roll a connect/Integrations UI. (Custom *i
 custom *triggers* are refused — the platform owns OAuth + the dispatcher.) Full pattern + examples:
 [`INTEGRATIONS.md`](../../INTEGRATIONS.md).
 
+## Platform capabilities — RAG, memory, web (built in, no integration)
+
+Six **platform capability tools** are always available — no integration, no API
+key. The platform brokers them server-side. List the id in an agent's `tools:` and
+call it, exactly like a catalog tool. Reach for these to make an app *intelligent*:
+
+- **`knowledge.search`** — RAG over the user's **uploaded documents + app data**
+  (auto-indexed). For "chat with my docs", knowledge-base Q&A, research-over-my-data:
+  give the answering agent this tool; it should call it FIRST and **cite** the
+  retrieved passages, and refuse to invent when nothing comes back. Prefer it over
+  writing a custom search tool. Companion: `knowledge.ingest` to add app text.
+- **`memory.recall` / `memory.save`** — durable per-user memory across runs. For a
+  long-running / conversational assistant: `memory.recall` at the START (personalise),
+  `memory.save` at the END for durable facts (stable `memKey`, never secrets/chatter).
+- **`web.search` / `web.fetch`** — live web for CURRENT external facts. For a deep
+  research/synthesis agent: attach these and require it to cite URLs; never answer a
+  time-sensitive question from memory. `web.fetch` reads a page before citing.
+
+Matching **skills** auto-attach when you use these tools (`ground-answer-in-knowledge`,
+`research-with-web-citations`, `remember-user-preferences`) — the vetted procedure
+comes for free. Full guidance: [`AGENTIC.md`](../../AGENTIC.md#platform-capabilities--built-in-no-integration-needed).
+
 ## Custom tool template — copy/adapt, don't deviate
 
 ```python

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-23T03:20:49.244Z",
+  "generatedAt": "2026-07-03T17:08:19.737Z",
   "integrations": [
     {
       "id": "airtable",
@@ -383,6 +383,20 @@
       ]
     },
     {
+      "id": "telegram",
+      "version": "1.0.0",
+      "name": "Telegram",
+      "description": "Send messages to a Telegram chat or channel via a bot.",
+      "category": "communication",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "message me on telegram",
+        "send a telegram",
+        "alert telegram"
+      ]
+    },
+    {
       "id": "trello",
       "version": "0.1.0",
       "name": "Trello",
@@ -424,6 +438,29 @@
     }
   ],
   "tools": [
+    {
+      "id": "knowledge.ingest",
+      "version": "1.0.0",
+      "description": "Add text to the app's knowledge base for the current user so it can be retrieved later with knowledge.search. Use for notes, extracted facts, or app data the app generates.",
+      "intentHints": [
+        "remember this document",
+        "add to the knowledge base",
+        "index this text for later search",
+        "save reference material"
+      ]
+    },
+    {
+      "id": "knowledge.search",
+      "version": "1.0.0",
+      "description": "Semantically search the app's knowledge base (the current user's uploaded documents + app data, embedded server-side) and return the most relevant passages to ground an answer on.",
+      "intentHints": [
+        "answer questions from uploaded documents",
+        "search my files",
+        "look it up in the knowledge base",
+        "cite sources from the docs",
+        "retrieve relevant context"
+      ]
+    },
     {
       "id": "llm.classify",
       "version": "1.0.0",
@@ -477,6 +514,51 @@
         "summarize a list of posts",
         "create a digest from messages",
         "boil down a thread"
+      ]
+    },
+    {
+      "id": "memory.recall",
+      "version": "1.0.0",
+      "description": "Recall the current user's most relevant remembered facts/preferences for a query. Call at the start of a run to personalise behaviour with what the app already knows about the user.",
+      "intentHints": [
+        "what do I know about this user",
+        "recall past preferences",
+        "personalise using history",
+        "remember previous context"
+      ]
+    },
+    {
+      "id": "memory.save",
+      "version": "1.0.0",
+      "description": "Remember a durable fact or preference for the current user, persisted across runs. Pass a stable memKey to overwrite that memory instead of accumulating duplicates.",
+      "intentHints": [
+        "remember the user's preference",
+        "store this for next time",
+        "keep track across runs",
+        "learn from feedback"
+      ]
+    },
+    {
+      "id": "web.fetch",
+      "version": "1.0.0",
+      "description": "Fetch a web page's readable text (e.g. a URL returned by web.search) so the agent can read and cite the source. Platform capability; server-side fetch is SSRF-guarded.",
+      "intentHints": [
+        "read this page",
+        "open the article",
+        "get the full text of a URL",
+        "read the source before citing"
+      ]
+    },
+    {
+      "id": "web.search",
+      "version": "1.0.0",
+      "description": "Search the live web for current, external facts and return ranked results (title, url, snippet). A platform capability — no integration needed. Use for anything time-sensitive or outside the app's own data.",
+      "intentHints": [
+        "look it up online",
+        "find current information",
+        "research the latest",
+        "search the web",
+        "get up-to-date facts"
       ]
     }
   ],
@@ -584,6 +666,53 @@
         "gmail.send",
         "slack.send",
         "outlook.send"
+      ]
+    },
+    {
+      "id": "ground-answer-in-knowledge",
+      "version": "0.1.0",
+      "description": "Answer strictly from the app's knowledge base: retrieve first, ground every claim in retrieved passages with citations, and refuse to invent when nothing relevant is found.",
+      "intentHints": [
+        "answer from documents",
+        "chat with my docs",
+        "knowledge base question",
+        "cite sources from files",
+        "retrieval augmented answer"
+      ],
+      "appliesTo": [
+        "knowledge.search"
+      ]
+    },
+    {
+      "id": "remember-user-preferences",
+      "version": "0.1.0",
+      "description": "Use persistent memory well: recall what's known about the user before acting, and save durable preferences/facts (not transient chatter) under stable keys so the app improves across runs without piling up duplicates.",
+      "intentHints": [
+        "remember preferences",
+        "personalise over time",
+        "learn from feedback",
+        "recall past context",
+        "assistant that remembers"
+      ],
+      "appliesTo": [
+        "memory.recall",
+        "memory.save"
+      ]
+    },
+    {
+      "id": "research-with-web-citations",
+      "version": "0.1.0",
+      "description": "Research current/external facts on the live web: search, open the best sources to verify, and cite every external claim with its URL — never answer time-sensitive questions from memory.",
+      "intentHints": [
+        "research online",
+        "find current information",
+        "look up the latest",
+        "cite sources from the web",
+        "verify with sources"
+      ],
+      "appliesTo": [
+        "web.search",
+        "web.fetch"
       ]
     },
     {

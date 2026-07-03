@@ -28,6 +28,39 @@ Schema: [`catalog/SCHEMA.json`](catalog/SCHEMA.json) (machine-readable)
 
 ---
 
+## Platform capabilities — built in, no integration needed
+
+Beyond the catalog, six **platform capability tools** are always available to any
+agent. They need **no integration, no API key, no credential** — the platform
+brokers them server-side (the app never holds keys or a vector store). Use them to
+make apps genuinely intelligent. Just list the tool id in the agent's `tools[]`
+(exactly like a catalog tool) and call it.
+
+| Tool | Use it when the app should… | Notes |
+|---|---|---|
+| **`knowledge.search`** | answer questions / reason over the user's **uploaded documents or app data** (RAG) | Uploaded files are auto-indexed. Call it FIRST, then ground + **cite** the retrieved passages. Don't invent when it returns nothing. |
+| **`knowledge.ingest`** | add app-generated text/notes to the knowledge base for later retrieval | Pass `text` (or pre-split `chunks`). |
+| **`memory.recall`** | **remember the user** across runs (a long-running / conversational assistant) | Call at the START to personalise. |
+| **`memory.save`** | persist a durable preference/fact learned this run | Use a stable `memKey` per fact so it overwrites, not piles up. Save durable facts only, never transient chatter or secrets. |
+| **`web.search`** | pull **current external facts** (news, prices, docs, anything time-sensitive) | Returns `{title, url, snippet}`. |
+| **`web.fetch`** | read a page's text before citing it | SSRF-guarded server-side fetch. |
+
+**Design guidance:**
+- **"Chat with my docs" / knowledge-base Q&A** → give the answering agent
+  `knowledge.search`; reach for it before writing a custom search tool.
+- **Assistant that improves over time** → give it `memory.recall` (start) +
+  `memory.save` (end).
+- **Deep research / synthesis of external facts** → give it `web.search`
+  (+ `web.fetch`) and require it to cite URLs — never answer from memory.
+- Matching **skills** (`ground-answer-in-knowledge`, `research-with-web-citations`,
+  `remember-user-preferences`) auto-attach when you use these tools, so the agent
+  gets the vetted procedure for free.
+
+These are listed in [`catalog/INDEX.md`](catalog/INDEX.md) under Tools; treat them
+as first-class primitives when composing an app's intelligence.
+
+---
+
 ## Authoring loop
 
 ### Step 1 — find what's in the catalog
