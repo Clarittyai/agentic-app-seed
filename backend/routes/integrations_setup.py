@@ -79,28 +79,40 @@ def _connect_url(integration_id: str) -> str | None:
 def _is_connected(integration_id: str, user_id: str) -> bool:
     """Whether this user has THIS app's connection for the integration.
 
-    Prefers the platform's CREDENTIAL-FREE state probe (``is_connected``) so it
-    never fetches a raw token — which is what lets brokered/gate-only
-    integrations still report status correctly. Falls back to a fetch probe on an
-    OLDER SDK that lacks it. Fail-closed: any error ⇒ not connected (the checklist
-    shows "connect")."""
+    Prefers the platform's CREDENTIAL-FREE tri-state probe (``connection_state``)
+    so it never fetches a raw token — which is what lets brokered/gate-only
+    integrations still report status correctly. Falls back to the boolean
+    ``is_connected`` / a fetch probe on an OLDER SDK.
+
+    CRITICAL: only a DEFINITIVE not-connected shows "connect". A transient/unknown
+    error (network blip, a platform 5xx, or the cold-start probe right after a
+    publish/redeploy) must NOT read as disconnected — the connection persists
+    server-side, and a false "disconnected" nags the user to reconnect an
+    already-connected integration on every publish. So unknown ⇒ treat as
+    connected; the real state resolves on the next successful probe (and a
+    genuinely not-connected integration still surfaces on the actual tool call)."""
     try:
         from claritty_sdk.integrations import platform_creds
     except Exception:  # noqa: BLE001 — SDK not importable in bare seed dev
         return False
     try:
+        # Tri-state (True / False / None-unknown) — the resilient path.
+        state_probe = getattr(platform_creds, "connection_state", None)
+        if state_probe is not None:
+            # None (unknown) ⇒ NOT False ⇒ do not show a false "disconnected".
+            return state_probe(integration_id, user_id) is not False
         probe = getattr(platform_creds, "is_connected", None)
         if probe is not None:
             return bool(probe(integration_id, user_id))
-        # Legacy SDK without the credential-free probe: a successful fetch ⇒
+        # Legacy SDK without any credential-free probe: a successful fetch ⇒
         # connected. (Discards the credential — only the boolean escapes.)
         platform_creds.fetch_for_user(integration_id, user_id)
         return True
     except platform_creds.CredentialsNotAvailable:
         return False
-    except Exception as exc:  # noqa: BLE001 — treat transient errors as "unknown/not connected"
+    except Exception as exc:  # noqa: BLE001 — transient/unknown, NOT "disconnected"
         logger.warning("connection probe for %s failed: %s", integration_id, exc)
-        return False
+        return True
 
 
 @router.get("/api/integrations/required")
