@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
+import Settings from './pages/Settings';
 import WidgetPage from './pages/WidgetPage';
 import Layout from './components/Layout';
 import { ToastProvider } from './components/Toast';
@@ -24,6 +25,7 @@ function App() {
           {/* App routes — with the navigation layout. */}
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
           <Route path="/tasks" element={<Layout><Tasks /></Layout>} />
+          <Route path="/settings" element={<Layout><Settings /></Layout>} />
         </Routes>
       </Router>
     </ToastProvider>

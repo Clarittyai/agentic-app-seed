@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, Plug, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { getRequiredIntegrations, type RequiredIntegration } from '@/lib/api';
+import { isEmbedded } from '@/lib/integration-bridge';
 import { ConnectButton } from './ConnectButton';
 
 const DISMISS_KEY = 'claritty_integrations_checklist_dismissed_v1';
@@ -14,6 +16,7 @@ const DISMISS_KEY = 'claritty_integrations_checklist_dismissed_v1';
  */
 export function IntegrationsChecklist() {
   const [items, setItems] = useState<RequiredIntegration[] | null>(null);
+  const [appId, setAppId] = useState<string | null>(null);
   const [allConnected, setAllConnected] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -21,6 +24,7 @@ export function IntegrationsChecklist() {
     try {
       const res = await getRequiredIntegrations();
       setItems(res.integrations);
+      setAppId(res.app_id ?? null);
       setAllConnected(res.all_connected);
     } catch {
       // A setup hint must never crash the app — degrade to hidden.
@@ -43,8 +47,9 @@ export function IntegrationsChecklist() {
   if (!items || allConnected || dismissed) return null;
   const unconnected = items.filter((i) => !i.connected);
   if (unconnected.length === 0) return null;
-  // Nothing actionable (e.g. bare local dev without a platform connect link).
-  if (!unconnected.some((i) => !!i.connect_url)) return null;
+  // Nothing actionable (bare local dev without a platform connect link).
+  // Embedded, the host bridge makes every row actionable regardless.
+  if (!unconnected.some((i) => !!i.connect_url) && !isEmbedded()) return null;
 
   const dismiss = () => {
     setDismissed(true);
@@ -103,6 +108,7 @@ export function IntegrationsChecklist() {
                 integrationId={it.id}
                 name={it.name}
                 connectUrl={it.connect_url}
+                appId={appId}
                 variant="secondary"
                 onConnected={() => void load()}
               />
@@ -110,6 +116,12 @@ export function IntegrationsChecklist() {
           </li>
         ))}
       </ul>
+      <Link
+        to="/settings"
+        className="mt-3 inline-block text-xs font-medium text-accent hover:underline"
+      >
+        Manage integrations in Settings →
+      </Link>
     </div>
   );
 }

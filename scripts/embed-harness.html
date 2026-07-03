@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  Embed harness — exercise the EMBEDDED broker connect flow WITHOUT the
+  platform. Open this file in a browser while the app runs locally
+  (docker compose up → http://localhost:3200). It iframes /settings, logs
+  every claritty:connect-integration / claritty:disconnect-integration
+  message the app posts, and replies like the platform bridge would:
+  `-started` immediately, `-done` after 1.5s. Watch the Settings page flip
+  the row to Connected/Disconnected and re-probe /api/integrations/required.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Claritty embed harness</title>
+    <style>
+      body { font: 14px/1.5 system-ui, sans-serif; margin: 0; display: flex; height: 100vh; }
+      iframe { flex: 1; border: 0; border-right: 1px solid #ccc; }
+      #log { width: 420px; padding: 12px; overflow: auto; background: #111; color: #9f9;
+             font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <iframe id="app" src="http://localhost:3200/settings"></iframe>
+    <div id="log">embed harness ready — click Connect in the iframe…</div>
+    <script>
+      const frame = document.getElementById('app');
+      const log = (msg) => {
+        document.getElementById('log').textContent +=
+          '\n' + new Date().toISOString().slice(11, 19) + '  ' + msg;
+      };
+      window.addEventListener('message', (event) => {
+        if (event.source !== frame.contentWindow) return;
+        const d = event.data || {};
+        if (d.type !== 'claritty:connect-integration' &&
+            d.type !== 'claritty:disconnect-integration') return;
+        log('← ' + JSON.stringify(d));
+        const done = d.type === 'claritty:connect-integration'
+          ? 'claritty:connect-integration-done'
+          : 'claritty:disconnect-integration-done';
+        if (d.type === 'claritty:connect-integration') {
+          frame.contentWindow.postMessage(
+            { type: 'claritty:connect-integration-started', integrationId: d.integrationId }, '*');
+          log('→ started');
+        }
+        setTimeout(() => {
+          frame.contentWindow.postMessage({ type: done, integrationId: d.integrationId }, '*');
+          log('→ ' + done);
+        }, 1500);
+      });
+    </script>
+  </body>
+</html>
