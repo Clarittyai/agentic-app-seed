@@ -1,0 +1,15 @@
+{
+  "id": "research-with-web-citations",
+  "kind": "skill",
+  "version": "0.1.0",
+  "description": "Research current/external facts on the live web: search, open the best sources to verify, and cite every external claim with its URL — never answer time-sensitive questions from memory.",
+  "intentHints": [
+    "research online",
+    "find current information",
+    "look up the latest",
+    "cite sources from the web",
+    "verify with sources"
+  ],
+  "appliesTo": ["web.search", "web.fetch"],
+  "procedureFile": "procedure.md"
+}

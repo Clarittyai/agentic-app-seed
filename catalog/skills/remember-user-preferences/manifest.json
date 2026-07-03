@@ -1,0 +1,15 @@
+{
+  "id": "remember-user-preferences",
+  "kind": "skill",
+  "version": "0.1.0",
+  "description": "Use persistent memory well: recall what's known about the user before acting, and save durable preferences/facts (not transient chatter) under stable keys so the app improves across runs without piling up duplicates.",
+  "intentHints": [
+    "remember preferences",
+    "personalise over time",
+    "learn from feedback",
+    "recall past context",
+    "assistant that remembers"
+  ],
+  "appliesTo": ["memory.recall", "memory.save"],
+  "procedureFile": "procedure.md"
+}

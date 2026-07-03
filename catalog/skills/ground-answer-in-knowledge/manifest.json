@@ -1,0 +1,15 @@
+{
+  "id": "ground-answer-in-knowledge",
+  "kind": "skill",
+  "version": "0.1.0",
+  "description": "Answer strictly from the app's knowledge base: retrieve first, ground every claim in retrieved passages with citations, and refuse to invent when nothing relevant is found.",
+  "intentHints": [
+    "answer from documents",
+    "chat with my docs",
+    "knowledge base question",
+    "cite sources from files",
+    "retrieval augmented answer"
+  ],
+  "appliesTo": ["knowledge.search"],
+  "procedureFile": "procedure.md"
+}
