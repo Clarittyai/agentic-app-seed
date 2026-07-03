@@ -47,6 +47,7 @@
     --brand-accent: 227 100% 58%;     /* #2957FF — white-on-accent ≈ 5.4:1 (AA) */
     --brand-accent-600: 230 88% 50%;  /* darker hover/active shade */
     --brand-accent-foreground: 0 0% 100%; /* text/icon ON the accent fill (white in light mode) */
+    --chart-1: var(--brand-accent); /* dataviz series hue (HSL triple, consumed as hsl(var(--chart-1))); re-resolves in .dark automatically — override in theme.css for a distinct chart hue */
     --brand-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
   }
 

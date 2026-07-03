@@ -46,6 +46,9 @@ export interface KpiWidgetData {
   primary: KpiStat;
   stats?: KpiStat[];
   last_updated?: string;
+  /** Optional recent series → renders a Sparkline (finance/sales KPI
+   *  widgets should send it — see docs/golden/INDEX.md). */
+  trend?: number[];
 }
 
 // DigestWidget data (Marketing/Ops/Legal/Exec) — a short summarized list.

@@ -2,11 +2,13 @@ import { WidgetContainer, WidgetBadge } from '@clarittyai/widget-toolkit';
 import { cn } from '@/lib/utils';
 import type { WidgetSize } from '@/lib/widget-sizes';
 import { type KpiWidgetData, type KpiStat } from './types';
+import { Sparkline } from '../charts';
 
 /**
- * KpiMetricWidget — a focal metric + optional secondary stats. Use for Finance/
- * Exec digests (runway, AR/AP, sent-today, revenue). Presentational: pass a
- * KpiWidgetData. Read-only — the safest widget for live demos.
+ * KpiMetricWidget — a focal metric + optional secondary stats + an optional
+ * trend sparkline (`data.trend`). Use for Finance/Exec/Sales digests (runway,
+ * AR/AP, revenue, pipeline). Presentational: pass a KpiWidgetData. Read-only —
+ * the safest widget for live demos.
  */
 export function KpiMetricWidget({
   size, data, className,
@@ -24,6 +26,9 @@ export function KpiMetricWidget({
           <div className="text-4xl font-bold leading-none text-foreground">{primary.value}</div>
           <div className="mt-1 text-xs font-medium text-muted-foreground">{primary.label}</div>
         </div>
+        {(data.trend?.length ?? 0) >= 2 && (
+          <Sparkline series={data.trend as number[]} className="h-6 w-full" />
+        )}
         {primary.delta && <DeltaBadge stat={primary} />}
       </WidgetContainer>
     );
@@ -39,6 +44,9 @@ export function KpiMetricWidget({
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
           {stats.slice(0, 2).map((s) => <StatRow key={s.label} stat={s} />)}
+          {(data.trend?.length ?? 0) >= 2 && (
+            <Sparkline series={data.trend as number[]} className="h-6 w-full" />
+          )}
         </div>
       </WidgetContainer>
     );
@@ -52,6 +60,9 @@ export function KpiMetricWidget({
           <span className="text-sm text-muted-foreground">{primary.label}</span>
           {primary.delta && <DeltaBadge stat={primary} />}
         </div>
+        {(data.trend?.length ?? 0) >= 2 && (
+          <Sparkline series={data.trend as number[]} className="mt-2 h-7 w-full" />
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2.5 overflow-hidden">
         {stats.slice(0, 4).map((s) => <StatRow key={s.label} stat={s} />)}
