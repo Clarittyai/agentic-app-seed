@@ -1,0 +1,21 @@
+{
+  "id": "memory.recall",
+  "kind": "tool",
+  "version": "1.0.0",
+  "broker": true,
+  "description": "Recall the current user's most relevant remembered facts/preferences for a query. Call at the start of a run to personalise behaviour with what the app already knows about the user.",
+  "intentHints": [
+    "what do I know about this user",
+    "recall past preferences",
+    "personalise using history",
+    "remember previous context"
+  ],
+  "input": {
+    "query": { "type": "string", "required": true },
+    "topK": { "type": "integer", "required": false, "default": 5 }
+  },
+  "output": {
+    "memories": { "type": "array", "required": true }
+  },
+  "handler": "broker"
+}

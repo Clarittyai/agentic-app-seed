@@ -1,0 +1,23 @@
+{
+  "id": "memory.save",
+  "kind": "tool",
+  "version": "1.0.0",
+  "broker": true,
+  "description": "Remember a durable fact or preference for the current user, persisted across runs. Pass a stable memKey to overwrite that memory instead of accumulating duplicates.",
+  "intentHints": [
+    "remember the user's preference",
+    "store this for next time",
+    "keep track across runs",
+    "learn from feedback"
+  ],
+  "input": {
+    "text": { "type": "string", "required": true },
+    "memKey": { "type": "string", "required": false },
+    "importance": { "type": "number", "required": false }
+  },
+  "output": {
+    "id": { "type": "string", "required": false },
+    "saved": { "type": "boolean", "required": true }
+  },
+  "handler": "broker"
+}
