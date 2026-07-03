@@ -38,7 +38,11 @@
               }
             ],
             "validation": {
-              "enum": ["fast", "balanced", "quality"]
+              "enum": [
+                "fast",
+                "balanced",
+                "quality"
+              ]
             }
           },
           {
@@ -211,7 +215,15 @@
   "clarity_marketplace": {
     "version": "1.0.0",
     "category": "templates",
-    "tags": ["template", "starter", "agentic-app", "ai", "agents", "workflows", "triggers"],
+    "tags": [
+      "template",
+      "starter",
+      "agentic-app",
+      "ai",
+      "agents",
+      "workflows",
+      "triggers"
+    ],
     "pricing_model": "free",
     "developer": {
       "name": "",
@@ -300,7 +312,9 @@
       "health_endpoint": "/health",
       "widget_endpoint": "/api/widget",
       "auth_method": "x-user-id-header",
-      "required_headers": ["X-User-ID"],
+      "required_headers": [
+        "X-User-ID"
+      ],
       "rate_limits": {
         "per_minute": 60,
         "per_hour": 1000
@@ -317,7 +331,11 @@
     },
     "deployment": {
       "docker_compose_version": "3.8",
-      "services": ["postgres", "backend", "frontend"],
+      "services": [
+        "postgres",
+        "backend",
+        "frontend"
+      ],
       "health_check_path": "/health",
       "ready_check_path": "/health",
       "startup_timeout_seconds": 60
@@ -338,5 +356,10 @@
       "no_sql_injection": true,
       "docker_security_scan": true
     }
+  },
+  "onboarding": {
+    "_comment": "AI onboarding: 2-4 questions whose answers TAILOR the agents (injected into user_context via backend/shared/onboarding.py) and define the user's progress metric. Filled per app at generation; empty = onboarding surface hidden.",
+    "questions": [],
+    "progress_metric": ""
   }
 }

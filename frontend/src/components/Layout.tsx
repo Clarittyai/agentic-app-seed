@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ListTodo } from 'lucide-react';
+import { Home, ListTodo, Settings as SettingsIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
 import { IntegrationsChecklist } from './IntegrationsChecklist';
+import { OnboardingFlow } from './OnboardingFlow';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,12 +13,14 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   // Credentials + OAuth are owned by the Claritty platform (the broker holds
-  // tokens; the app never does). But the END USER connects IN-CONTEXT here: the
-  // <IntegrationsChecklist> (first-run) and inline "Connect X" CTAs open the
-  // platform-hosted connect popup. The nav stays minimal — connect is inline.
+  // tokens; the app never does). The END USER connects IN-CONTEXT: the
+  // <IntegrationsChecklist> (first-run) and inline "Connect X" CTAs, and the
+  // always-available Settings → Integrations page (host bridge when embedded,
+  // platform popup standalone). Every app ships the Settings nav item.
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Tasks', href: '/tasks', icon: ListTodo },
+    { name: 'Settings', href: '/settings', icon: SettingsIcon },
   ];
 
   // App glyph — the app's own initial in a themed tile. Derived from the
@@ -89,6 +92,7 @@ export default function Layout({ children }: LayoutProps) {
       <main className="min-h-[calc(100vh-16rem)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
           <IntegrationsChecklist />
+          <OnboardingFlow />
           {children}
         </div>
       </main>

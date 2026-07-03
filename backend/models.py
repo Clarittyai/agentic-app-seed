@@ -20,6 +20,8 @@ from datetime import datetime
 import uuid
 from backend.database import Base
 from backend.shared.spine import ItemMixin, LifecycleMixin
+# KEEP: per-user AI-onboarding profile (registered on Base for create_all).
+from backend.shared.onboarding import OnboardingProfile  # noqa: F401
 
 
 class Result(Base, ItemMixin, LifecycleMixin):

@@ -367,10 +367,41 @@ export interface IntegrationsStatus {
 }
 
 /** The app's required integrations + per-user connection status. Powers the
- * setup checklist + Integrations page. Returns no required integrations for a
- * self-contained app. */
+ * first-run checklist AND the Settings → Integrations page. Returns no
+ * required integrations for a self-contained app. */
 export const getRequiredIntegrations = async (): Promise<IntegrationsStatus> => {
   const response = await api.get('/api/integrations/required');
+  return response.data;
+};
+
+// ── AI onboarding (per-user profile that tailors the agents) ────────────────
+export interface OnboardingQuestion {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'select';
+  options?: { value: string; label: string }[];
+  help?: string;
+  placeholder?: string;
+}
+export interface OnboardingStatus {
+  questions: OnboardingQuestion[];
+  completed: boolean;
+  answers: Record<string, unknown>;
+}
+
+/** The app's onboarding questions + this user's saved answers. Questions are
+ * authored per app in app-config.json → `onboarding.questions`. */
+export const getOnboarding = async (): Promise<OnboardingStatus> => {
+  const response = await api.get('/api/onboarding');
+  return response.data;
+};
+
+/** Save the user's onboarding answers. The backend composes them into the
+ * profile context every agent run reads (see backend/shared/onboarding.py). */
+export const saveOnboarding = async (
+  answers: Record<string, unknown>,
+): Promise<OnboardingStatus> => {
+  const response = await api.post('/api/onboarding', { answers });
   return response.data;
 };
 
