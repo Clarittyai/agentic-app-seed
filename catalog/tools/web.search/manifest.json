@@ -1,0 +1,22 @@
+{
+  "id": "web.search",
+  "kind": "tool",
+  "version": "1.0.0",
+  "broker": true,
+  "description": "Search the live web for current, external facts and return ranked results (title, url, snippet). A platform capability — no integration needed. Use for anything time-sensitive or outside the app's own data.",
+  "intentHints": [
+    "look it up online",
+    "find current information",
+    "research the latest",
+    "search the web",
+    "get up-to-date facts"
+  ],
+  "input": {
+    "query": { "type": "string", "required": true },
+    "count": { "type": "integer", "required": false, "default": 5 }
+  },
+  "output": {
+    "results": { "type": "array", "required": true }
+  },
+  "handler": "broker"
+}

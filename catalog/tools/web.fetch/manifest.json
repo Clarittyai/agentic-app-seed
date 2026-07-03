@@ -1,0 +1,22 @@
+{
+  "id": "web.fetch",
+  "kind": "tool",
+  "version": "1.0.0",
+  "broker": true,
+  "description": "Fetch a web page's readable text (e.g. a URL returned by web.search) so the agent can read and cite the source. Platform capability; server-side fetch is SSRF-guarded.",
+  "intentHints": [
+    "read this page",
+    "open the article",
+    "get the full text of a URL",
+    "read the source before citing"
+  ],
+  "input": {
+    "url": { "type": "string", "required": true }
+  },
+  "output": {
+    "url": { "type": "string", "required": false },
+    "title": { "type": "string", "required": false },
+    "text": { "type": "string", "required": false }
+  },
+  "handler": "broker"
+}
