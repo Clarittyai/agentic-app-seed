@@ -38,6 +38,9 @@ in `claritty_sdk` are binders; the manifest carries the data.
    [`.claude/prompts/brainstorm.md`](../prompts/brainstorm.md). If signed in to the
    CLI, `claritty discover outcomes "<problem>"` / `claritty discover questions
    "<problem>"` give the platform's real output (else generate them per the playbook).
+   Discovery is the **only** question round: once the brief + definition of done
+   exist, build autonomously against them — no plan-approval pauses, no mid-build
+   questions; decide open forks by the definition of done and note the call in the brief.
 1. Read [`AGENTIC.md`](../../AGENTIC.md) (one-page overview).
 2. Grep [`catalog/INDEX.md`](../../catalog/INDEX.md) for the integration / tool / agent / **skill** you need. If it's there, reference it by id in `intelligence.yaml`. Don't reinvent.
    - **For every custom agent, also scan the `## Skills` section** — if one fits the agent's job (by its "Fits agents that:" tools or its intent), open `catalog/skills/<id>/procedure.md` and inline that vetted procedure into the agent's `prompt.md`. The procedure is proven; writing the steps freehand is the thing to avoid.

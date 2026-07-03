@@ -21,6 +21,11 @@ playbook is **`.claude/prompts/brainstorm.md`**. In short:
 4. **Write the brief** → `docs/plans/0001-brief.md`, and set
    `app-config.json` → `clarity_marketplace.core_action.definition_of_done`.
 
+**One question round, then autonomous.** Discovery is the only time to question the
+developer — one batch. Afterwards the brief + definition of done are the goal that
+decides everything: don't pause for plan approval or ask mid-build; resolve open
+forks by what best serves the definition of done and record the call in the brief.
+
 **Parity (optional):** if the developer is signed in to the Claritty CLI, get the
 platform's *real* discovery output instead of improvising:
 

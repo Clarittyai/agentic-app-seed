@@ -27,6 +27,14 @@ discovery: **problem → two ideal outcomes → a few focused follow-ups → a b
 Use the SAME method here before you design or write anything. It takes ~2 minutes
 and makes the rest of the build obvious.
 
+> **One question round, then autonomous.** Discovery is the ONLY time you question
+> the developer — one batch (outcomes + follow-ups + look/name). The chosen outcome
+> plus the answers become the **goal** (the brief + definition of done), and every
+> later decision — plan shape, data model, integration vs seed, design, naming,
+> trade-offs — is made by you against that goal, never asked. Hit a fork the brief
+> doesn't answer? Pick what best serves the definition of done, record the decision
+> in the brief, and keep building.
+
 > **Parity (hybrid):** if the developer is signed in to the CLI, get the *real*
 > platform output instead of improvising — run
 > `claritty discover outcomes "<their problem>"` and
