@@ -59,6 +59,23 @@ make apps genuinely intelligent. Just list the tool id in the agent's `tools[]`
 These are listed in [`catalog/INDEX.md`](catalog/INDEX.md) under Tools; treat them
 as first-class primitives when composing an app's intelligence.
 
+**App-data RAG — index the app's OWN data (not just uploads).** Uploaded files are
+auto-indexed, but you can also make the app's own records searchable from app CODE
+(a custom tool or route) via `ctx.knowledge` / `ctx.memory` — ingest a record the
+moment it's created, then answer over it later:
+
+```python
+@tool(id="notes.create")
+def create_note(input: Dict[str, Any], ctx: ToolCtx) -> Dict[str, Any]:
+    note = db.notes.insert(user_id=ctx.user_id, text=input["text"])
+    ctx.knowledge.ingest(text=input["text"], document_id=note.id)  # now searchable
+    return {"note_id": note.id}
+
+# later, an agent (or route) answers over everything the user has:
+hits = ctx.knowledge.search("what did I note about pricing?")
+ctx.memory.save("prefers terse answers", mem_key="tone")   # remember across runs
+```
+
 ### Example — one agent, all three capabilities
 
 A research assistant that answers over the user's uploaded docs, remembers them,
