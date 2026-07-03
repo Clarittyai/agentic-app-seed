@@ -59,6 +59,48 @@ make apps genuinely intelligent. Just list the tool id in the agent's `tools[]`
 These are listed in [`catalog/INDEX.md`](catalog/INDEX.md) under Tools; treat them
 as first-class primitives when composing an app's intelligence.
 
+### Example — one agent, all three capabilities
+
+A research assistant that answers over the user's uploaded docs, remembers them,
+and grounds current facts on the live web. Just list the capability tool ids in
+`tools:` — no integration, no keys:
+
+```yaml
+# intelligence.yaml
+agents:
+  - id: research-assistant
+    source: custom
+    promptFile: backend/custom/agents/research_assistant/prompt.md
+    description: Answers the user's question from their documents + the live web, and remembers them.
+    reasoning: deep            # Opus + extended thinking + grounded, self-critiquing prompt
+    integrations: []           # capabilities need NO integration
+    tools:
+      - memory.recall          # personalise from what we know about this user
+      - knowledge.search       # RAG over their uploaded documents / app data
+      - web.search             # current external facts
+      - web.fetch              # read a source before citing it
+      - memory.save            # remember durable preferences learned this run
+    input:  { question: { type: string, required: true } }
+    output: { answer: { type: string, required: true } }
+    timeout: 120
+
+workflows:
+  - id: answer-question
+    type: dag
+    steps:
+      - id: answer
+        agent: research-assistant
+        input: { question: "${input.question}" }
+    outputs: { answer: "${steps.answer.output.answer}" }
+```
+
+The `prompt.md` inlines the auto-fitting skills (`ground-answer-in-knowledge`,
+`research-with-web-citations`, `remember-user-preferences`) and says: *recall the
+user first; answer from `knowledge.search` and cite the passages; for anything
+current, `web.search` + `web.fetch` and cite the URL; never invent; save a durable
+preference at the end.* The deep-tier reasoning discipline reinforces this
+automatically. That's a genuinely intelligent app in ~20 lines.
+
 ---
 
 ## Authoring loop
