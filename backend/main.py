@@ -15,6 +15,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import os
 import hmac
+import json
 import logging
 
 from backend.database import get_db, init_db, engine
@@ -917,6 +918,163 @@ async def execute_workflow(
         db.refresh(execution)
 
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
+
+
+# ─── Talk to the team ────────────────────────────────────────────────────────
+# The Team Room chat (and later Slack/MCP channels) speaks to the app's
+# COORDINATOR here. Works for both intelligence modes: a declared team workflow
+# supplies the roster; a DAG-only manifest gets an ad-hoc coordinator over all
+# agents. Conversation persists per-user in TeamMessage (framework model).
+
+_TEAM_CHAT_COORDINATOR_PROMPT = (
+    "You are chatting with the team's OWNER. Answer their message directly and "
+    "conversationally. Delegate to teammates only when their skills are needed "
+    "to fulfil the request; for simple questions about status or capability, "
+    "answer yourself.\n"
+    "When you call finish:\n"
+    "- output.reply = the user-facing reply (plain text, friendly, concise).\n"
+    "- output.components (optional) = data worth SHOWING, as an array of "
+    "display components. This chat is the team's only screen — whenever the "
+    "answer contains numbers, rankings, or records, include components instead "
+    "of cramming data into prose. Allowed shapes:\n"
+    '  {"type":"stat","label":str,"value":str|num,"delta":str?}\n'
+    '  {"type":"table","title":str?,"columns":[str],"rows":[[cell,…]]} (≤8 rows)\n'
+    '  {"type":"list","title":str?,"items":[str]} (≤8 items)\n'
+    '  {"type":"bars","label":str,"values":[num],"labels":[str]?} (≤12 values)\n'
+    "Never invent data for components — only real results from teammates/tools."
+)
+
+
+def _team_chat_workflow(boot):
+    """Synthesize the chat coordinator's workflow: reuse a declared team
+    workflow's roster + persona when one exists, else coordinate ALL agents."""
+    from claritty_sdk.manifest import WorkflowDecl
+
+    manifest = boot.manifest
+    team_wf = next(
+        (w for w in (manifest.workflows or []) if getattr(w, "type", "") == "team"),
+        None,
+    )
+    roster = list(team_wf.team) if (team_wf and team_wf.team) else [
+        a.id for a in (manifest.agents or [])
+    ]
+    if not roster:
+        return None
+    persona = getattr(team_wf, "coordinator_prompt", None) if team_wf else None
+    prompt = (persona + "\n\n" if persona else "") + _TEAM_CHAT_COORDINATOR_PROMPT
+    return WorkflowDecl(
+        id="__team_chat__",
+        type="team",
+        team=roster,
+        maxIterations=8,
+        coordinatorPrompt=prompt,
+    )
+
+
+@app.post("/api/team/message")
+async def team_message(
+    body: Optional[Dict[str, Any]] = None,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Send a message to the team; the coordinator replies (synchronously)."""
+    text = str((body or {}).get("message") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="message is required")
+    boot = _get_boot()
+    if boot is None:
+        raise HTTPException(status_code=503, detail="team runtime not ready")
+    chat_wf = _team_chat_workflow(boot)
+    if chat_wf is None:
+        raise HTTPException(status_code=404, detail="this app has no team agents")
+
+    # Persist the user's message first — the thread survives a failed run.
+    user_msg = models.TeamMessage(user_id=user_id, role="user", content=text)
+    db.add(user_msg)
+    db.commit()
+
+    # Short conversation memory so follow-ups make sense.
+    history = (
+        db.query(models.TeamMessage)
+        .filter(models.TeamMessage.user_id == user_id)
+        .order_by(models.TeamMessage.created_at.desc())
+        .limit(8)
+        .all()
+    )
+    conversation = [
+        {"role": m.role, "content": m.content} for m in reversed(history)
+    ]
+
+    from claritty_sdk.runtime.team_runner import run_team
+
+    try:
+        output = await run_team(
+            manifest=boot.manifest,
+            workflow=chat_wf,
+            inputs={"message": text, "conversation": conversation},
+            user_id=user_id,
+        )
+    except Exception as e:
+        logger.error(f"team chat run failed: {e}")
+        raise HTTPException(status_code=500, detail="the team could not answer")
+
+    reply = ""
+    components: list = []
+    payload = None
+    if isinstance(output, dict):
+        reply = str(output.get("reply") or "").strip()
+        raw_components = output.get("components")
+        if isinstance(raw_components, list):
+            # Keep only well-formed display components (the chat renders these).
+            components = [
+                c
+                for c in raw_components[:8]
+                if isinstance(c, dict)
+                and c.get("type") in ("stat", "table", "list", "bars")
+            ]
+        rest = {
+            k: v for k, v in output.items() if k not in ("reply", "components")
+        }
+        payload = {
+            **({"components": components} if components else {}),
+            **rest,
+        } or None
+    if not reply:
+        reply = (
+            json.dumps(output, default=str)[:2000]
+            if output
+            else "Done — no further details."
+        )
+
+    team_msg = models.TeamMessage(
+        user_id=user_id, role="team", content=reply, payload=payload
+    )
+    db.add(team_msg)
+    db.commit()
+    db.refresh(team_msg)
+
+    return {
+        "reply": reply,
+        "components": components,
+        "message": team_msg.to_dict(),
+    }
+
+
+@app.get("/api/team/messages")
+async def team_messages(
+    limit: int = 50,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """The caller's conversation with the team, oldest → newest."""
+    rows = (
+        db.query(models.TeamMessage)
+        .filter(models.TeamMessage.user_id == user_id)
+        .order_by(models.TeamMessage.created_at.desc())
+        .limit(max(1, min(limit, 200)))
+        .all()
+    )
+    return {"messages": [m.to_dict() for m in reversed(rows)]}
 
 
 @app.get("/api/workflows/executions/{execution_id}")

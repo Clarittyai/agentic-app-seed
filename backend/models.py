@@ -49,6 +49,39 @@ class Result(Base, ItemMixin, LifecycleMixin):
         return f"<Result id={self.id} kind={self.kind} status={self.status}>"
 
 
+class TeamMessage(Base):
+    """
+    Talk-to-the-team conversation log (KEEP — framework, not domain).
+
+    The platform's Team Room chat (and later Slack/MCP channels) posts user
+    messages to `POST /api/team/message`; the coordinator's reply is stored
+    here too. Per-user thread (multi-tenancy via user_id), newest-last.
+    """
+    __tablename__ = "team_messages"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, nullable=False, index=True)  # multi-tenancy key
+
+    role = Column(String, nullable=False, index=True)  # "user" | "team"
+    content = Column(Text, nullable=False)
+    # Optional structured payload the coordinator returned alongside its reply.
+    payload = Column(JSON)
+
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "role": self.role,
+            "content": self.content,
+            "payload": self.payload,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self):
+        return f"<TeamMessage id={self.id} role={self.role}>"
+
+
 class Task(Base):
     """
     The seed's example domain entity: a simple, AI-prioritized to-do item.
