@@ -291,15 +291,15 @@
     }
   }
 
-  /* Desktop hover effects */
+  /* Desktop hover effect — a calm background tint. Never movement, never a
+     shadow change (hover = color transition only; see design-tokens.md). */
   @media (min-width: 1025px) {
     .hover-lift {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: background-color 0.2s ease;
     }
 
     .hover-lift:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.15);
+      background-color: hsl(var(--muted) / 0.6);
     }
   }
 
