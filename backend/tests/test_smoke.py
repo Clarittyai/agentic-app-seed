@@ -32,3 +32,23 @@ def test_graph_builds():
     assert isinstance(graph, dict)
     assert "nodes" in graph and "edges" in graph
     assert len(graph["nodes"]) >= 1
+
+
+def test_no_startup_data_seeding():
+    """First run must be a connect-first EMPTY state — the app never seeds
+    sample/mock rows on boot (mirrors the identity gate's blocking check)."""
+    import inspect
+    import re
+
+    import backend.database as database
+
+    seeders = [n for n in dir(database) if n.startswith("seed_")]
+    assert seeders == [], f"backend.database defines startup seeders: {seeders}"
+
+    import backend.main as main
+
+    src = re.sub(r"#.*", "", inspect.getsource(main))
+    assert not re.search(r"\bseed_[a-z0-9_]*\s*\(", src), (
+        "backend/main.py calls a seeder on startup — first run must show real "
+        "data or an honest empty state"
+    )
