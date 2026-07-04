@@ -13,6 +13,7 @@ import {
   type RequiredIntegration,
 } from '@/lib/api';
 import {
+  askLines,
   buildScript,
   conciergeReducer,
   initialConciergeState,
@@ -126,36 +127,42 @@ export function ConciergeOnboarding() {
     return () => window.removeEventListener('keydown', onKey);
   }, [visible, skip]);
 
-  // ── answer submission ──────────────────────────────────────────────────────
+  // ── answer submission — the ack SETTLES (live line raced against a short
+  // timeout, template guaranteed) before anything animates, so the chat never
+  // restarts a bubble mid-reveal.
   const submitAnswer = (q: OnboardingQuestion, value: unknown, userText: string) => {
+    const nextStep = state.script[state.index + 1];
     const label =
       q.type === 'select'
         ? (q.options?.find((o) => o.value === value)?.label ?? String(value))
         : String(value);
-    const ack = renderLine(q.ack, q.ack_fallback, 'Got it — {label}.', {
+    const templateAck = renderLine(q.ack, q.ack_fallback, 'Got it — {label}.', {
       value,
       label,
       persona,
       ctx: facts,
     });
-    dispatch({ type: 'SUBMIT', key: q.key, value, userText, ack });
+    dispatch({ type: 'SUBMIT', key: q.key, value, userText });
     // Incremental save — resumable; failures self-heal on the final save.
     saveOnboarding({ [q.key]: value }, { complete: false }).catch(() => undefined);
-    // Live concierge voice — replaces the queued ack if it lands in time.
-    conciergeLine({ step_key: q.key, value, label })
-      .then((r) => {
-        if (r?.text) dispatch({ type: 'ACK_TEXT', text: r.text });
-      })
-      .catch(() => undefined);
+
+    const liveAck = conciergeLine({ step_key: q.key, value, label })
+      .then((r) => (r?.text ? r.text : templateAck))
+      .catch(() => templateAck);
+    const timeout = new Promise<string>((resolve) =>
+      window.setTimeout(() => resolve(templateAck), 1600),
+    );
+    void Promise.race([liveAck, timeout]).then((ack) => {
+      dispatch({ type: 'AI_LINES', lines: [ack, ...askLines(nextStep)] });
+    });
   };
 
   const skipQuestion = (q: OnboardingQuestion) => {
+    const nextStep = state.script[state.index + 1];
+    dispatch({ type: 'SUBMIT', key: q.key, value: '', userText: 'Skip' });
     dispatch({
-      type: 'SUBMIT',
-      key: q.key,
-      value: '',
-      userText: 'Skip',
-      ack: 'No problem — you can set that any time in Settings.',
+      type: 'AI_LINES',
+      lines: ['No problem — you can set that any time in Settings.', ...askLines(nextStep)],
     });
   };
 
@@ -215,7 +222,9 @@ export function ConciergeOnboarding() {
         aria-label="Set up this app"
       >
         {/* Backdrop + accent aura */}
-        <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
+        {/* Theme-safe scrim: a fixed deep-navy dim (the kit Dialog value) — a
+            foreground-based tint would invert into a white wash in dark mode. */}
+        <div className="absolute inset-0 bg-[hsl(222_47%_6%/0.62)] backdrop-blur-sm" />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -265,18 +274,24 @@ export function ConciergeOnboarding() {
             {state.transcript.map((b) => (
               <BubbleView key={b.id} bubble={b} animate={false} />
             ))}
-            {state.phase === 'speaking' &&
-              state.pending.map((text, i) => (
-                <SpeakingBubble
-                  key={`p${state.index}-${i}-${text.slice(0, 12)}`}
-                  text={text}
-                  delay={i * 0.25}
-                  reduceMotion={!!reduceMotion}
-                  onDone={
-                    i === state.pending.length - 1 ? () => dispatch({ type: 'SPOKEN' }) : undefined
-                  }
-                />
-              ))}
+            {state.phase === 'thinking' && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-2.5">
+                  <TypingDots />
+                </div>
+              </div>
+            )}
+            {state.phase === 'speaking' && (
+              <SpeakSequence
+                key={`seq-${state.index}-${state.transcript.length}`}
+                lines={state.pending}
+                reduceMotion={!!reduceMotion}
+                onAllDone={() => dispatch({ type: 'SPOKEN' })}
+                onLineShown={() =>
+                  transcriptRef.current?.scrollTo({ top: 999999, behavior: 'auto' })
+                }
+              />
+            )}
 
             {/* Connect step */}
             {state.phase === 'connect' && currentStep?.kind === 'connect' && (
@@ -292,21 +307,31 @@ export function ConciergeOnboarding() {
                   connectUrl={currentStep.integration.connect_url}
                   appId={appId}
                   variant="primary"
-                  onConnected={() =>
+                  onConnected={() => {
+                    const nextStep = state.script[state.index + 1];
+                    dispatch({ type: 'ADVANCE' });
                     dispatch({
-                      type: 'CONNECTED',
-                      ack: 'Connected. I can work from your real data now.',
-                    })
-                  }
+                      type: 'AI_LINES',
+                      lines: [
+                        'Connected. I can work from your real data now.',
+                        ...askLines(nextStep),
+                      ],
+                    });
+                  }}
                 />
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    const nextStep = state.script[state.index + 1];
+                    dispatch({ type: 'ADVANCE' });
                     dispatch({
-                      type: 'SKIP_STEP',
-                      ack: 'No problem — you can connect any time from Settings.',
-                    })
-                  }
+                      type: 'AI_LINES',
+                      lines: [
+                        'No problem — you can connect any time from Settings.',
+                        ...askLines(nextStep),
+                      ],
+                    });
+                  }}
                   className="min-h-11 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Skip
@@ -394,66 +419,98 @@ function BubbleView({ bubble, animate }: { bubble: Bubble; animate: boolean }) {
   );
 }
 
-/** AI line revealing word-by-word after a brief typing indicator. */
-function SpeakingBubble({
-  text,
-  delay,
+/** Sequential chat reveal: ONE line at a time — brief dots, then a word-fade;
+ * earlier lines sit still. Instant under reduced motion. */
+function SpeakSequence({
+  lines,
   reduceMotion,
-  onDone,
+  onAllDone,
+  onLineShown,
 }: {
-  text: string;
-  delay: number;
+  lines: string[];
   reduceMotion: boolean;
-  onDone?: () => void;
+  onAllDone: () => void;
+  onLineShown?: () => void;
 }) {
+  const [current, setCurrent] = useState(0);
   const [typing, setTyping] = useState(!reduceMotion);
-  const words = useMemo(() => text.split(' '), [text]);
   const doneRef = useRef(false);
-  const finish = useCallback(() => {
+
+  const finishAll = useCallback(() => {
     if (doneRef.current) return;
     doneRef.current = true;
-    onDone?.();
-  }, [onDone]);
+    onAllDone();
+  }, [onAllDone]);
 
   useEffect(() => {
     if (reduceMotion) {
-      finish();
+      finishAll();
       return;
     }
-    const t = window.setTimeout(() => setTyping(false), 450 + delay * 1000);
+    setTyping(true);
+    const t = window.setTimeout(() => {
+      setTyping(false);
+      onLineShown?.();
+    }, 380);
     return () => window.clearTimeout(t);
-  }, [reduceMotion, delay, finish]);
+  }, [current, reduceMotion, finishAll, onLineShown]);
 
-  if (reduceMotion) {
-    return <BubbleView bubble={{ id: 'r', role: 'ai', text }} animate={false} />;
+  if (reduceMotion || lines.length === 0) {
+    return (
+      <>
+        {lines.map((text, i) => (
+          <BubbleView key={i} bubble={{ id: `s${i}`, role: 'ai', text }} animate={false} />
+        ))}
+      </>
+    );
   }
 
+  const advance = () => {
+    if (current >= lines.length - 1) {
+      finishAll();
+    } else {
+      setCurrent((n) => n + 1);
+    }
+  };
+
   return (
-    <div className="flex justify-start">
-      <div className="max-w-[85%] rounded-2xl rounded-tl-md bg-muted px-4 py-2.5 text-sm leading-relaxed text-foreground">
-        {typing ? (
-          <TypingDots />
-        ) : (
-          <motion.span
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.028 } } }}
-            onAnimationComplete={finish}
-          >
-            {words.map((w, i) => (
-              <motion.span
-                key={i}
-                className="inline"
-                variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-              >
-                {w}
-                {i < words.length - 1 ? ' ' : ''}
-              </motion.span>
-            ))}
-          </motion.span>
-        )}
+    <>
+      {lines.slice(0, current).map((text, i) => (
+        <BubbleView key={i} bubble={{ id: `s${i}`, role: 'ai', text }} animate={false} />
+      ))}
+      <div className="flex justify-start">
+        <div className="max-w-[85%] rounded-2xl rounded-tl-md bg-muted px-4 py-2.5 text-sm leading-relaxed text-foreground">
+          {typing ? (
+            <TypingDots />
+          ) : (
+            <WordFade key={current} text={lines[current]} onDone={advance} />
+          )}
+        </div>
       </div>
-    </div>
+    </>
+  );
+}
+
+function WordFade({ text, onDone }: { text: string; onDone: () => void }) {
+  const words = useMemo(() => text.split(' '), [text]);
+  return (
+    <motion.span
+      initial="hidden"
+      animate="visible"
+      variants={{ visible: { transition: { staggerChildren: 0.026 } } }}
+      onAnimationComplete={onDone}
+    >
+      {words.map((w, i) => (
+        <motion.span
+          key={i}
+          className="inline"
+          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+        >
+          {w}
+          {i < words.length - 1 ? ' ' : ''}
+        </motion.span>
+      ))}
+    </motion.span>
   );
 }
 

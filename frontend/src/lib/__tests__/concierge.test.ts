@@ -143,50 +143,53 @@ describe('conciergeReducer', () => {
     expect(s.transcript.map((b) => b.text)).toEqual(['Hello.', 'Target?']);
   });
 
-  it('SUBMIT records the answer, user bubble, ack + next ask', () => {
+  it('SUBMIT records the answer + user bubble and enters thinking', () => {
     let s = conciergeReducer(boot(), { type: 'SPOKEN' });
-    s = conciergeReducer(s, {
-      type: 'SUBMIT',
-      key: 'target',
-      value: 5,
-      userText: '5 logos',
-      ack: 'Noted: 5.',
-    });
+    s = conciergeReducer(s, { type: 'SUBMIT', key: 'target', value: 5, userText: '5 logos' });
     expect(s.answers).toEqual({ target: 5 });
     expect(s.transcript.at(-1)?.role).toBe('user');
-    expect(s.pending).toEqual(['Noted: 5.', 'Lead?']);
-    expect(s.phase).toBe('speaking');
+    expect(s.pending).toEqual([]);
+    expect(s.phase).toBe('thinking');
   });
 
-  it('ACK_TEXT swaps the queued ack for the live line', () => {
+  it('AI_LINES settles the ack + next ask, then SPOKEN opens input', () => {
     let s = conciergeReducer(boot(), { type: 'SPOKEN' });
-    s = conciergeReducer(s, {
-      type: 'SUBMIT',
-      key: 'target',
-      value: 5,
-      userText: '5',
-      ack: 'template ack',
-    });
-    s = conciergeReducer(s, { type: 'ACK_TEXT', text: 'live ack' });
-    expect(s.pending[0]).toBe('live ack');
-    expect(s.pending[1]).toBe('Lead?');
+    s = conciergeReducer(s, { type: 'SUBMIT', key: 'target', value: 5, userText: '5' });
+    s = conciergeReducer(s, { type: 'AI_LINES', lines: ['Noted: 5.', 'Lead?'] });
+    expect(s.pending).toEqual(['Noted: 5.', 'Lead?']);
+    expect(s.phase).toBe('speaking');
+    s = conciergeReducer(s, { type: 'SPOKEN' });
+    expect(s.phase).toBe('input');
+  });
+
+  it('ADVANCE (connect/skip) moves on without a user bubble', () => {
+    let s = boot();
+    const before = s.transcript.length;
+    s = conciergeReducer(s, { type: 'ADVANCE' });
+    expect(s.index).toBe(1);
+    expect(s.transcript.length).toBe(before);
+    expect(s.phase).toBe('thinking');
   });
 
   it('walks through to finale and closes', () => {
     let s = conciergeReducer(boot(), { type: 'SPOKEN' });
-    s = conciergeReducer(s, { type: 'SUBMIT', key: 'target', value: 5, userText: '5', ack: 'a' });
+    s = conciergeReducer(s, { type: 'SUBMIT', key: 'target', value: 5, userText: '5' });
+    s = conciergeReducer(s, { type: 'AI_LINES', lines: ['a', 'Lead?'] });
     s = conciergeReducer(s, { type: 'SPOKEN' });
-    s = conciergeReducer(s, {
-      type: 'SUBMIT',
-      key: 'lead_view',
-      value: 'progress',
-      userText: 'Progress',
-      ack: 'done',
-    });
+    s = conciergeReducer(s, { type: 'SUBMIT', key: 'lead_view', value: 'progress', userText: 'Progress' });
+    s = conciergeReducer(s, { type: 'AI_LINES', lines: ['done'] });
     s = conciergeReducer(s, { type: 'SPOKEN' });
     expect(s.phase).toBe('finale');
     s = conciergeReducer(s, { type: 'FINALE_DONE' });
     expect(s.phase).toBe('closed');
+  });
+
+  it('AI_LINES with no lines falls straight through to the step phase', () => {
+    let s = conciergeReducer(boot(), { type: 'SPOKEN' });
+    s = conciergeReducer(s, { type: 'SUBMIT', key: 'target', value: 5, userText: '5' });
+    s = conciergeReducer(s, { type: 'SUBMIT', key: 'lead_view', value: 'progress', userText: 'P' });
+    s = conciergeReducer(s, { type: 'AI_LINES', lines: [] });
+    expect(s.phase).toBe('finale');
   });
 
   it('resume starts at the first unanswered question with saved answers kept', () => {

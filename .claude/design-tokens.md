@@ -76,6 +76,21 @@ radius (`rounded-3xl`) is canonical and intentionally NOT one of these** — it 
 fixed (the widget validator enforces it); express widget personality inside the
 content, not on the outer tile.
 
+## Modal overlays — theme-safe scrims (hard rule)
+
+Every modal/sheet/dialog overlay must DIM the page in BOTH themes. The trap:
+`bg-foreground/40` looks right in light mode but INVERTS in dark mode
+(foreground is near-white there) — the page washes out into a milky gray
+instead of dimming. Never build a scrim from `foreground`.
+
+- **Scrim**: `bg-[hsl(222_47%_6%/0.62)] backdrop-blur-sm` — the kit Dialog's
+  fixed deep-navy dim; correct in light AND dark. (`bg-black/40` is an
+  acceptable simpler variant.)
+- **Panel**: `bg-card border border-border rounded-3xl` (or `rounded-2xl`) —
+  the tokens flip per theme so the panel is always right.
+- Verify every overlay by screenshotting BOTH `?theme=light` and
+  `?theme=dark` before calling it done.
+
 ## Dataviz color (`--chart-1`)
 
 Charts (`frontend/src/components/charts` — BarList / TrendLine / Sparkline) draw

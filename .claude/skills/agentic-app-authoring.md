@@ -203,7 +203,7 @@ When you build the frontend (`Dashboard.tsx`, `Widget.tsx`, pages), match the
   [`docs/golden/INDEX.md`](../../docs/golden/INDEX.md)**.
 
 Study their hierarchy, spacing, and state handling; then ADAPT to this app's
-domain — do not copy the content. The six non-negotiables they demonstrate:
+domain — do not copy the content. The seven non-negotiables they demonstrate:
 
 1. **Theme tokens only** — `text-foreground` / `text-muted-foreground` /
    `text-accent` / `bg-card` / `border`. NEVER hardcode hex or a fixed Tailwind
@@ -219,7 +219,11 @@ domain — do not copy the content. The six non-negotiables they demonstrate:
 5. **No AI tells** — no emoji in chrome, no decorative icons glued to headings,
    no rainbow/multi-stop gradients, no "Welcome to…" hero. lucide icons only
    where they aid scanning; sentence case; concise domain copy.
-6. **Domain-fit dataviz** — data-heavy categories (sales/GTM, finance, analytics,
+6. **Theme-safe modal scrims** — overlay dims in BOTH themes:
+   `bg-[hsl(222_47%_6%/0.62)] backdrop-blur-sm` (never a `bg-foreground/*`
+   scrim — it inverts to a white wash in dark mode); panel = `bg-card
+   border-border`. Screenshot light AND dark before done.
+7. **Domain-fit dataviz** — data-heavy categories (sales/GTM, finance, analytics,
    marketing, …) LEAD the landing page with a chart from
    `frontend/src/components/charts` (`BarList` / `TrendLine` / `Sparkline` —
    single series, `--chart-1` hue, table twin + tooltips included). Never

@@ -33,7 +33,14 @@ export interface Bubble {
   text: string;
 }
 
-export type Phase = 'loading' | 'speaking' | 'connect' | 'input' | 'finale' | 'closed';
+export type Phase =
+  | 'loading'
+  | 'speaking' // AI lines revealing one at a time
+  | 'thinking' // waiting for the (possibly live) ack — one dots bubble
+  | 'connect'
+  | 'input'
+  | 'finale'
+  | 'closed';
 
 export interface ConciergeState {
   script: ConciergeStep[];
@@ -53,10 +60,12 @@ export type ConciergeEvent =
       intro: string[];
     }
   | { type: 'SPOKEN' }
-  | { type: 'SUBMIT'; key: string; value: unknown; userText: string; ack: string }
-  | { type: 'ACK_TEXT'; text: string } // live concierge line replaces the queued ack
-  | { type: 'CONNECTED'; ack: string }
-  | { type: 'SKIP_STEP'; ack: string }
+  /** User answered: bubble + answer recorded, step advances, AI 'thinks'. */
+  | { type: 'SUBMIT'; key: string; value: unknown; userText: string }
+  /** Connect done / step skipped: advance + think (no user bubble). */
+  | { type: 'ADVANCE' }
+  /** The AI's next lines are settled (live or template) — speak them. */
+  | { type: 'AI_LINES'; lines: string[] }
   | { type: 'FINALE_DONE' }
   | { type: 'DISMISS' };
 
@@ -213,7 +222,7 @@ export function conciergeReducer(
         script: event.script,
         answers: { ...event.savedAnswers },
         index,
-        pending: [...event.intro, ...linesFor(event.script[index])],
+        pending: [...event.intro, ...askLines(event.script[index])],
         phase: 'speaking',
       };
     }
@@ -232,32 +241,29 @@ export function conciergeReducer(
     }
 
     case 'SUBMIT': {
-      const next = state.index + 1;
       return {
         ...state,
         answers: { ...state.answers, [event.key]: event.value },
         transcript: [...state.transcript, bubble('user', event.userText)],
-        index: next,
-        pending: [event.ack, ...linesFor(state.script[next])],
-        phase: 'speaking',
+        index: state.index + 1,
+        pending: [],
+        phase: 'thinking',
       };
     }
 
-    case 'ACK_TEXT': {
-      // Replace the queued ack (pending[0]) with the live concierge line.
-      if (state.phase !== 'speaking' || state.pending.length === 0) return state;
-      return { ...state, pending: [event.text, ...state.pending.slice(1)] };
+    case 'ADVANCE': {
+      return { ...state, index: state.index + 1, pending: [], phase: 'thinking' };
     }
 
-    case 'CONNECTED':
-    case 'SKIP_STEP': {
-      const next = state.index + 1;
-      return {
-        ...state,
-        index: next,
-        pending: [event.ack, ...linesFor(state.script[next])],
-        phase: 'speaking',
-      };
+    case 'AI_LINES': {
+      if (event.lines.length === 0) {
+        // Nothing to say (e.g. straight into the finale card) — behave as spoken.
+        const step = state.script[state.index];
+        const phase: Phase =
+          step?.kind === 'connect' ? 'connect' : step?.kind === 'finale' ? 'finale' : 'input';
+        return { ...state, pending: [], phase };
+      }
+      return { ...state, pending: event.lines, phase: 'speaking' };
     }
 
     case 'FINALE_DONE':
@@ -269,7 +275,8 @@ export function conciergeReducer(
   }
 }
 
-function linesFor(step: ConciergeStep | undefined): string[] {
+/** The ask lines a step opens with ([] for the finale card). */
+export function askLines(step: ConciergeStep | undefined): string[] {
   if (!step) return [];
   if (step.kind === 'finale') return [];
   return step.ask;
