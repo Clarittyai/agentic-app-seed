@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { PageHeader, Section, EmptyState, ErrorState, Button } from '@clarittyai/app-ui';
 import {
   getRequiredIntegrations,
+  resetOnboarding,
   toApiError,
   type IntegrationsStatus,
 } from '@/lib/api';
@@ -127,6 +128,30 @@ export default function Settings() {
         description="Your goals and context — the agents use these to tailor what they do for you."
       >
         <OnboardingForm variant="settings" />
+        <div className="mt-4 border-t border-border pt-4">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void resetOnboarding()
+                .then(() => {
+                  try {
+                    sessionStorage.removeItem('claritty_concierge_skipped_v1');
+                  } catch {
+                    /* ignore */
+                  }
+                  window.location.assign('/');
+                })
+                .catch((err) =>
+                  show({ tone: 'error', text: `Couldn’t reset: ${toApiError(err).message}` }),
+                );
+            }}
+          >
+            Run the setup conversation again
+          </Button>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Replays the AI onboarding from the top — your answers are re-asked fresh.
+          </p>
+        </div>
       </Section>
     </div>
   );

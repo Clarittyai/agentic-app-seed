@@ -370,4 +370,17 @@ def make_onboarding_router(context_provider: Optional[ContextProvider] = None) -
             "answers": dict(profile.answers or {}),
         }
 
+    @router.delete("/api/onboarding")
+    async def reset_onboarding(
+        user_id: str = Depends(require_user),
+        db: Session = Depends(get_db),
+    ):
+        """Reset the profile so the concierge conversation runs again from the
+        top (Settings → "Run the setup conversation again")."""
+        profile = get_profile(db, user_id)
+        if profile is not None:
+            db.delete(profile)
+            db.commit()
+        return {"reset": True}
+
     return router

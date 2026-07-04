@@ -428,6 +428,12 @@ export const getOnboardingContext = async (): Promise<{ facts: Record<string, un
 
 /** One live in-persona concierge line for a step (LLM when the app opts in and
  * the proxy is up; ALWAYS falls back to the authored, data-grounded template). */
+/** Wipe the onboarding profile so the concierge conversation replays. */
+export const resetOnboarding = async (): Promise<{ reset: boolean }> => {
+  const response = await api.delete('/api/onboarding');
+  return response.data;
+};
+
 export const conciergeLine = async (payload: {
   step_key: string;
   value?: unknown;
