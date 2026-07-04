@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { ChartCard, ChartTooltip, MARK } from './ChartCard';
 import { formatCompact, type TrendPoint } from './types';
 
@@ -44,6 +44,7 @@ export function TrendLine({
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const gradientId = useId();
 
   const pts = useMemo(
     () =>
@@ -144,8 +145,14 @@ export function TrendLine({
             {formatTime(last.t)}
           </text>
 
-          {/* ~10% area wash, 2px line, end dot with a 2px surface ring */}
-          <path d={areaPath} fill={MARK} opacity={0.1} />
+          {/* soft gradient area wash (18% → 0%), 2px line, ringed end dot */}
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={MARK} stopOpacity={0.18} />
+              <stop offset="100%" stopColor={MARK} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <path d={areaPath} fill={`url(#${gradientId})`} />
           <path
             d={linePath}
             fill="none"
