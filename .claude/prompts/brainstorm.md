@@ -82,12 +82,17 @@ agent / endpoint* — translate them. Across your questions you MUST cover at le
   (the domain → design matrix) that matches the app's category and offer it as the
   default option; data-heavy domains (sales/GTM, finance, analytics) lead with
   charts from `frontend/src/components/charts`.
-- **Onboarding & value definition** (tailored intelligence): 2–4 first-run
-  questions whose answers CHANGE agent behavior (goals, thresholds, priorities)
-  plus **the ONE progress metric** the dashboard tracks against the user's stated
-  target. These become `app-config.json → onboarding.questions` and the agents
-  read the profile via `backend/shared/onboarding.py` (`before(ctx)` →
-  `ctx.user_context`).
+- **Onboarding & value definition** (tailored intelligence): author the AI
+  CONCIERGE conversation — a persona (name + tagline, no emoji), 2–4 questions
+  whose answers CHANGE agent behavior (goals, thresholds, priorities), each with
+  a conversational `ask` and a data-grounded `ack` template (`{value}`, `{label}`,
+  `{ctx.*}` facts from the app's context_provider — e.g. "that flags
+  {ctx.quiet_preview.{value}} accounts today"), **a final `lead_view` question**
+  (progress | signals | queue — the dashboard arranges itself around it), the
+  finale check items, and **the ONE progress metric** tracked against the user's
+  target. These become `app-config.json → onboarding` and agents read the profile
+  via `backend/shared/onboarding.py` (`before(ctx)` → `ctx.user_context`).
+  Set `voice: "llm"` for live in-persona lines (template fallback is automatic).
 
 ### Step 4 — Write the brief
 Synthesize problem + chosen outcome + the answers into the plan: agents/workflow/
@@ -296,8 +301,9 @@ After brainstorming, you should have:
 - Landing page concept: [what the real Dashboard shows]
 - Primary visualization: [e.g. TrendLine of pipeline + BarList by stage]  (→ leads
   `Dashboard.tsx`; matrix row: [category] in `docs/golden/INDEX.md`)
-- Onboarding: [2–4 questions that tailor the agents] + progress metric: [the ONE
-  number tracked vs the user's target]  (→ `app-config.json` → `onboarding`)
+- Onboarding concierge: persona [name — tagline] + [2–4 ask/ack pairs, data-
+  grounded] + lead_view + progress metric: [the ONE number tracked vs the user's
+  target]  (→ `app-config.json` → `onboarding`; modal = ConciergeOnboarding)
 - App name + mark: [name] + [logo idea]  (→ `app-meta.ts`, `Layout.tsx`)
 
 

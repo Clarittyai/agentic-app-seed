@@ -11,3 +11,13 @@
  *     --brand-font: 'Inter', system-ui, sans-serif;
  *   }
  */
+
+
+/* One-time highlight on the section the user chose to lead their dashboard
+   (set by the onboarding concierge via sessionStorage). */
+@keyframes lead-glow {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--brand-accent) / 0.45); }
+  100% { box-shadow: 0 0 0 14px hsl(var(--brand-accent) / 0); }
+}
+.lead-glow { border-radius: 1rem; animation: lead-glow 1.4s 0.5s ease-out 1; }
+@media (prefers-reduced-motion: reduce) { .lead-glow { animation: none; } }

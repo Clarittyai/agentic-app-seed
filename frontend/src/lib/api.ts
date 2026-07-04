@@ -382,11 +382,21 @@ export interface OnboardingQuestion {
   options?: { value: string; label: string }[];
   help?: string;
   placeholder?: string;
+  /** Conversational script (optional — synthesized from label/help if absent). */
+  ask?: string;
+  ack?: string;
+  ack_fallback?: string;
+  prefix?: string;
+  suffix?: string;
 }
 export interface OnboardingStatus {
   questions: OnboardingQuestion[];
   completed: boolean;
   answers: Record<string, unknown>;
+  persona?: { name: string; tagline?: string } | null;
+  intro?: string[];
+  intro_fallback?: string[];
+  finale?: string[];
 }
 
 /** The app's onboarding questions + this user's saved answers. Questions are
@@ -396,12 +406,34 @@ export const getOnboarding = async (): Promise<OnboardingStatus> => {
   return response.data;
 };
 
-/** Save the user's onboarding answers. The backend composes them into the
- * profile context every agent run reads (see backend/shared/onboarding.py). */
+/** Save onboarding answers. `complete:false` = incremental per-step save from
+ * the concierge (profile stays resumable); default true = definitive save
+ * (Settings form / concierge finale). */
 export const saveOnboarding = async (
   answers: Record<string, unknown>,
+  opts?: { complete?: boolean },
 ): Promise<OnboardingStatus> => {
-  const response = await api.post('/api/onboarding', { answers });
+  const response = await api.post('/api/onboarding', {
+    answers,
+    complete: opts?.complete ?? true,
+  });
+  return response.data;
+};
+
+/** Deterministic grounding facts the concierge weaves into its lines. */
+export const getOnboardingContext = async (): Promise<{ facts: Record<string, unknown> }> => {
+  const response = await api.get('/api/onboarding/context');
+  return response.data;
+};
+
+/** One live in-persona concierge line for a step (LLM when the app opts in and
+ * the proxy is up; ALWAYS falls back to the authored, data-grounded template). */
+export const conciergeLine = async (payload: {
+  step_key: string;
+  value?: unknown;
+  label?: unknown;
+}): Promise<{ text: string; source: 'llm' | 'template' }> => {
+  const response = await api.post('/api/onboarding/concierge', payload);
   return response.data;
 };
 

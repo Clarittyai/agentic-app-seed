@@ -358,7 +358,7 @@
     }
   },
   "onboarding": {
-    "_comment": "AI onboarding: 2-4 questions whose answers TAILOR the agents (injected into user_context via backend/shared/onboarding.py) and define the user's progress metric. Filled per app at generation; empty = onboarding surface hidden.",
+    "_comment": "AI concierge onboarding (conversational modal — components/ConciergeOnboarding.tsx). Author per app: persona {name, tagline, model?}, intro[] / intro_fallback[] (templates over {persona.*} and {ctx.*} grounding facts), voice: 'llm'|'template' (llm = live one-line rephrasing through the Claritty proxy, template fallback always), questions[] with conversational ask/ack/ack_fallback templates ({value},{label},{ctx.<path>} — dynamic lookups like {ctx.quiet_preview.{value}} work) + optional prefix/suffix for number fields, finale[] (the animated check items), and END with a lead_view select (progress|signals|queue) so the dashboard arranges itself around what the user wants to see first. Ground facts come from the app's context_provider (see backend/shared/onboarding.py). Empty questions = surface hidden.",
     "questions": [],
     "progress_metric": ""
   }

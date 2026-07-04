@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Sparkles, X } from 'lucide-react';
 import { Button, Field, Input, Select } from '@clarittyai/app-ui';
 import {
   getOnboarding,
@@ -9,8 +8,6 @@ import {
   type OnboardingStatus,
 } from '@/lib/api';
 import { useToast } from '@/components/Toast';
-
-const DISMISS_KEY = 'claritty_onboarding_dismissed_v1';
 
 /**
  * AI onboarding — the first-run interview that tailors this app's
@@ -153,63 +150,6 @@ function QuestionField({
   );
 }
 
-// ── The first-run card (mounted in Layout, under the integrations checklist) ─
-
-export function OnboardingFlow() {
-  const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    try {
-      setDismissed(sessionStorage.getItem(DISMISS_KEY) === '1');
-    } catch {
-      /* private mode — treat as not dismissed */
-    }
-    getOnboarding()
-      .then((s) => setVisible(s.questions.length > 0 && !s.completed))
-      .catch(() => setVisible(false)); // a setup hint must never crash the app
-  }, []);
-
-  if (!visible || dismissed) return null;
-
-  const dismiss = () => {
-    setDismissed(true);
-    try {
-      sessionStorage.setItem(DISMISS_KEY, '1');
-    } catch {
-      /* ignore */
-    }
-  };
-
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
-            <Sparkles className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              Make this app yours
-            </p>
-            <p className="text-xs text-muted-foreground">
-              A few answers tailor the agents to your goals — and define the
-              progress this app will track for you.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label="Dismiss"
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="mt-4">
-        <OnboardingForm variant="onboarding" onCompleted={() => setVisible(false)} />
-      </div>
-    </div>
-  );
-}
+// The first-run experience is the ConciergeOnboarding modal (conversational,
+// data-aware). This file keeps only the reusable form — the Settings →
+// Preferences editor.

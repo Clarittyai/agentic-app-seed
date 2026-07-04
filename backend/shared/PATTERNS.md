@@ -68,6 +68,13 @@ voice; never fabricate a recipient; finish calmly when there's nothing to do.
 - Tailor every agent to the user: implement `before(ctx)` appending
   `profile_context(db, ctx.user_id)` (backend/shared/onboarding.py) to
   `ctx.user_context`, and let deterministic fallbacks read `get_answers(...)`
-  for thresholds/goals. The onboarding questions live in `app-config.json` →
-  `onboarding.questions`; surface progress vs the user's stated target on the
-  landing page.
+  for thresholds/goals. The onboarding CONVERSATION (persona + ask/ack script +
+  the `lead_view` question) lives in `app-config.json` → `onboarding`; surface
+  progress vs the user's stated target on the landing page.
+- **Team shape — prefer 2–3 members with DISTINCT cognitive jobs** over one
+  do-everything agent. The proven pair for goal-driven apps: a **per-item
+  analyst** (judge each record: flags, next best action) chained into a
+  **cross-book strategist** (coverage math vs the user's onboarding targets →
+  the top plays this week + a coach note, persisted for the dashboard). Same
+  workflow, one step each; the strategist reads the profile via `before(ctx)`
+  like every agent.

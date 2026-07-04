@@ -3,7 +3,7 @@ import { Home, ListTodo, Settings as SettingsIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { appName } from '@/lib/app-meta';
 import { IntegrationsChecklist } from './IntegrationsChecklist';
-import { OnboardingFlow } from './OnboardingFlow';
+import { ConciergeOnboarding } from './ConciergeOnboarding';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -92,7 +92,7 @@ export default function Layout({ children }: LayoutProps) {
       <main className="min-h-[calc(100vh-16rem)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
           <IntegrationsChecklist />
-          <OnboardingFlow />
+          <ConciergeOnboarding />
           {children}
         </div>
       </main>

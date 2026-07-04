@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, Plug, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getRequiredIntegrations, type RequiredIntegration } from '@/lib/api';
+import { getOnboarding, getRequiredIntegrations, type RequiredIntegration } from '@/lib/api';
 import { isEmbedded } from '@/lib/integration-bridge';
 import { ConnectButton } from './ConnectButton';
 
@@ -17,11 +17,20 @@ const DISMISS_KEY = 'claritty_integrations_checklist_dismissed_v1';
 export function IntegrationsChecklist() {
   const [items, setItems] = useState<RequiredIntegration[] | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
+  const [conciergeActive, setConciergeActive] = useState(false);
   const [allConnected, setAllConnected] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   const load = useCallback(async () => {
     try {
+      // Defer to the concierge while it owns first-run (it includes connect).
+      try {
+        const ob = await getOnboarding();
+        const skipped = sessionStorage.getItem('claritty_concierge_skipped_v1') === '1';
+        setConciergeActive(ob.questions.length > 0 && !ob.completed && !skipped);
+      } catch {
+        setConciergeActive(false);
+      }
       const res = await getRequiredIntegrations();
       setItems(res.integrations);
       setAppId(res.app_id ?? null);
@@ -44,7 +53,7 @@ export function IntegrationsChecklist() {
     return () => window.removeEventListener('focus', onFocus);
   }, [load]);
 
-  if (!items || allConnected || dismissed) return null;
+  if (!items || allConnected || dismissed || conciergeActive) return null;
   const unconnected = items.filter((i) => !i.connected);
   if (unconnected.length === 0) return null;
   // Nothing actionable (bare local dev without a platform connect link).
