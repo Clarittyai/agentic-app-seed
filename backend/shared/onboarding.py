@@ -77,11 +77,23 @@ class OnboardingProfile(Base):
 
 
 def _app_config() -> Dict[str, Any]:
-    path = Path(__file__).resolve().parents[2] / "app-config.json"
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+    """app-config.json, tried across runtimes: repo root (local/docker),
+    APP_CONFIG_PATH override, and the process cwd (Lambda task root — the
+    platform stages the file next to the manifest there)."""
+    import os
+
+    candidates = [
+        Path(__file__).resolve().parents[2] / "app-config.json",
+        Path(os.environ.get("APP_CONFIG_PATH") or "/nonexistent"),
+        Path.cwd() / "app-config.json",
+    ]
+    for path in candidates:
+        try:
+            if path.is_file():
+                return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+    return {}
 
 
 def onboarding_questions() -> List[Dict[str, Any]]:
