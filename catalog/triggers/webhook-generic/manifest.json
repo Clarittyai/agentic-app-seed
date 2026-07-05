@@ -1,0 +1,17 @@
+{
+  "id": "webhook-generic",
+  "kind": "trigger",
+  "version": "1.0.0",
+  "type": "WEBHOOK",
+  "name": "Incoming webhook",
+  "description": "Fire the team when an external system POSTs to the app's webhook URL — a new ticket, a form submission, or one of your platform's automations.",
+  "intentHints": [
+    "when X happens in my platform",
+    "on new ticket",
+    "when a form is submitted",
+    "real-time event",
+    "when my system sends an event",
+    "trigger from zapier"
+  ],
+  "configFields": []
+}

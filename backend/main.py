@@ -938,11 +938,75 @@ _TEAM_CHAT_COORDINATOR_PROMPT = (
     "answer contains numbers, rankings, or records, include components instead "
     "of cramming data into prose. Allowed shapes:\n"
     '  {"type":"stat","label":str,"value":str|num,"delta":str?}\n'
-    '  {"type":"table","title":str?,"columns":[str],"rows":[[cell,…]]} (≤8 rows)\n'
+    '  {"type":"metrics","items":[{"label":str,"value":str|num,"delta":str?}]} '
+    "(≤4 items — a compact group of related stats)\n"
+    '  {"type":"table","title":str?,"columns":[str],"rows":[[cell,…]]} (≤8 rows; '
+    'a cell is str|num OR {"text":str,"tone":"success"|"warning"|"danger"|"info"} '
+    "for a status pill)\n"
     '  {"type":"list","title":str?,"items":[str]} (≤8 items)\n'
     '  {"type":"bars","label":str,"values":[num],"labels":[str]?} (≤12 values)\n'
+    '  {"type":"chart","kind":"line"|"area"|"bar","title":str?,"labels":[str],'
+    '"series":[{"name":str,"data":[num]}]} (≤4 series, ≤24 points each; '
+    "labels length == each series' data length)\n"
     "Never invent data for components — only real results from teammates/tools."
 )
+
+# Server-side caps for chat display components (mirror the renderer's limits).
+_CHAT_CHART_MAX_SERIES = 4
+_CHAT_CHART_MAX_POINTS = 24
+_CHAT_METRICS_MAX_ITEMS = 4
+
+
+def _sanitize_chat_component(c: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Clamp/sanitize a display component; return None to drop it (never raise).
+
+    Charts: ≤4 series, ≤24 points/labels, non-numeric points coerced out.
+    Metrics: ≤4 well-formed items. Other types pass through untouched.
+    """
+    ctype = c.get("type")
+    try:
+        if ctype == "chart":
+            if c.get("kind") not in ("line", "area", "bar"):
+                return None
+            labels = [
+                str(l) for l in (c.get("labels") or []) if isinstance(l, (str, int, float))
+            ][:_CHAT_CHART_MAX_POINTS]
+            series = []
+            for s in (c.get("series") or [])[:_CHAT_CHART_MAX_SERIES]:
+                if not isinstance(s, dict):
+                    continue
+                data = [
+                    float(v)
+                    for v in (s.get("data") or [])
+                    if isinstance(v, (int, float)) and not isinstance(v, bool)
+                ][:_CHAT_CHART_MAX_POINTS]
+                if not data:
+                    continue
+                series.append({"name": str(s.get("name") or f"Series {len(series) + 1}"), "data": data})
+            if not labels or not series:
+                return None
+            out: Dict[str, Any] = {"type": "chart", "kind": c["kind"], "labels": labels, "series": series}
+            if isinstance(c.get("title"), str):
+                out["title"] = c["title"]
+            return out
+        if ctype == "metrics":
+            items = []
+            for it in (c.get("items") or [])[: _CHAT_METRICS_MAX_ITEMS * 2]:
+                if not isinstance(it, dict):
+                    continue
+                label, value = it.get("label"), it.get("value")
+                if not isinstance(label, str) or not isinstance(value, (str, int, float)):
+                    continue
+                item: Dict[str, Any] = {"label": label, "value": value}
+                if isinstance(it.get("delta"), str):
+                    item["delta"] = it["delta"]
+                items.append(item)
+                if len(items) >= _CHAT_METRICS_MAX_ITEMS:
+                    break
+            return {"type": "metrics", "items": items} if items else None
+        return c
+    except Exception:
+        return None
 
 
 def _team_chat_workflow(boot):
@@ -1025,12 +1089,15 @@ async def team_message(
         reply = str(output.get("reply") or "").strip()
         raw_components = output.get("components")
         if isinstance(raw_components, list):
-            # Keep only well-formed display components (the chat renders these).
+            # Keep only well-formed display components (the chat renders these),
+            # clamping sizes server-side so the UI never sees runaway payloads.
             components = [
-                c
+                sc
                 for c in raw_components[:8]
                 if isinstance(c, dict)
-                and c.get("type") in ("stat", "table", "list", "bars")
+                and c.get("type") in ("stat", "table", "list", "bars", "chart", "metrics")
+                for sc in [_sanitize_chat_component(c)]
+                if sc is not None
             ]
         rest = {
             k: v for k, v in output.items() if k not in ("reply", "components")

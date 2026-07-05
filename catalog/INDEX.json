@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-03T17:08:19.737Z",
+  "generatedAt": "2026-07-05T15:40:24.850Z",
   "integrations": [
     {
       "id": "airtable",
@@ -285,6 +285,24 @@
         "openai chat",
         "embedding",
         "generate an image"
+      ]
+    },
+    {
+      "id": "outbound-webhook",
+      "version": "1.0.0",
+      "name": "Outbound webhook",
+      "description": "POST results to any webhook URL you own — Zapier, Make, n8n, or your platform's own automations.",
+      "category": "dev",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "notify my system",
+        "send results to my platform",
+        "push to zapier",
+        "send to make.com",
+        "trigger my n8n workflow",
+        "post to a webhook",
+        "forward results to my automation"
       ]
     },
     {
@@ -617,6 +635,13 @@
           "label": "Timezone"
         }
       ]
+    },
+    {
+      "id": "webhook-generic",
+      "version": "1.0.0",
+      "kind": "trigger",
+      "description": "Fire the team when an external system POSTs to the app's webhook URL — a new ticket, a form submission, or one of your platform's automations.",
+      "configFields": []
     }
   ],
   "workflows": [
