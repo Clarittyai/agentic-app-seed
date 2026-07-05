@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@clarittyai/app-ui": "^0.2.1",
-    "@clarittyai/widget-toolkit": "^1.6.1",
+    "@clarittyai/widget-toolkit": "^1.6.2",
     "axios": "^1.18.1",
     "clsx": "^2.1.0",
     "date-fns": "^3.0.6",
