@@ -30,10 +30,14 @@ handful of lines that map the agent's tool input onto the model:
         finally:
             db.close()
 
+The read-side twin is `fetch_items` + `items_summary`: read what previous runs
+persisted at the START of a run (or before answering in team chat), so every run
+builds on prior runs instead of starting blind — see their docstrings.
+
 See PATTERNS.md (same folder) for the five reusable agent system-prompt patterns.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from backend.shared.spine import ItemStatus, record_audit
 
@@ -100,3 +104,77 @@ def persist_item(
     )
     db.commit()
     return item.id
+
+
+def fetch_items(
+    db,
+    Model,
+    *,
+    user_id: str,
+    kind: Optional[str] = None,
+    limit: int = 20,
+) -> List[Any]:
+    """Read the user's most recent spine items (newest first) — the read-side
+    twin of `persist_item`.
+
+    THE PATTERN: read history at run start so runs BUILD ON prior runs. An
+    agent/workflow that persisted items yesterday should see them today —
+    dedupe against them, continue where it left off, or answer "what have you
+    found so far?" from real rows instead of guessing. Call this at the top of
+    a custom tool (or before composing an agent's prompt) and fold the digest
+    from `items_summary` into the prompt context:
+
+        # backend/custom/tools/app_recall_<x>/impl.py
+        from backend.database import SessionLocal
+        from backend.models import Ticket
+        from backend.shared.agent_tools import fetch_items, items_summary
+
+        db = SessionLocal()
+        try:
+            history = fetch_items(db, Ticket, user_id=ctx.user_id, limit=10)
+            prompt_context = items_summary(history)  # goes into the LLM prompt
+        finally:
+            db.close()
+
+    Filters by `user_id` (multi-tenancy — never omit it) and optionally by the
+    spine's `kind` column; orders by `created_at` desc. Works with any
+    ItemMixin-shaped model (needs `user_id` + `created_at`, `kind` only when
+    the filter is used). The caller owns the session lifecycle.
+    """
+    q = db.query(Model).filter(Model.user_id == user_id)
+    if kind is not None:
+        q = q.filter(Model.kind == kind)
+    return q.order_by(Model.created_at.desc()).limit(max(1, limit)).all()
+
+
+def items_summary(rows: Sequence[Any], *, max_body_chars: int = 120) -> str:
+    """Render fetched rows into a compact one-line-per-item text digest an
+    agent can drop straight into its prompt context.
+
+    Each line: `- [kind/status] title — body-snippet (YYYY-MM-DD)`, with every
+    part optional-safe (missing columns are simply skipped), bodies whitespace-
+    collapsed and clipped to `max_body_chars`. Returns "(none)" for an empty
+    list so the prompt still states explicitly that there is no history —
+    an agent told "(none)" won't hallucinate prior results.
+    """
+    lines: List[str] = []
+    for r in rows or []:
+        tag = "/".join(
+            str(v) for v in (getattr(r, "kind", None), getattr(r, "status", None)) if v
+        )
+        title = getattr(r, "title", None) or getattr(r, "id", None) or "(untitled)"
+        line = f"- {'[' + tag + '] ' if tag else ''}{title}"
+        body = getattr(r, "body", None)
+        if body:
+            snippet = " ".join(str(body).split())
+            if len(snippet) > max_body_chars:
+                snippet = snippet[: max_body_chars - 1].rstrip() + "…"
+            line += f" — {snippet}"
+        created = getattr(r, "created_at", None)
+        if created is not None:
+            try:
+                line += f" ({created.date().isoformat()})"
+            except Exception:
+                pass
+        lines.append(line)
+    return "\n".join(lines) if lines else "(none)"

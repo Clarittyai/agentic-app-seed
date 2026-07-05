@@ -13,10 +13,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+import asyncio
 import os
 import hmac
 import json
 import logging
+import uuid
 
 from backend.database import get_db, init_db, engine
 from backend import models
@@ -931,6 +933,27 @@ _TEAM_CHAT_COORDINATOR_PROMPT = (
     "conversationally. Delegate to teammates only when their skills are needed "
     "to fulfil the request; for simple questions about status or capability, "
     "answer yourself.\n"
+    "GROUND EVERY ANSWER IN WHAT THE TEAM KNOWS. The request includes "
+    "`team_knowledge` — a server-fetched digest of the team's recent records, "
+    "workflow results and runs from the app's own database (it is REAL data, "
+    "newest first). Consult it before answering; answer from it whenever it "
+    "covers the question, and delegate only for work it cannot answer. When "
+    "the user asks what the team has found/done/produced, show the actual "
+    "rows from team_knowledge as table/list/metrics/chart components — never "
+    "summarise them into vague prose, never invent rows that are not there. "
+    "If team_knowledge says '(none)' or is empty, say plainly that the team "
+    "has no stored results yet.\n"
+    "TAKING ACTION: the request lists `runnable_workflows` — the ids of this "
+    "app's declared workflows. When (and ONLY when) the user explicitly asks "
+    "you to DO something now ('draft the posts', 'run the trend sweep'), "
+    "start the matching workflow by calling delegate_workflow_runner with "
+    'context {"workflow_id": "<id>"} (optionally {"inputs": {…}} for workflow '
+    "inputs). Never fire a workflow to answer a question, for a status check, "
+    "or on your own initiative — questions are answered from team_knowledge "
+    "or by delegating to a teammate. After firing one, tell the user exactly "
+    "what you started (workflow id + run status the tool returned) and "
+    "summarise any early results it included; if it is still running, say "
+    "results will appear in the team's records shortly.\n"
     "When you call finish:\n"
     "- output.reply = the user-facing reply (plain text, friendly, concise).\n"
     "- output.components (optional) = data worth SHOWING, as an array of "
@@ -1009,6 +1032,233 @@ def _sanitize_chat_component(c: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
 
+# ── Chat grounding + actions ────────────────────────────────────────────────
+# The coordinator must never answer blind or fabricate "what we found": the
+# server fetches a digest of what the team actually knows (spine items, Result
+# rows, recent runs) and injects it into the coordinator's request as
+# `team_knowledge`. Firing real work from chat goes through a pseudo-teammate
+# (`workflow_runner`) whose delegate tool starts a declared workflow.
+
+#: Pseudo-teammate id the coordinator delegates to in order to FIRE one of the
+#: app's declared workflows from chat (exposed as `delegate_workflow_runner`).
+_WORKFLOW_RUNNER_ID = "workflow_runner"
+
+#: How long a chat-fired workflow may run before the tool reports "running"
+#: instead of blocking the conversation (the run continues in-process).
+_TEAM_CHAT_WORKFLOW_WAIT_SECONDS = float(
+    os.getenv("TEAM_CHAT_WORKFLOW_WAIT", "25") or 25
+)
+
+
+def _runnable_workflow_ids(boot) -> List[str]:
+    """The workflow ids the chat coordinator may fire — exactly the ones
+    declared in intelligence.yaml (anything else is rejected)."""
+    try:
+        return [w.id for w in (boot.manifest.workflows or []) if getattr(w, "id", None)]
+    except Exception:
+        return []
+
+
+def _team_knowledge_digest(db: Session, user_id: str, *, max_chars: int = 4000) -> str:
+    """What the team knows, as compact prompt-ready text (server-side fetched).
+
+    Covers every ItemMixin-shaped model registered on Base (the auto-persisted
+    `Result` store first, then the app's domain models) plus the last few
+    workflow runs — so the coordinator answers "what have you found/done?" from
+    REAL rows instead of hoping the LLM calls a tool. Best-effort: any model
+    whose table is missing is skipped, and a failure never breaks chat.
+    """
+    from backend.database import Base
+    from backend.shared.agent_tools import fetch_items, items_summary
+    from backend.shared.spine import ItemMixin
+
+    sections: List[str] = []
+    try:
+        item_models = sorted(
+            {
+                m.class_
+                for m in Base.registry.mappers
+                if isinstance(m.class_, type) and issubclass(m.class_, ItemMixin)
+            },
+            # Result (the workflow-output store) first, then domain models A→Z.
+            key=lambda M: (M is not models.Result, M.__name__),
+        )
+    except Exception:
+        item_models = [models.Result]
+
+    for Model in item_models:
+        try:
+            rows = fetch_items(db, Model, user_id=user_id, limit=8)
+        except Exception:
+            db.rollback()  # a missing table must not poison the session
+            continue
+        if rows:
+            label = (
+                "Workflow results (auto-persisted outputs)"
+                if Model is models.Result
+                else f"{Model.__name__} records"
+            )
+            sections.append(f"{label}, newest first:\n{items_summary(rows)}")
+
+    try:
+        runs = (
+            db.query(models.WorkflowExecution)
+            .filter(models.WorkflowExecution.user_id == user_id)
+            .order_by(models.WorkflowExecution.started_at.desc())
+            .limit(5)
+            .all()
+        )
+        if runs:
+            lines = [
+                f"- {r.workflow_id}: {r.status}"
+                + (f" ({r.started_at.date().isoformat()})" if r.started_at else "")
+                for r in runs
+            ]
+            sections.append("Recent workflow runs:\n" + "\n".join(lines))
+    except Exception:
+        db.rollback()
+
+    if not sections:
+        return "(none — the team has not stored any records or results for this user yet)"
+    return "\n\n".join(sections)[:max_chars]
+
+
+async def _start_workflow_from_chat(
+    *, boot, user_id: str, request: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Tool body behind `delegate_workflow_runner`: validate + fire a declared
+    workflow, waiting a bounded time for early results.
+
+    The run itself goes through `_run_workflow` (the SAME engine path as manual
+    runs and triggers, so outputs auto-persist to the Result store) on its OWN
+    session, as a background task. We wait up to
+    ``_TEAM_CHAT_WORKFLOW_WAIT_SECONDS`` for it: fast workflows return real
+    outputs into the coordinator's reply; long ones get "running" + the
+    execution id while the task finishes in-process (best-effort on serverless
+    hosts, where post-response compute isn't guaranteed). Either way a
+    WorkflowExecution row records the outcome. Never raises — the coordinator
+    must always get a tool result it can relay.
+    """
+    workflow_id = str((request or {}).get("workflow_id") or "").strip()
+    valid = _runnable_workflow_ids(boot)
+    if not workflow_id or workflow_id not in valid:
+        return {
+            "error": f"unknown workflow_id {workflow_id!r} — not declared by this app",
+            "valid_workflow_ids": valid,
+        }
+    raw_inputs = (request or {}).get("inputs")
+    trigger_data = dict(raw_inputs) if isinstance(raw_inputs, dict) else {}
+    execution_id = str(uuid.uuid4())
+
+    async def _execute() -> Dict[str, Any]:
+        from backend.database import SessionLocal
+
+        run_db = SessionLocal()
+        started = datetime.utcnow()
+        success, error, outputs = False, None, {}
+        try:
+            result = await _run_workflow(
+                run_db,
+                workflow_id=workflow_id,
+                user_id=user_id,
+                trigger_data=trigger_data,
+            )
+            success = bool(result.get("success"))
+            error = result.get("error")
+            outputs = result.get("outputs", {}) or {}
+        except HTTPException as e:
+            run_db.rollback()
+            error = str(e.detail)
+        except Exception as e:
+            run_db.rollback()
+            error = str(e)
+        try:
+            run_db.add(
+                models.WorkflowExecution(
+                    id=execution_id,
+                    workflow_id=workflow_id,
+                    user_id=user_id,
+                    status="completed" if success else "failed",
+                    input_data=trigger_data,
+                    output_data=outputs,
+                    error_message=error,
+                    started_at=started,
+                    completed_at=datetime.utcnow(),
+                    duration_seconds=int(
+                        (datetime.utcnow() - started).total_seconds()
+                    ),
+                )
+            )
+            run_db.commit()
+        except Exception:
+            run_db.rollback()
+        finally:
+            run_db.close()
+        return {"success": success, "outputs": outputs, "error": error}
+
+    task = asyncio.create_task(_execute())
+    try:
+        result = await asyncio.wait_for(
+            asyncio.shield(task), timeout=_TEAM_CHAT_WORKFLOW_WAIT_SECONDS
+        )
+    except asyncio.TimeoutError:
+        return {
+            "workflow_id": workflow_id,
+            "execution_id": execution_id,
+            "status": "running",
+            "note": (
+                "started; still running — its outputs will land in the team's "
+                "Result store when it finishes"
+            ),
+        }
+    except Exception as e:  # defensive: the tool must never raise
+        return {
+            "workflow_id": workflow_id,
+            "execution_id": execution_id,
+            "status": "failed",
+            "error": str(e),
+        }
+
+    outputs_preview = json.dumps(result.get("outputs") or {}, default=str)
+    if len(outputs_preview) > 1500:
+        outputs_preview = outputs_preview[:1500] + "…"
+    return {
+        "workflow_id": workflow_id,
+        "execution_id": execution_id,
+        "status": "completed" if result.get("success") else "failed",
+        "error": result.get("error"),
+        "outputs_preview": outputs_preview,
+    }
+
+
+def _team_chat_manifest(boot):
+    """The manifest the chat coordinator sees: the app's manifest plus the
+    `workflow_runner` pseudo-teammate (so its delegate tool + roster line carry
+    a real description). The pseudo-agent is never executed as an agent — the
+    chat's custom `agent_runner` intercepts it (see `team_message`)."""
+    manifest = boot.manifest
+    if not _runnable_workflow_ids(boot):
+        return manifest
+    from claritty_sdk.manifest import AgentDecl
+
+    runner = AgentDecl(
+        id=_WORKFLOW_RUNNER_ID,
+        description=(
+            "Starts one of this app's declared workflows (a real run through "
+            "the workflow engine). Pass context {\"workflow_id\": \"<id>\"} — "
+            "one of the ids in the request's `runnable_workflows` — and "
+            "optionally {\"inputs\": {…}}. Use ONLY for explicit user action "
+            "requests, never to answer questions."
+        ),
+    )
+    try:
+        return manifest.model_copy(
+            update={"agents": list(manifest.agents or []) + [runner]}
+        )
+    except Exception:  # never let the pseudo-teammate break chat
+        return manifest
+
+
 def _team_chat_workflow(boot):
     """Synthesize the chat coordinator's workflow: reuse a declared team
     workflow's roster + persona when one exists, else coordinate ALL agents."""
@@ -1024,6 +1274,10 @@ def _team_chat_workflow(boot):
     ]
     if not roster:
         return None
+    # Chat can also FIRE declared workflows — via the workflow_runner
+    # pseudo-teammate (its tool body is _start_workflow_from_chat).
+    if _runnable_workflow_ids(boot):
+        roster = roster + [_WORKFLOW_RUNNER_ID]
     persona = getattr(team_wf, "coordinator_prompt", None) if team_wf else None
     prompt = (persona + "\n\n" if persona else "") + _TEAM_CHAT_COORDINATOR_PROMPT
     return WorkflowDecl(
@@ -1069,14 +1323,45 @@ async def team_message(
         {"role": m.role, "content": m.content} for m in reversed(history)
     ]
 
+    # Ground the coordinator: fetch what the team actually knows (recent spine
+    # records + auto-persisted Result rows + runs) server-side and inject it
+    # into the request — never rely on the LLM choosing to call a tool for it.
+    try:
+        team_knowledge = _team_knowledge_digest(db, user_id)
+    except Exception as e:  # grounding is best-effort; chat must still work
+        logger.warning(f"team chat: knowledge digest failed (non-fatal): {e}")
+        team_knowledge = "(unavailable)"
+
     from claritty_sdk.runtime.team_runner import run_team
+    from claritty_sdk.runtime.tool_loop import run_agent
+
+    async def _chat_agent_runner(*, agent_id: str, user_input: Dict[str, Any]):
+        # The workflow_runner pseudo-teammate is OURS: its delegate tool fires
+        # a declared workflow instead of invoking an LLM agent.
+        if agent_id == _WORKFLOW_RUNNER_ID:
+            return await _start_workflow_from_chat(
+                boot=boot, user_id=user_id, request=user_input
+            )
+        res = await run_agent(
+            manifest=boot.manifest,
+            agent_id=agent_id,
+            user_input=user_input,
+            agent_context=AgentContext(user_id=user_id, input_data=user_input),
+        )
+        return res.output
 
     try:
         output = await run_team(
-            manifest=boot.manifest,
+            manifest=_team_chat_manifest(boot),
             workflow=chat_wf,
-            inputs={"message": text, "conversation": conversation},
+            inputs={
+                "message": text,
+                "conversation": conversation,
+                "team_knowledge": team_knowledge,
+                "runnable_workflows": _runnable_workflow_ids(boot),
+            },
             user_id=user_id,
+            agent_runner=_chat_agent_runner,
         )
     except Exception as e:
         logger.error(f"team chat run failed: {e}")

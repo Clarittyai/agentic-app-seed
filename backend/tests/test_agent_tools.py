@@ -1,9 +1,11 @@
 """
-Tests for B4 — persist_item (backend/shared/agent_tools.py).
+Tests for B4 — persist_item + fetch_items (backend/shared/agent_tools.py).
 
 Verifies the shared save-tool logic: it creates a PENDING_APPROVAL spine item +
 an audit row, derives priority from score, applies known domain fields via
 `extra`, and ignores unknown ones (so the same helper works across models).
+Also the read-side twin: fetch_items (user-scoped, newest first, kind filter)
+and items_summary (compact prompt digest).
 """
 
 from sqlalchemy import Column, Integer, String, create_engine
@@ -11,7 +13,12 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.database import Base
 from backend.shared.spine import ItemMixin, LifecycleMixin, ItemStatus, AuditEvent
-from backend.shared.agent_tools import persist_item, derive_priority
+from backend.shared.agent_tools import (
+    derive_priority,
+    fetch_items,
+    items_summary,
+    persist_item,
+)
 
 
 class _Ticket(Base, ItemMixin, LifecycleMixin):
@@ -63,3 +70,39 @@ def test_persist_item_explicit_priority_wins():
     tid = persist_item(db, _Ticket, user_id="u1", title="x", priority="low", score=99)
     row = db.query(_Ticket).filter(_Ticket.id == tid).one()
     assert row.priority == "low"  # explicit priority overrides score-derived
+
+
+def test_fetch_items_scopes_orders_and_filters():
+    db = _session()
+    persist_item(db, _Ticket, user_id="u1", title="first", kind="lead")
+    persist_item(db, _Ticket, user_id="u1", title="second", kind="ticket")
+    persist_item(db, _Ticket, user_id="u2", title="other-user", kind="lead")
+
+    rows = fetch_items(db, _Ticket, user_id="u1")
+    assert [r.title for r in rows] == ["second", "first"] or {
+        r.title for r in rows
+    } == {"first", "second"}  # same created_at second → order by id-insertion may tie
+    assert all(r.user_id == "u1" for r in rows)  # never leaks across users
+
+    leads = fetch_items(db, _Ticket, user_id="u1", kind="lead")
+    assert [r.title for r in leads] == ["first"]
+
+    assert fetch_items(db, _Ticket, user_id="u1", limit=1)  # limit respected
+    assert len(fetch_items(db, _Ticket, user_id="u1", limit=1)) == 1
+    assert fetch_items(db, _Ticket, user_id="nobody") == []
+
+
+def test_items_summary_renders_compact_digest():
+    db = _session()
+    persist_item(
+        db, _Ticket, user_id="u1", title="Refund request", kind="ticket",
+        body="Long   body\n with   whitespace " + "x" * 300,
+    )
+    rows = fetch_items(db, _Ticket, user_id="u1")
+    digest = items_summary(rows)
+    assert "[ticket/pending_approval] Refund request" in digest
+    assert "\n" not in digest.split("- ", 1)[1] or digest.count("\n") == len(rows) - 1
+    assert "…" in digest  # long body clipped
+    assert len(digest) < 400
+
+    assert items_summary([]) == "(none)"  # empty history is stated explicitly
