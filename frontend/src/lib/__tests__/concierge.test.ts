@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildScript,
+  replayHistory,
   conciergeReducer,
   firstOpenStep,
   initialConciergeState,
@@ -205,5 +206,27 @@ describe('conciergeReducer', () => {
 
   it('DISMISS closes from any phase', () => {
     expect(conciergeReducer(boot(), { type: 'DISMISS' }).phase).toBe('closed');
+  });
+});
+
+
+describe('replayHistory (resume shows the full chat)', () => {
+  it('replays ask + user answer + rendered ack for answered steps only', () => {
+    const script = buildScript({
+      questions: [
+        q({ key: 'target', label: 'Target?', type: 'number', suffix: 'logos', ack: 'Noted: {value}.' }),
+        q({ key: 'lead', label: 'Lead?', type: 'select', options: [{ value: 'p', label: 'Progress' }] }),
+      ],
+      ctx: {},
+      integrations: [],
+      embedded: false,
+    });
+    const h = replayHistory(script, { target: 5 }, { ctx: {} });
+    expect(h).toEqual([
+      { role: 'ai', text: 'Target?' },
+      { role: 'user', text: '5 logos' },
+      { role: 'ai', text: 'Noted: 5.' },
+    ]);
+    expect(replayHistory(script, {}, { ctx: {} })).toEqual([]);
   });
 });

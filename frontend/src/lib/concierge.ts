@@ -58,6 +58,8 @@ export type ConciergeEvent =
       script: ConciergeStep[];
       savedAnswers: Record<string, unknown>;
       intro: string[];
+      /** Replayed prior turns (resume): the FULL chat so far, as bubbles. */
+      history?: { role: 'ai' | 'user'; text: string }[];
     }
   | { type: 'SPOKEN' }
   /** User answered: bubble + answer recorded, step advances, AI 'thinks'. */
@@ -199,6 +201,46 @@ export function firstOpenStep(
   return script.length - 1;
 }
 
+/** Replay the FULL conversation for already-answered steps (resume): each
+ * answered question's ask lines, the user's answer bubble, and the rendered
+ * ack — so a returning user sees the whole chat, not a summary. */
+export function replayHistory(
+  script: ConciergeStep[],
+  savedAnswers: Record<string, unknown>,
+  vars: { persona?: Persona | null; ctx?: Record<string, unknown> },
+): { role: 'ai' | 'user'; text: string }[] {
+  const out: { role: 'ai' | 'user'; text: string }[] = [];
+  const stop = firstOpenStep(script, savedAnswers);
+  for (let i = 0; i < stop; i++) {
+    const step = script[i];
+    if (step.kind !== 'question') continue;
+    const value = savedAnswers[step.question.key];
+    if (value === undefined || value === null || value === '') continue;
+    const label =
+      step.question.type === 'select'
+        ? (step.question.options?.find((o) => o.value === value)?.label ?? String(value))
+        : String(value);
+    for (const line of step.ask) out.push({ role: 'ai', text: line });
+    out.push({
+      role: 'user',
+      text:
+        step.question.type === 'select'
+          ? label
+          : `${step.question.prefix ?? ''}${value}${step.question.suffix ? ` ${step.question.suffix}` : ''}`,
+    });
+    out.push({
+      role: 'ai',
+      text: renderLine(step.ack, step.ackFallback, 'Got it — {label}.', {
+        value,
+        label,
+        persona: vars.persona,
+        ctx: vars.ctx,
+      }),
+    });
+  }
+  return out;
+}
+
 // ── Reducer ──────────────────────────────────────────────────────────────────
 
 export const initialConciergeState: ConciergeState = {
@@ -222,6 +264,7 @@ export function conciergeReducer(
         script: event.script,
         answers: { ...event.savedAnswers },
         index,
+        transcript: (event.history ?? []).map((h) => bubble(h.role, h.text)),
         pending: [...event.intro, ...askLines(event.script[index])],
         phase: 'speaking',
       };

@@ -15,6 +15,7 @@ import {
 import {
   askLines,
   buildScript,
+  replayHistory,
   conciergeReducer,
   initialConciergeState,
   renderLine,
@@ -89,11 +90,15 @@ export function ConciergeOnboarding() {
           integrations,
           embedded: isEmbedded(),
         });
-        const resumed = Object.keys(s.answers ?? {}).length > 0;
-        const intro = resumed
-          ? ['Welcome back — picking up where we left off.']
-          : introLines(s, groundFacts);
-        dispatch({ type: 'READY', script, savedAnswers: s.answers ?? {}, intro });
+        const history = replayHistory(script, s.answers ?? {}, {
+          persona: s.persona ?? null,
+          ctx: groundFacts,
+        });
+        const intro =
+          history.length > 0
+            ? ['Welcome back — picking up where we left off.']
+            : introLines(s, groundFacts);
+        dispatch({ type: 'READY', script, savedAnswers: s.answers ?? {}, intro, history });
         setVisible(true);
       },
     );
@@ -235,7 +240,7 @@ export function ConciergeOnboarding() {
         />
 
         <motion.div
-          className="relative flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-border bg-card"
+          className="relative flex h-[min(680px,85vh)] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-border bg-card"
           initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.98 }}
           animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
           transition={spring}
