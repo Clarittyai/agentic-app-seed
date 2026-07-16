@@ -50,6 +50,14 @@ integrations, tools, agents, and **skills** you need. For each custom agent, che
 citations…) — when one fits the agent's job, inline `catalog/skills/<id>/procedure.md` into
 its `prompt.md` instead of writing the steps freehand. Proven procedure beats improvised.
 
+**Real data only — never fake, mock, or sample (Hard Rule).** Every screen, widget, and
+API response shows exactly what's in the app's **DB** or a **real connected service** —
+never invented rows, demo seeds, hardcoded lists, random/placeholder numbers, stubbed API
+results, or a fake "connected"/fake success. No data yet → return **empty** and show a
+polished empty state + a Connect / first-action CTA. Empty is honest; fabricated is a bug.
+If you're tempted to fake data to demo something, wire the real path (DB read / import /
+connector pull) instead. Full rule in `CLAUDE.md` → "❌ DON'T Suggest" #9.
+
 **Invariants:** widget sizes are exactly 170×170 / 360×170 / 360×360; triggers are
 schedule / webhook / event / manual; the app is self-contained (no OAuth/keys except
 catalog integrations the platform manages — see `INTEGRATIONS.md`).

@@ -10,15 +10,40 @@ The #1 failure mode is shipping an app that still **looks exactly like this seed
 (same indigo palette, same template landing page, same Claritty logo, same example
 agents). Swapping the backend logic is NOT enough.
 
-Your job has two halves:
+Your job has three parts:
 1. **KEEP** the platform contract (endpoints, SDK decorators, widget sizes, infra,
    multi-tenancy, CSS token *names*).
-2. **REPLACE** the template identity completely — palette + typography
-   (`frontend/src/theme.css`), the landing page (`frontend/src/pages/Dashboard.tsx`),
-   the header mark (`frontend/src/components/Layout.tsx`), the app name
-   (`frontend/src/lib/app-meta.ts`), and the example agent/workflow/trigger.
+2. **Make it look like CLARITTY built it — a real product, not the empty template.**
+   Use Claritty's design language: keep the accent **Claritty blue `#5B7FFF`** (the seed's
+   own default in `index.css` — do NOT invent an off-brand hue), compose from
+   `@clarittyai/app-ui` (already Claritty-branded, token-only), use the **liquid-glass
+   surface** for elevated panels (`bg-white/60 backdrop-blur-2xl backdrop-saturate-150
+   border-slate-900/[0.08] ring-1 ring-inset`, `rounded-2xl/3xl`), **Inter only**, **pill
+   buttons**, one accent primary per view, **no hover motion** (color/opacity only),
+   `tabular-nums` on metrics. Uniqueness comes from the app's OWN **landing page**
+   (`frontend/src/pages/Dashboard.tsx`) showing its **real domain data** (never the starter
+   Stat-row / "Nothing here" EmptyState), its own header mark (`Layout.tsx`) and name
+   (`app-meta.ts`) — NOT a different brand color. Reserve the supporting palette
+   (green/purple/orange…) for status + data-viz only. `theme.css` may tune shape/radius,
+   not swap the brand.
+3. **AUTHOR a full onboarding that sets the intelligence TEAM up for success — never
+   ship it blank** (`app-config.json#onboarding` + `core_action`). A real onboarding:
+   introduces the team (persona), **asks 2–4 tailoring questions whose answers CHANGE
+   agent behavior** (thresholds, goals, priorities), guides the user to **connect the
+   required integrations and bring in their data/knowledge**, sets the **communication
+   channel** the team reaches them on, and states the **ONE success metric** +
+   `definition_of_done`. Then **wire the answers through** so an agent actually uses
+   them (read `OnboardingProfile` / `get_answers` in a tool, or the agent's
+   `before(ctx)`) — a stored answer nothing consumes doesn't count.
+4. **USE ONLY REAL DATA — never fake, mock, sample, or hardcoded (Hard Rule).** Every
+   screen, widget, and API response shows exactly what's in the app's **DB** or a
+   **real connected service** — nothing invented to make the UI "look alive." No demo
+   seeds, no sample rows on first run, no placeholder numbers, no stubbed API results,
+   no fake "connected"/fake success. When there's no data yet, return **empty** and show
+   a polished empty state + a Connect / first-action CTA. Empty is honest; fabricated is
+   a bug. (Full rule under "❌ DON'T Suggest" #9.)
 
-👉 **The full KEEP-vs-REPLACE manifest + redesign checklist is in [IDENTITY.md](IDENTITY.md). Read it before building.**
+👉 **The full KEEP-vs-REPLACE manifest + redesign checklist is in [IDENTITY.md](IDENTITY.md); the onboarding-authoring guide is in [.claude/prompts/brainstorm.md](.claude/prompts/brainstorm.md). Read both before building.**
 
 An automated **identity gate** (`scripts/check-not-template.mjs`, wired as a Claude
 Code Stop hook, `npm run check:identity`, and CI) will **refuse to let the build be
@@ -555,6 +580,31 @@ async def get_widget_data(
    # ✅ CORRECT - filters by the caller (X-User-ID header → user_id)
    users = db.query(User).filter(User.user_id == user_id).all()
    ```
+
+9. **Fake / mock / sample / hardcoded data — EVER (Hard Rule)**. The app works with
+   REAL data from its DB and REAL connected services, and NOTHING else. This means:
+   ```python
+   # ❌ WRONG - fabricated rows, demo seeds, hardcoded lists, random/faker values,
+   #            "if no data, return a nice-looking example", stubbed API responses
+   findings = [{"vendor": "Acme", "overcharge": 1234.56}]        # invented
+   if not rows: rows = SAMPLE_FINDINGS                            # demo fallback
+   return {"revenue": random.randint(1000, 9000)}                # made up
+
+   # ✅ CORRECT - read exactly what's in the DB (or a real connected source); if
+   #             there's nothing yet, return an EMPTY result and let the UI show a
+   #             polished empty state + a Connect / first-action CTA.
+   rows = db.query(Finding).filter(Finding.user_id == user_id).all()
+   return {"findings": [r.to_dict() for r in rows]}              # real, possibly []
+   ```
+   - **Empty is honest; fake is a bug.** A brand-new app shows empty states, NOT a
+     staged demo. Never seed sample rows on first run (identity gate blocks startup
+     seeders). Never invent numbers to "make the screen look alive."
+   - **Connections must be real too**: an unconnected service returns a real
+     not-connected result + a Connect CTA — never a fake "connected" or fake success
+     (see the adapters' "never fake success" contract).
+   - If you're tempted to fabricate data to demo a feature, that's the signal the
+     real data path (DB read, CSV import, or a connector pull) isn't wired yet —
+     wire THAT instead.
 
 ### ⚠️ WARN Before Suggesting
 
