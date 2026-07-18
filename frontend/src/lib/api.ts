@@ -67,6 +67,21 @@ const api = axios.create({
 
 // Add authentication to requests.
 api.interceptors.request.use((config) => {
+  // Multipart uploads: the axios instance defaults every request to
+  // `Content-Type: application/json`. Sent with a FormData body that makes the
+  // server unable to parse the file part (FastAPI → 422 "unprocessable"). Drop
+  // the header for FormData so the browser sets `multipart/form-data` WITH the
+  // required boundary. Must run before the early returns below so it applies in
+  // both preview and deployed modes.
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    const h = config.headers as unknown as {
+      delete?: (name: string) => void;
+      [key: string]: unknown;
+    };
+    if (typeof h.delete === 'function') h.delete('Content-Type');
+    else delete h['Content-Type'];
+  }
+
   // PREVIEW: the proxy wraps the request with the trusted identity server-side,
   // so we attach NO token — sending one would be ignored, and the proxy is the
   // source of truth for "the right user".
@@ -446,5 +461,61 @@ export const conciergeLine = async (payload: {
 // Helper functions / aliases for convenience (wrapped format for Dashboard compatibility)
 export const getAgents = async () => ({ agents: await listAgents() });
 export const getWorkflows = async () => ({ workflows: await listWorkflows() });
+
+// ── Files: brokered per-app / per-user storage (images + documents) ──────────
+// The platform mints presigned S3 URLs scoped to {appId}/{userId}; the app never
+// holds storage credentials and bytes never stream through it. See FileUpload +
+// AppImage, and backend/routes/files.py.
+export interface StoredFile {
+  fileId: string;
+  filename: string;
+  contentType: string;
+  sizeBytes?: number;
+  status?: 'PENDING' | 'READY';
+  createdAt?: string;
+}
+
+/** Upload a file/image to this app's private storage: reserve a presigned URL,
+ *  PUT the bytes STRAIGHT to S3 (not through the app — dodges Lambda's payload
+ *  cap, exposes no credential), then confirm. Returns the stored file. */
+export const uploadFile = async (file: File): Promise<StoredFile> => {
+  const contentType = file.type || 'application/octet-stream';
+  const reserve = await api.post('/api/files/upload-url', {
+    filename: file.name,
+    contentType,
+    sizeBytes: file.size,
+  });
+  const { fileId, uploadUrl, contentType: putType } = reserve.data as {
+    fileId: string;
+    uploadUrl: string;
+    contentType: string;
+  };
+  // Raw fetch, NOT the axios instance: presigned S3 needs the EXACT Content-Type
+  // and rejects any extra/Authorization header (it would break the signature).
+  const put = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': putType || contentType },
+  });
+  if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+  const confirmed = await api.post(`/api/files/${encodeURIComponent(fileId)}/confirm`);
+  return confirmed.data as StoredFile;
+};
+
+export const listFiles = async (): Promise<StoredFile[]> => {
+  const res = await api.get('/api/files');
+  return (res.data?.files ?? []) as StoredFile[];
+};
+
+/** A fresh short-lived presigned GET URL for display/download. These expire —
+ *  re-fetch per use, never persist. */
+export const getFileUrl = async (fileId: string): Promise<string> => {
+  const res = await api.get(`/api/files/${encodeURIComponent(fileId)}/url`);
+  return (res.data?.url ?? '') as string;
+};
+
+export const deleteFile = async (fileId: string): Promise<void> => {
+  await api.delete(`/api/files/${encodeURIComponent(fileId)}`);
+};
 
 export default api;

@@ -50,14 +50,23 @@ def _required_integrations() -> List[Dict[str, str]]:
         logger.warning("could not read intelligence.yaml integrations: %s", exc)
         return []
 
+    # Always-on platform primitives (RAG/model/memory/web/skills/storage) that an
+    # app may reference in `integrations:` but a user never "connects" — filtered
+    # so NO generated app shows them on the checklist / Settings as accounts.
+    from backend.integrations.catalog import is_internal_capability
+
     out: List[Dict[str, str]] = []
     for entry in manifest.get("integrations") or []:
         if isinstance(entry, str):
-            out.append({"id": entry, "name": _humanize(entry)})
+            iid, name = entry, _humanize(entry)
         elif isinstance(entry, dict) and entry.get("id"):
-            out.append(
-                {"id": entry["id"], "name": entry.get("name") or _humanize(entry["id"])}
-            )
+            iid = entry["id"]
+            name = entry.get("name") or _humanize(iid)
+        else:
+            continue
+        if is_internal_capability(iid):
+            continue  # platform primitive, not a user-connectable account
+        out.append({"id": iid, "name": name})
     return out
 
 

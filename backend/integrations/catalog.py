@@ -31,8 +31,45 @@ def _load() -> Dict[str, Any]:
         return {"version": 1, "integrations": []}
 
 
+# Always-on platform primitives that agents reference in `integrations:` but a
+# user never "connects" — RAG, the model, agent memory, web, skills, storage.
+# They ship with every Claritty app via the SDK, so surfacing them as connectable
+# accounts anywhere (Settings, setup checklist) is meaningless and confusing.
+# Canonical here; the setup/checklist route imports this same set.
+INTERNAL_CAPABILITIES = frozenset(
+    {
+        "knowledge",
+        "memory",
+        "llm",
+        "web",
+        "web-search",
+        "web_search",
+        "websearch",
+        "search",
+        "skills",
+        "skill",
+        "storage",
+        "vector",
+        "embeddings",
+        "data-source",
+        "data_source",
+        "datasource",
+    }
+)
+
+
+def is_internal_capability(integration_id: str) -> bool:
+    return (integration_id or "").strip().lower() in INTERNAL_CAPABILITIES
+
+
 def list_integrations() -> List[Dict[str, Any]]:
-    return list(_load().get("integrations", []))
+    """All catalog entries EXCEPT internal platform capabilities — so no
+    user-facing connect surface can ever list knowledge/llm/memory/etc."""
+    return [
+        e
+        for e in _load().get("integrations", [])
+        if not is_internal_capability(e.get("id", ""))
+    ]
 
 
 def get_integration(integration_id: str) -> Optional[Dict[str, Any]]:
