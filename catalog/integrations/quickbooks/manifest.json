@@ -33,6 +33,12 @@
       "description": "Fetch a single vendor bill by id.",
       "input": { "bill_id": { "type": "string", "required": true } },
       "output": { "bill": { "type": "object" } }
+    },
+    {
+      "id": "quickbooks.list_vendor_credits",
+      "description": "List vendor credits (AP credit memos) — the confirmation a vendor actually credited back an overbilling.",
+      "input": {},
+      "output": { "credits": { "type": "array" } }
     }
   ]
 }

@@ -33,6 +33,12 @@
       "description": "Fetch a single supplier bill by id.",
       "input": { "bill_id": { "type": "string", "required": true } },
       "output": { "bill": { "type": "object" } }
+    },
+    {
+      "id": "xero.list_vendor_credits",
+      "description": "List supplier (AP) credit notes — the confirmation a vendor actually credited back an overbilling.",
+      "input": {},
+      "output": { "credits": { "type": "array" } }
     }
   ]
 }
