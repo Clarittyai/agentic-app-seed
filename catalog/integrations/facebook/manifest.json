@@ -1,0 +1,15 @@
+{
+  "id": "facebook",
+  "kind": "integration",
+  "category": "social",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Facebook",
+  "vendor": "Meta",
+  "description": "Read the posts published by a Facebook Page you administer.",
+  "intentHints": ["read our facebook page posts", "facebook page content"],
+  "authType": "oauth2",
+  "providedTools": [
+    { "id": "facebook.fetch_page_posts", "description": "Read a Page's own published posts.", "input": { "page_id": { "type": "string", "required": false }, "limit": { "type": "number", "required": false } }, "output": { "posts": { "type": "array", "required": true } } }
+  ]
+}

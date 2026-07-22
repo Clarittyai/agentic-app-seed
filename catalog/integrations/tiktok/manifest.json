@@ -1,0 +1,15 @@
+{
+  "id": "tiktok",
+  "kind": "integration",
+  "category": "social",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "TikTok",
+  "vendor": "TikTok",
+  "description": "List the videos posted by your connected TikTok creator account.",
+  "intentHints": ["read our tiktok videos", "tiktok content"],
+  "authType": "oauth2",
+  "providedTools": [
+    { "id": "tiktok.fetch_videos", "description": "List the creator's own videos.", "input": { "limit": { "type": "number", "required": false } }, "output": { "videos": { "type": "array", "required": true } } }
+  ]
+}
