@@ -788,6 +788,69 @@ async def run_due_triggers(
     return {"ok": True, "results": results}
 
 
+@app.post("/internal/run-workflow")
+async def run_workflow_dry_or_commit(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_internal_dispatch),
+):
+    """Run ONE workflow in dry / live-commit mode for the recorder's
+    dry-run → approve → cheap-commit flow.
+
+    - ``runMode: "dry"``  → reads run for real, WRITE steps are stubbed to
+      previews. Returns the read cache (to replay on approval), the write
+      previews (what it would do), and anomalies.
+    - ``runMode: "live"`` + ``priorOutputs`` → seeds the engine with the dry
+      run's read cache so reads short-circuit and only the writes execute — so
+      approving a run doesn't re-spend tokens.
+
+    Synchronous: the caller (clarity-api RecorderRunService) records the result.
+    """
+    boot = _get_boot()
+    workflow_id = payload.get("workflowId")
+    user_id = payload.get("userId")
+    if boot is None or not _manifest_has_workflow(boot, workflow_id):
+        raise HTTPException(
+            status_code=404, detail=f"Workflow '{workflow_id}' not found"
+        )
+    inputs = dict(payload.get("inputs") or {})
+    inputs.setdefault("user_id", user_id)
+    run_mode = payload.get("runMode") or "live"
+    prior_outputs = payload.get("priorOutputs") or {}
+
+    result = await boot.engine.run(
+        workflow_id,
+        inputs=inputs,
+        trigger=inputs,
+        user_id=user_id,
+        run_mode=run_mode,
+        prior_outputs=prior_outputs,
+    )
+    status = getattr(result, "status", "")
+    # On a successful LIVE commit, land outputs in the Result store (same bridge
+    # as a normal run) so the widget/dashboard reflects it.
+    outputs = getattr(result, "outputs", {}) or {}
+    if run_mode == "live" and status == "success" and outputs:
+        try:
+            from backend.shared.results import persist_workflow_results
+
+            persist_workflow_results(
+                db, user_id=user_id, workflow_id=workflow_id, outputs=outputs
+            )
+        except Exception as e:  # never fail a run on the display bridge
+            logger.warning("Result bridge failed for %s (non-fatal): %s", workflow_id, e)
+
+    return {
+        "workflowId": workflow_id,
+        "status": status,
+        "outputs": outputs,
+        "error": getattr(result, "error", None),
+        "readCache": getattr(result, "read_cache", {}) or {},
+        "writePreviews": getattr(result, "write_previews", []) or [],
+        "anomalies": getattr(result, "anomalies", []) or [],
+    }
+
+
 @app.post("/internal/trigger-webhook")
 async def run_trigger_webhook(
     payload: Dict[str, Any],
@@ -1311,10 +1374,12 @@ async def team_message(
     db.add(user_msg)
     db.commit()
 
-    # Short conversation memory so follow-ups make sense.
+    # Short conversation memory so follow-ups make sense. Scope to the team-wide
+    # thread (agent_id IS NULL) so a direct 1:1 teammate chat stays separate.
     history = (
         db.query(models.TeamMessage)
         .filter(models.TeamMessage.user_id == user_id)
+        .filter(models.TeamMessage.agent_id.is_(None))
         .order_by(models.TeamMessage.created_at.desc())
         .limit(8)
         .all()
@@ -1422,6 +1487,140 @@ async def team_messages(
     rows = (
         db.query(models.TeamMessage)
         .filter(models.TeamMessage.user_id == user_id)
+        .filter(models.TeamMessage.agent_id.is_(None))
+        .order_by(models.TeamMessage.created_at.desc())
+        .limit(max(1, min(limit, 200)))
+        .all()
+    )
+    return {"messages": [m.to_dict() for m in reversed(rows)]}
+
+
+# ── Direct teammate chat — "speak with a member directly" ──────────────────
+# A 1:1 conversation with a single agent (any mode — DAG or Team). Distinct
+# from the team-wide coordinator chat above: messages are scoped by agent_id,
+# and the named agent answers directly with its own per-thread memory. The
+# platform proxies these at POST/GET /apps/:appId/agents/:agentId/chat|messages.
+
+
+def _agent_exists(boot, agent_id: str) -> bool:
+    try:
+        return any(a.id == agent_id for a in (boot.manifest.agents or []))
+    except Exception:
+        return False
+
+
+@app.post("/api/agents/{agent_id}/chat")
+async def agent_chat(
+    agent_id: str,
+    body: Optional[Dict[str, Any]] = None,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Send a message to ONE teammate; that agent replies (synchronously), with
+    its own per-user conversation memory."""
+    text = str((body or {}).get("message") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="message is required")
+    # Per-agent instruction overlay the platform passes through (the user's
+    # "how you work" note for this teammate). Prepended to the agent's input.
+    user_context = str((body or {}).get("user_context") or "").strip()
+    boot = _get_boot()
+    if boot is None:
+        raise HTTPException(status_code=503, detail="agent runtime not ready")
+    if not _agent_exists(boot, agent_id):
+        raise HTTPException(status_code=404, detail=f"no agent '{agent_id}'")
+
+    # Persist the user's message first — the thread survives a failed run.
+    db.add(
+        models.TeamMessage(
+            user_id=user_id, role="user", content=text, agent_id=agent_id
+        )
+    )
+    db.commit()
+
+    # Short per-agent conversation memory so follow-ups make sense.
+    history = (
+        db.query(models.TeamMessage)
+        .filter(models.TeamMessage.user_id == user_id)
+        .filter(models.TeamMessage.agent_id == agent_id)
+        .order_by(models.TeamMessage.created_at.desc())
+        .limit(8)
+        .all()
+    )
+    conversation = [
+        {"role": m.role, "content": m.content} for m in reversed(history)
+    ]
+
+    from claritty_sdk.runtime.tool_loop import run_agent
+
+    user_input: Dict[str, Any] = {
+        "message": text,
+        "conversation": conversation,
+    }
+    if user_context:
+        user_input["user_context"] = user_context
+    try:
+        res = await run_agent(
+            manifest=boot.manifest,
+            agent_id=agent_id,
+            user_input=user_input,
+            agent_context=AgentContext(user_id=user_id, input_data=user_input),
+        )
+        output = res.output
+    except Exception as e:
+        logger.error(f"agent chat run failed for {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail="the teammate could not answer")
+
+    # Coalesce the agent's structured output into a readable reply.
+    reply = ""
+    payload = None
+    if isinstance(output, dict):
+        reply = str(
+            output.get("reply")
+            or output.get("message")
+            or output.get("summary")
+            or output.get("text")
+            or ""
+        ).strip()
+        rest = {
+            k: v
+            for k, v in output.items()
+            if k not in ("reply", "message", "summary", "text")
+        }
+        payload = rest or None
+    if not reply:
+        reply = (
+            json.dumps(output, default=str)[:2000]
+            if output
+            else "Done — no further details."
+        )
+
+    agent_msg = models.TeamMessage(
+        user_id=user_id,
+        role="agent",
+        content=reply,
+        payload=payload,
+        agent_id=agent_id,
+    )
+    db.add(agent_msg)
+    db.commit()
+    db.refresh(agent_msg)
+
+    return {"reply": reply, "message": agent_msg.to_dict()}
+
+
+@app.get("/api/agents/{agent_id}/messages")
+async def agent_messages(
+    agent_id: str,
+    limit: int = 50,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """The caller's 1:1 conversation with one teammate, oldest → newest."""
+    rows = (
+        db.query(models.TeamMessage)
+        .filter(models.TeamMessage.user_id == user_id)
+        .filter(models.TeamMessage.agent_id == agent_id)
         .order_by(models.TeamMessage.created_at.desc())
         .limit(max(1, min(limit, 200)))
         .all()
