@@ -848,6 +848,22 @@ async def run_workflow_dry_or_commit(
         "readCache": getattr(result, "read_cache", {}) or {},
         "writePreviews": getattr(result, "write_previews", []) or [],
         "anomalies": getattr(result, "anomalies", []) or [],
+        # How the run ACTUALLY went, step by step. The engine distinguishes a step
+        # skipped because its branch condition was false (no error) from one that
+        # FAILED and was skipped by the default on_error policy (error set) —
+        # without this the platform sees neither and renders both as a bare
+        # "SKIPPED", which makes a broken integration impossible to diagnose.
+        # Mapped explicitly (StepRunResult is a dataclass) to the same camelCase
+        # shape as WorkflowRunResult.to_dict().
+        "steps": [
+            {
+                "id": s.id,
+                "status": s.status,
+                "output": s.output,
+                "error": s.error,
+            }
+            for s in (getattr(result, "steps", None) or [])
+        ],
     }
 
 
