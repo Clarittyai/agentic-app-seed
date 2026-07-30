@@ -818,6 +818,12 @@ async def run_workflow_dry_or_commit(
     run_mode = payload.get("runMode") or "live"
     prior_outputs = payload.get("priorOutputs") or {}
 
+    # The platform's identity for THIS attempt. Every other route into this file
+    # threads one; this route did not, and it is the only route automations use.
+    # Without it the engine skips its per-step checkpoints, skips the
+    # already-succeeded short-circuit that makes a retried commit safe, and sends
+    # no budget headers to the LLM proxy — so an automation run had no spend
+    # ceiling at all. Three separate protections, off, silently.
     result = await boot.engine.run(
         workflow_id,
         inputs=inputs,
@@ -825,6 +831,8 @@ async def run_workflow_dry_or_commit(
         user_id=user_id,
         run_mode=run_mode,
         prior_outputs=prior_outputs,
+        workflow_run_id=payload.get("workflowRunId"),
+        idempotency_key=payload.get("idempotencyKey"),
     )
     status = getattr(result, "status", "")
     # On a successful LIVE commit, land outputs in the Result store (same bridge
