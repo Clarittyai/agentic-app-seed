@@ -21,8 +21,11 @@ import configparser
 
 from backend.database import _redact_db_urls
 
+# The password here is FAKE. The shape is copied from a real log line —
+# that is the point, since the bug is that this exact string was printed —
+# but the credential itself must never be the live one.
 REAL_SHAPE = (
-    "postgresql://app_7ac1b8d7_891de962:a25de759a205d2c332ffeeac045703ad"
+    "postgresql://app_7ac1b8d7_891de962:NOT_A_REAL_PASSWORD_0000000000000"
     "@claritty-production-postgres.cqzamoyumjyf.us-east-1.rds.amazonaws.com:5432"
     "/clarity_platform?options=-csearch_path%3Dtenant_7ac1b8d7&sslmode=require"
 )
@@ -30,7 +33,7 @@ REAL_SHAPE = (
 
 def test_password_never_survives_redaction():
     out = _redact_db_urls(f"invalid interpolation syntax in '{REAL_SHAPE}' at position 197")
-    assert "a25de759a205d2c332ffeeac045703ad" not in out
+    assert "NOT_A_REAL_PASSWORD_0000000000000" not in out
     assert "***" in out
 
 
