@@ -28,6 +28,27 @@ engine = create_engine(
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
+def _redact_db_urls(text: str) -> str:
+    """Strip the password out of any connection URL in `text`.
+
+    Driver and config errors quote the connection string back at you, password
+    and all. Printing one puts a live database credential in CloudWatch, where it
+    is retained, searchable, and readable by anyone with log access — a much
+    wider audience than the secret store it came from. This was doing exactly
+    that on every cold start of every deployed app.
+
+    Redacts the credential portion of any `scheme://user:secret@host` it finds,
+    keeping the user and host so the message stays diagnosable.
+    """
+    import re
+
+    return re.sub(
+        r"(\b[a-zA-Z][a-zA-Z0-9+.-]*://[^:/?#\s]+:)[^@\s]+(@)",
+        r"\1***\2",
+        text,
+    )
+
 # Base class for models
 Base = declarative_base()
 
@@ -129,28 +150,54 @@ def init_db():
         cfg = Config(os.path.join(os.path.dirname(__file__), "alembic.ini"))
         insp = inspect(engine)
         has_alembic = insp.has_table("alembic_version")
-        has_legacy_tables = insp.has_table("tasks")
 
-        if has_legacy_tables and not has_alembic:
-            command.stamp(cfg, "head")  # adopt an existing (create_all) schema
+        # Does the database already hold THIS app's schema? Derived from the models
+        # rather than hardcoded, because the old check was
+        # `insp.has_table("tasks")` — "tasks" is the SEED's own example table, which
+        # every real app renames or replaces. So `has_legacy_tables` was always
+        # False, the adopt branch never ran, and `upgrade` was attempted against a
+        # schema that step 2's create_all had already built. Alembic then died on
+        # the first `create_table` ("relation ... already exists") and NO migration
+        # ever applied — silently, because the reconciler below kept the schema
+        # close enough to the models that nothing looked wrong.
+        existing = set(insp.get_table_names())
+        has_our_schema = any(t.name in existing for t in Base.metadata.sorted_tables)
+
+        if has_our_schema and not has_alembic:
+            # Adopt: the tables are already right, so record that we're at head
+            # instead of replaying history over them. Subsequent boots take the
+            # upgrade path and apply only genuinely new revisions.
+            command.stamp(cfg, "head")
             print("✅ Database schema adopted into Alembic (stamped head)")
         else:
             command.upgrade(cfg, "head")
             print("✅ Database migrated to head")
     except Exception as e:  # never block boot — create_all below still runs
-        print(f"⚠️  Alembic step skipped ({e})")
+        # LOUD. This printed a mild "skipped" line while migrations silently never
+        # ran; the additive reconciler below covered for it, so the warning scrolled
+        # past unread for months. Anything that means "your migrations are not being
+        # applied" has to look like a failure, not a note.
+        print("=" * 72)
+        print("❌ ALEMBIC DID NOT RUN — migrations are NOT being applied.")
+        # Redacted: this exception is routinely the connection string, and it was
+        # printing a live database password into CloudWatch on every cold start.
+        print(f"   {type(e).__name__}: {_redact_db_urls(str(e))}")
+        print("   The additive reconciler below still creates missing tables and")
+        print("   columns, but anything a migration does BEYOND that (backfills,")
+        print("   index changes, data moves) has silently not happened.")
+        print("=" * 72)
 
     # 2. Additively create any model table not yet present (idempotent; never
     #    alters existing tables).
     try:
         Base.metadata.create_all(bind=engine)
     except Exception as e:
-        print(f"⚠️  create_all skipped ({e})")
+        print(f"⚠️  create_all skipped ({_redact_db_urls(str(e))})")
 
     # 3. Additively add any model column missing on an existing table.
     try:
         _reconcile_missing_columns(engine)
     except Exception as e:
-        print(f"⚠️  column reconcile skipped ({e})")
+        print(f"⚠️  column reconcile skipped ({_redact_db_urls(str(e))})")
 
     print("✅ Database schema reconciled to models (additive, data-preserving)")

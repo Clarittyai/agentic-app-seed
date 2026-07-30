@@ -23,9 +23,19 @@ from backend import models  # noqa: E402,F401  (register models on Base.metadata
 config = context.config
 
 # Inject the runtime DATABASE_URL (env wins over anything in the ini).
+#
+# `%` MUST be doubled. Alembic's Config is a ConfigParser with BasicInterpolation,
+# so a bare `%` in the value raises InterpolationSyntaxError when the option is
+# read back. Every platform-issued URL carries one:
+#
+#   ...?options=-csearch_path%3Dtenant_<x>_app_<y>&sslmode=require
+#
+# so `upgrade head` died on every boot of every multi-tenant app, and the
+# additive reconciler in database.py kept the schema close enough to the models
+# that nothing looked broken. Migrations have simply never applied.
 _db_url = os.getenv("DATABASE_URL")
 if _db_url:
-    config.set_main_option("sqlalchemy.url", _db_url)
+    config.set_main_option("sqlalchemy.url", _db_url.replace("%", "%%"))
 
 if config.config_file_name is not None:
     try:
