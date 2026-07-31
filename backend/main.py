@@ -540,9 +540,16 @@ def _maybe_fetch_remote_manifest():
         import urllib.request
 
         url = f"{base}/internal/apps/{app_id}/manifest-bundle"
-        req = urllib.request.Request(
-            url, headers={"X-Claritty-Internal": secret}
-        )
+        # The shared secret is transport auth only — every deployed app holds
+        # the same one, so it cannot say WHICH app is asking, and the appId here
+        # is just a path segment. The per-app secret (HMAC(master, appId), given
+        # to us as CLARITY_APP_INTEGRATION_SECRET) proves it, which is what lets
+        # the platform serve this app its own manifest and refuse anyone else's.
+        headers = {"X-Claritty-Internal": secret}
+        app_secret = os.getenv("CLARITY_APP_INTEGRATION_SECRET")
+        if app_secret:
+            headers["X-Claritty-App-Secret"] = app_secret
+        req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=8) as resp:  # noqa: S310
             data = json.loads(resp.read().decode("utf-8"))
         out_dir = "/tmp/claritty-manifest"
