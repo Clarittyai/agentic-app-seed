@@ -407,15 +407,26 @@ async def execute_agent(
     """
     Execute a single agent with provided input data.
     """
-    # Get user integrations
+    # Get user integrations — SELF-HOST ONLY.
+    #
+    # This dict becomes the agent's `integration_resolver`, so every entry is a
+    # credential handed directly to agent code and, through it, within reach of
+    # the model. That is the opposite of the managed model: on-platform the
+    # credential stays on the platform and the app calls a brokered tool, so the
+    # token never enters this process at all.
+    #
+    # Leaving the dict EMPTY on-platform is what makes the SDK fall through to
+    # the broker. Populating it was a legacy self-host path that also ran when
+    # hosted, quietly re-introducing the exposure the broker exists to remove.
     integrations = {}
-    user_integrations = db.query(models.UserIntegration).filter(
-        models.UserIntegration.user_id == user_id,
-        models.UserIntegration.is_active == True
-    ).all()
+    if not os.environ.get("CLARITTY_PLATFORM_URL"):
+        user_integrations = db.query(models.UserIntegration).filter(
+            models.UserIntegration.user_id == user_id,
+            models.UserIntegration.is_active == True
+        ).all()
 
-    for integration in user_integrations:
-        integrations[integration.service] = integration.credentials
+        for integration in user_integrations:
+            integrations[integration.service] = integration.credentials
 
     # Per-agent user context (the platform's "how to do your job" instructions)
     # arrives alongside the inputs; pull it out and bind it so the SDK injects
@@ -490,17 +501,6 @@ def verify_internal_dispatch(
     expected = os.getenv("CLARITY_INTERNAL_SECRET")
     if expected and x_claritty_internal != expected:
         raise HTTPException(status_code=401, detail="Invalid internal dispatch secret")
-
-
-def _load_user_integrations(db: Session, user_id: str) -> Dict[str, Any]:
-    integrations: Dict[str, Any] = {}
-    rows = db.query(models.UserIntegration).filter(
-        models.UserIntegration.user_id == user_id,
-        models.UserIntegration.is_active == True,
-    ).all()
-    for row in rows:
-        integrations[row.service] = row.credentials
-    return integrations
 
 
 # --- v2 manifest execution (intelligence.yaml workflows) ----------------------

@@ -5,6 +5,7 @@ Credentials are encrypted before they touch the database and decrypted only in
 memory when an app needs to call the provider. Status views never expose secrets.
 """
 import logging
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -92,6 +93,20 @@ def merge_credentials(
 
 
 def get_credentials(db: Session, user_id: str, service: str) -> Optional[Dict[str, Any]]:
+    """Decrypt this app's OWN stored credential. SELF-HOST ONLY.
+
+    Refuses on-platform. The write routes have returned 410 for a while — a
+    hosted app cannot put anything here — but the read side stayed live, and a
+    live reader plus a live `APP_ENCRYPTION_KEY` is a decryption path sitting
+    inside the process the credential is supposed to stay out of. Legacy rows
+    from before the routes closed would still decrypt.
+
+    Returning None on-platform lands callers on `IntegrationNotConnected`, which
+    is honest: for a hosted app there genuinely is no app-local credential, and
+    the connected one lives on the platform behind the broker.
+    """
+    if os.environ.get("CLARITTY_PLATFORM_URL"):
+        return None
     row = _row(db, user_id, service)
     if not row or not row.credentials:
         return None
