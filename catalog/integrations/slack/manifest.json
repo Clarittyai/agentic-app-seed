@@ -17,7 +17,7 @@
   "providedTools": [
     {
       "id": "slack.post_message",
-      "description": "Post a message to a channel.",
+      "description": "Post a message to a channel. To post a LIST of records, bind `report.rows` to the structured data and it is delivered as an aligned table with a chart — do not flatten a list into prose.",
       "input": {
         "channel": {
           "type": "string",
@@ -26,6 +26,14 @@
         "text": {
           "type": "string",
           "required": true
+        },
+        "report": {
+          "type": "object",
+          "required": false
+        },
+        "blocks": {
+          "type": "array",
+          "required": false
         }
       },
       "output": {

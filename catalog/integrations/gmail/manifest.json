@@ -18,7 +18,7 @@
   "providedTools": [
     {
       "id": "gmail.send",
-      "description": "Send an email (optionally as a reply in a thread).",
+      "description": "Send an email (optionally as a reply in a thread). To send a LIST of records, bind `report.rows` to the structured data and it is delivered as a formatted table with a chart — do not flatten a list into prose.",
       "input": {
         "to": {
           "type": "string",
@@ -31,6 +31,14 @@
         "body": {
           "type": "string",
           "required": true
+        },
+        "report": {
+          "type": "object",
+          "required": false
+        },
+        "html": {
+          "type": "string",
+          "required": false
         },
         "threadId": {
           "type": "string",
