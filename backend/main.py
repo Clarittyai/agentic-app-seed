@@ -494,13 +494,34 @@ async def execute_agent(
 
 def verify_internal_dispatch(
     x_claritty_internal: Optional[str] = Header(None, alias="X-Claritty-Internal"),
+    x_claritty_app_secret: Optional[str] = Header(None, alias="X-Claritty-App-Secret"),
 ) -> None:
-    """Reject unless the platform's shared internal secret matches. When no
-    secret is configured (local dev) we allow, since the platform always sets
-    it in production."""
-    expected = os.getenv("CLARITY_INTERNAL_SECRET")
-    if expected and x_claritty_internal != expected:
-        raise HTTPException(status_code=401, detail="Invalid internal dispatch secret")
+    """Reject unless the caller presents a secret this app can verify.
+
+    Two credentials are accepted. The per-app secret (HMAC(master, appId),
+    given to us as CLARITY_APP_INTEGRATION_SECRET) is the better one: it is
+    OURS, so a caller presenting it proves it either holds the master or was
+    given this app's own value. The shared CLARITY_INTERNAL_SECRET is identical
+    in every deployed app, so it says nothing about who is calling; it stays
+    accepted for older platforms that send nothing else.
+
+    "Configured" means EITHER credential is present. It used to mean the shared
+    secret alone, so an app without it allowed every caller — which would have
+    turned removing that variable from the app environment into silently
+    unauthenticating these routes rather than tightening them. With no
+    credential at all (local dev, nothing to check against) we still allow.
+    """
+    expected_internal = os.getenv("CLARITY_INTERNAL_SECRET")
+    expected_app = os.getenv("CLARITY_APP_INTEGRATION_SECRET")
+    if not expected_internal and not expected_app:
+        return
+    if expected_app and hmac.compare_digest(x_claritty_app_secret or "", expected_app):
+        return
+    if expected_internal and hmac.compare_digest(
+        x_claritty_internal or "", expected_internal
+    ):
+        return
+    raise HTTPException(status_code=401, detail="Invalid internal dispatch secret")
 
 
 # --- v2 manifest execution (intelligence.yaml workflows) ----------------------
