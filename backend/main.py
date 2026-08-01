@@ -549,12 +549,15 @@ def _maybe_fetch_remote_manifest():
         return None
     app_id = os.getenv("CLARITY_APP_ID")
     secret = os.getenv("CLARITY_INTERNAL_SECRET")
+    app_secret = os.getenv("CLARITY_APP_INTEGRATION_SECRET")
     base = (
         os.getenv("CLARITTY_PLATFORM_URL")
         or os.getenv("CLARITY_PLATFORM_URL")
         or ""
     ).rstrip("/")
-    if not (app_id and secret and base):
+    # EITHER credential works — requiring the shared one would silently disable
+    # hot-reload (this returns None, no error) once it leaves the app env.
+    if not (app_id and base and (secret or app_secret)):
         return None
     try:
         import json
@@ -566,8 +569,9 @@ def _maybe_fetch_remote_manifest():
         # is just a path segment. The per-app secret (HMAC(master, appId), given
         # to us as CLARITY_APP_INTEGRATION_SECRET) proves it, which is what lets
         # the platform serve this app its own manifest and refuse anyone else's.
-        headers = {"X-Claritty-Internal": secret}
-        app_secret = os.getenv("CLARITY_APP_INTEGRATION_SECRET")
+        headers = {}
+        if secret:
+            headers["X-Claritty-Internal"] = secret
         if app_secret:
             headers["X-Claritty-App-Secret"] = app_secret
         req = urllib.request.Request(url, headers=headers)

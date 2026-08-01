@@ -165,11 +165,12 @@ def execute_tool(
     import httpx
 
     base = (os.environ.get("CLARITTY_PLATFORM_URL") or "").rstrip("/")
-    secret = (
-        os.environ.get("CLARITY_INTERNAL_SECRET")
-        or os.environ.get("CLARITTY_INTERNAL_SECRET")
-        or ""
-    )
+    # Auth headers come from the SDK so this fallback path presents the SAME
+    # credentials as the primary executor: the per-app HMAC proves our appId and
+    # authenticates on its own, with the shared secret sent only while it exists.
+    # Hardcoding X-Claritty-Internal here meant this path 401'd the moment
+    # CLARITY_INTERNAL_SECRET left the app environment.
+    from claritty_sdk import internal_auth as _internal_auth
     # The platform scopes each integration credential to (user, app). Send this
     # app's id so the platform's findConnected matches the app-scoped connection;
     # without it the lookup falls back to appId=null and reports NOT_CONNECTED even
@@ -190,7 +191,7 @@ def execute_tool(
     try:
         resp = httpx.post(
             url,
-            headers={"X-Claritty-Internal": secret},
+            headers=_internal_auth.internal_headers(),
             json=body,
             timeout=30,
         )
