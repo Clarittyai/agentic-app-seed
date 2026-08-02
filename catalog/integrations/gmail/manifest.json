@@ -18,7 +18,7 @@
   "providedTools": [
     {
       "id": "gmail.send",
-      "description": "Send an email (optionally as a reply in a thread). To send a LIST of records, bind `report.rows` to the structured data and it is delivered as a formatted table with a chart — do not flatten a list into prose.",
+      "description": "Send an email (optionally as a reply in a thread). To send a LIST of records, bind `report.rows` to the structured data and it is delivered as a formatted table with a chart \u2014 do not flatten a list into prose.",
       "input": {
         "to": {
           "type": "string",
@@ -58,7 +58,7 @@
     },
     {
       "id": "gmail.list_messages",
-      "description": "List recent messages (stubs); supports paging.",
+      "description": "List messages, newest first; supports paging. Each result already carries id, thread_id, sender, sender_email, sender_name, subject, date and snippet. Bind them directly. Do NOT add a step to extract those fields; they are not in the message body.",
       "input": {
         "limit": {
           "type": "integer",
@@ -76,7 +76,8 @@
       "output": {
         "messages": {
           "type": "array",
-          "required": true
+          "required": true,
+          "description": "Rows of {id, thread_id, sender, sender_email, sender_name, subject, date, snippet, label_ids}."
         },
         "nextPageToken": {
           "type": "string",
@@ -86,7 +87,7 @@
     },
     {
       "id": "gmail.search",
-      "description": "Search messages by query (Gmail syntax); supports paging.",
+      "description": "Search messages by query (Gmail syntax); supports paging. Each result already carries id, thread_id, sender, sender_email, sender_name, subject, date and snippet. Bind them directly. Do NOT add a step to extract those fields; they are not in the message body.",
       "input": {
         "query": {
           "type": "string",
@@ -104,7 +105,8 @@
       "output": {
         "messages": {
           "type": "array",
-          "required": true
+          "required": true,
+          "description": "Rows of {id, thread_id, sender, sender_email, sender_name, subject, date, snippet, label_ids}."
         },
         "nextPageToken": {
           "type": "string",
