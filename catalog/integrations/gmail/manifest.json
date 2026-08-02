@@ -86,17 +86,17 @@
         "matched": {
           "type": "integer",
           "required": false,
-          "description": "How many messages matched the query on this page."
-        },
-        "hydrated": {
-          "type": "integer",
-          "required": false,
-          "description": "How many of those carry full metadata. Rows beyond this have only ids."
+          "description": "How many messages matched the query."
         },
         "truncated": {
           "type": "boolean",
           "required": false,
-          "description": "True when matched exceeded hydrated. A report built on these rows covers `hydrated` messages, not `matched` \u2014 say which."
+          "description": "True when matched exceeded returned. A total over these rows counts `returned`, not `matched` \u2014 bind a headline total to `matched` and say \"the most recent N of M\". Use nextPageToken for the rest."
+        },
+        "returned": {
+          "type": "integer",
+          "required": false,
+          "description": "How many came back. Every returned row is a full record; unreadable rows are not returned."
         }
       }
     },
@@ -130,17 +130,17 @@
         "matched": {
           "type": "integer",
           "required": false,
-          "description": "How many messages matched the query on this page."
-        },
-        "hydrated": {
-          "type": "integer",
-          "required": false,
-          "description": "How many of those carry full metadata. Rows beyond this have only ids."
+          "description": "How many messages matched the query."
         },
         "truncated": {
           "type": "boolean",
           "required": false,
-          "description": "True when matched exceeded hydrated. A report built on these rows covers `hydrated` messages, not `matched` \u2014 say which."
+          "description": "True when matched exceeded returned. A total over these rows counts `returned`, not `matched` \u2014 bind a headline total to `matched` and say \"the most recent N of M\". Use nextPageToken for the rest."
+        },
+        "returned": {
+          "type": "integer",
+          "required": false,
+          "description": "How many came back. Every returned row is a full record; unreadable rows are not returned."
         }
       }
     },
