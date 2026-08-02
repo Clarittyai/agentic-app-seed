@@ -82,6 +82,21 @@
         "nextPageToken": {
           "type": "string",
           "required": false
+        },
+        "matched": {
+          "type": "integer",
+          "required": false,
+          "description": "How many messages matched the query on this page."
+        },
+        "hydrated": {
+          "type": "integer",
+          "required": false,
+          "description": "How many of those carry full metadata. Rows beyond this have only ids."
+        },
+        "truncated": {
+          "type": "boolean",
+          "required": false,
+          "description": "True when matched exceeded hydrated. A report built on these rows covers `hydrated` messages, not `matched` \u2014 say which."
         }
       }
     },
@@ -111,6 +126,21 @@
         "nextPageToken": {
           "type": "string",
           "required": false
+        },
+        "matched": {
+          "type": "integer",
+          "required": false,
+          "description": "How many messages matched the query on this page."
+        },
+        "hydrated": {
+          "type": "integer",
+          "required": false,
+          "description": "How many of those carry full metadata. Rows beyond this have only ids."
+        },
+        "truncated": {
+          "type": "boolean",
+          "required": false,
+          "description": "True when matched exceeded hydrated. A report built on these rows covers `hydrated` messages, not `matched` \u2014 say which."
         }
       }
     },
