@@ -29,10 +29,11 @@
     },
     {
       "id": "linkedin.create_post",
-      "description": "Publish a post to LinkedIn. Posts to the member's own feed by default; pass org_id to post as a Company Page the member administers (falls back to the personal feed if page posting isn't authorized). Pass image_base64 to publish an image with the post: a base64 PNG with no data: prefix, such as a rendered chart or report card. Describe it in image_alt.",
+      "description": "Publish a post to LinkedIn. Posts to the member's own feed by default; pass org_id to post as a Company Page the member administers (falls back to the personal feed if page posting isn't authorized). To publish a CHART with the post, bind `report.rows` to the structured data and the platform draws it as the post image; do not flatten a list into prose. Pass image_base64 instead when you already have the exact bytes (base64 PNG, no data: prefix). Describe either in image_alt.",
       "input": {
         "text": { "type": "string", "required": true },
         "org_id": { "type": "string", "required": false },
+        "report": { "type": "object", "required": false },
         "image_base64": { "type": "string", "required": false },
         "image_alt": { "type": "string", "required": false }
       },
