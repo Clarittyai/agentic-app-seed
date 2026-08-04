@@ -29,10 +29,12 @@
     },
     {
       "id": "linkedin.create_post",
-      "description": "Publish a post to LinkedIn. Posts to the member's own feed by default; pass org_id to post as a Company Page the member administers (falls back to the personal feed if page posting isn't authorized).",
+      "description": "Publish a post to LinkedIn. Posts to the member's own feed by default; pass org_id to post as a Company Page the member administers (falls back to the personal feed if page posting isn't authorized). Pass image_base64 to publish an image with the post: a base64 PNG with no data: prefix, such as a rendered chart or report card. Describe it in image_alt.",
       "input": {
         "text": { "type": "string", "required": true },
-        "org_id": { "type": "string", "required": false }
+        "org_id": { "type": "string", "required": false },
+        "image_base64": { "type": "string", "required": false },
+        "image_alt": { "type": "string", "required": false }
       },
       "output": {
         "post_id": { "type": "string", "required": true },
