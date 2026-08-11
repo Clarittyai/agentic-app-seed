@@ -6,7 +6,7 @@ Complete API documentation for the Clarity Agentic App backend.
 
 ```
 http://localhost:8000  (Development)
-https://your-app.clarity.ai  (Production)
+https://your-app.claritty.ai  (Production)
 ```
 
 ## Authentication

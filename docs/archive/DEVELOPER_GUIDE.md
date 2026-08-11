@@ -695,7 +695,7 @@ git push origin main
 4. **Deploy**:
 - Platform builds Docker containers
 - Runs health checks
-- Goes live at `https://your-app.clarity.ai`
+- Goes live at `https://your-app.claritty.ai`
 
 ### Post-Deployment
 

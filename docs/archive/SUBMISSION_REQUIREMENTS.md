@@ -180,7 +180,7 @@ services:
    ```
 
 2. **Submit via Clarity Platform**
-   - Go to [Clarity Developer Dashboard](https://platform.clarity.ai/developer)
+   - Go to [Clarity Developer Dashboard](https://platform.claritty.ai/developer)
    - Click "Submit New App"
    - Select "From GitHub Repository"
    - Enter repository URL
@@ -202,7 +202,7 @@ services:
    ```
 
 2. **Submit via Clarity Platform**
-   - Go to [Clarity Developer Dashboard](https://platform.clarity.ai/developer)
+   - Go to [Clarity Developer Dashboard](https://platform.claritty.ai/developer)
    - Click "Submit New App"
    - Select "Upload Archive"
    - Upload `my-app.tar.gz`
@@ -359,9 +359,9 @@ To update your marketplace app:
 
 ### Support
 
-- **Developer Docs**: https://docs.clarity.ai/marketplace
+- **Developer Docs**: https://docs.claritty.ai/marketplace
 - **Developer Discord**: https://discord.gg/clarity-devs
-- **Email Support**: marketplace@clarity.ai
+- **Email Support**: marketplace@claritty.ai
 - **Response Time**: < 24 hours
 
 ---
@@ -417,21 +417,21 @@ To update your marketplace app:
    - Clean code, comprehensive docs
    - Perfect security score
    - 5-star user reviews
-   - [View on Marketplace](https://marketplace.clarity.ai/taskflow-ai)
+   - [View on Marketplace](https://marketplace.claritty.ai/taskflow-ai)
 
 2. **ContentFlow AI** - Content creation automation
    - Innovative AI features
    - Great UX
    - Active developer support
-   - [View on Marketplace](https://marketplace.clarity.ai/contentflow-ai)
+   - [View on Marketplace](https://marketplace.claritty.ai/contentflow-ai)
 
 ---
 
 ## 📞 Questions?
 
-- **Email**: marketplace@clarity.ai
+- **Email**: marketplace@claritty.ai
 - **Discord**: https://discord.gg/clarity-devs
-- **Docs**: https://docs.clarity.ai/marketplace/submission
+- **Docs**: https://docs.claritty.ai/marketplace/submission
 - **Office Hours**: Tuesdays 2-4pm PT
 
 ---

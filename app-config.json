@@ -1,5 +1,5 @@
 {
-  "$schema": "https://clarity.ai/schemas/app-config-v1.json",
+  "$schema": "https://claritty.ai/schemas/app-config-v1.json",
   "appName": "App",
   "appVersion": "1.0.0",
   "description": "An AI-powered agentic app.",

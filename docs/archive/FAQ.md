@@ -751,9 +751,9 @@ print(AgentRegistry.list_agents())
 ### Getting Support
 
 1. **GitHub Issues**: https://github.com/Clarittyai/agentic-app-seed/issues
-2. **Clarity Platform Docs**: https://docs.clarity.ai
+2. **Clarity Platform Docs**: https://docs.claritty.ai
 3. **Community Discord**: [Link to Discord]
-4. **Email Support**: support@clarity.ai
+4. **Email Support**: support@claritty.ai
 
 ### Before Asking for Help
 
