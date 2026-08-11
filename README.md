@@ -1,24 +1,35 @@
-# 🚀 Agentic App Seed - Claritty Platform Template
+<div align="center">
 
-**Build production-ready agentic apps in minutes** - optimized for Claude Code
+# Agentic App Seed
+
+**A self-hostable template for building AI workflow automations and agentic apps.**
+
+FastAPI, React and Postgres, wired for Claude Code.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![Claritty Platform](https://img.shields.io/badge/Claritty-Platform_Ready-green.svg)](https://claritty.ai)
 
+### [Claritty Cloud »](https://claritty.ai) · [Docs](https://claritty.ai/docs) · [Report an issue](https://github.com/Clarittyai/agentic-app-seed/issues)
+
+</div>
+
 ---
 
-## 🎯 What is This?
+## What this is
 
-A **minimal, best-practice, self-hostable template** for building agentic apps
-(FastAPI + React + Postgres). You host it yourself — anywhere you can run Docker.
-Its only Claritty dependencies are **the LLM (via the `claritty_sdk` proxy)** and
-**the widget UI kit (`@clarittyai/widget-toolkit`)**.
+A minimal, best-practice template for an agentic app: an agent that reasons, tools it can
+call, a workflow that sequences them, a trigger that runs it on a schedule or an event, and
+a UI to watch it. You host it yourself, anywhere you can run Docker.
 
-**Perfect for:**
-- Developers with an agentic app idea
-- Anyone wanting to automate tasks with AI
-- Shipping a real agentic app in hours, not weeks
+Its only Claritty dependencies are **the LLM** (through the `claritty_sdk` proxy) and **the
+widget UI kit** (`@clarittyai/widget-toolkit`). The rest of the stack is ordinary FastAPI,
+React and Postgres, and it stays yours.
+
+**Reach for it when you want to:**
+- automate a task you keep doing by hand, and own the code that does it
+- ship a working agentic app in hours rather than weeks
+- build with Claude Code, Cursor or Codex against a real project structure instead of a blank file
 
 **Developer workflow:**
 ```bash
@@ -31,14 +42,14 @@ Its only Claritty dependencies are **the LLM (via the `claritty_sdk` proxy)** an
 
 ---
 
-## ⚡ 5-Minute Quick Start
+## 5-Minute Quick Start
 
 ### 1. Scaffold your app
 ```bash
 npx create-claritty-app my-awesome-app
 cd my-awesome-app
 # Clones this template, creates .env, and inits a fresh git repo for you.
-# No API keys needed — AI runs through the Claritty platform proxy
+# No API keys needed. AI runs through the Claritty platform proxy
 # (and each agent's fallback(ctx) runs instead when no proxy is set locally).
 ```
 
@@ -78,7 +89,7 @@ In Claude Code, run:
 - What problem your app solves
 - What tasks should be automated
 - When/how users want it to run
-- **Its design identity** — palette, typography, landing page, app name/logo
+- **Its design identity**: palette, typography, landing page, app name/logo
 
 **Claude will help you design:**
 - AI agents for specific tasks
@@ -87,7 +98,7 @@ In Claude Code, run:
 - Widget interfaces (small & large)
 - A distinct visual identity (so it doesn't look like this template)
 
-> ⚠️ **This is a template — make the app your own.** Keep the platform contract,
+> ⚠️ **This is a template, so make the app your own.** Keep the platform contract,
 > but completely replace the look (theme, landing page, logo, name). Run
 > `rm .claritty-seed-pristine` to activate the **identity gate**
 > (`npm run check:identity`, also a Claude Code Stop hook) which blocks "done"
@@ -95,7 +106,7 @@ In Claude Code, run:
 
 ---
 
-## 🏗️ What's Included
+## What's Included
 
 ### Backend (FastAPI + Python)
 ```
@@ -126,14 +137,14 @@ frontend/
 
 ---
 
-## 🎨 Core Concepts
+## Core Concepts
 
 ### 1. Agentic Apps = AI Workers on User's Schedule
 
 **Traditional apps:** User does the work manually
 **Agentic apps:** AI agents work automatically
 
-**Example** (the seed's `example-agent`) — v2: the agent is a system prompt; the SDK's
+**Example** (the seed's `example-agent`), v2: the agent is a system prompt; the SDK's
 tool-use loop runs it. No `execute()` method.
 ```python
 @agent(id="example-agent")            # schema lives in intelligence.yaml
@@ -169,7 +180,7 @@ triggers:
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 ### Core Guides (Start Here)
 - **[CLAUDE.md](CLAUDE.md)** - AI assistant guide (for Claude Code / Cursor)
@@ -181,7 +192,7 @@ triggers:
 
 ---
 
-## 🔧 Common Tasks
+## Common Tasks
 
 Everything below is declared in **`intelligence.yaml`** (the v2 manifest the SDK runs). There are NO
 `backend/workflows/*.py` or `backend/triggers/*.py` files.
@@ -189,7 +200,7 @@ Everything below is declared in **`intelligence.yaml`** (the v2 manifest the SDK
 ### Add a New Agent
 1. Declare it in `intelligence.yaml#agents` (schema here) with `promptFile: backend/custom/agents/my_agent/prompt.md`.
 2. Write the agent's instructions as prose in that `prompt.md` (call tools by id, end with `__finish`).
-3. (Optional) a handler class for hooks/offline `fallback` — `@agent(id)` + `system_prompt`, never `execute()`.
+3. (Optional) a handler class for hooks/offline `fallback`: `@agent(id)` + `system_prompt`, never `execute()`.
 
 ### Add a New Workflow
 1. Declare it in `intelligence.yaml#workflows`: `steps` with `agent:`/`tool:`, pipe data via
@@ -203,9 +214,9 @@ Everything below is declared in **`intelligence.yaml`** (the v2 manifest the SDK
 
 ---
 
-## 🚀 Host it
+## Host it
 
-This is a normal Docker app — run it anywhere you can run a container + Postgres.
+This is a normal Docker app, so run it anywhere you can run a container + Postgres.
 
 ```bash
 # Build + run locally (nginx → FastAPI on one container, + Postgres)
@@ -213,10 +224,10 @@ docker compose up --build
 # → app on http://localhost:3200
 ```
 
-**Required env vars** (set in `.env` — don't delete them):
-- `DATABASE_URL` — Postgres connection
-- `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN` — the Claritty LLM proxy
-  (for real AI; without them, the SDK runs each agent's `fallback(ctx)` — a no-AI result)
+**Required env vars** (set in `.env`, don't delete them):
+- `DATABASE_URL`: Postgres connection
+- `CLARITTY_PLATFORM_URL` + `CLARITTY_AUTH_TOKEN`: the Claritty LLM proxy
+  (for real AI; without them, the SDK runs each agent's `fallback(ctx)`, a no-AI result)
 
 To deploy, ship the same image to your host of choice (any container platform) and
 point `DATABASE_URL` at your Postgres. The schema is managed by Alembic migrations
@@ -224,7 +235,7 @@ point `DATABASE_URL` at your Postgres. The schema is managed by Alembic migratio
 
 ---
 
-## 🛠 Infrastructure files (yours)
+## Infrastructure files (yours)
 
 You self-host, so `Dockerfile`, `docker-compose.yml`, and `frontend/nginx.conf`
 are yours to change. Two things to keep working:
@@ -234,7 +245,7 @@ are yours to change. Two things to keep working:
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Manual API testing
@@ -251,7 +262,7 @@ curl http://localhost:8000/api/widget?size=large  # Should be < 500ms
 
 ---
 
-## 💡 Best Practices
+## Best Practices
 
 ### Design Workflow
 1. ✅ **Start with widgets** - Design small/large widgets first
@@ -282,7 +293,7 @@ curl http://localhost:8000/api/widget?size=large  # Should be < 500ms
 
 ---
 
-## 🌟 What You Can Build
+## What You Can Build
 
 **Real examples:**
 - **AI Task Manager** - Auto-prioritize tasks, suggest schedules
@@ -296,13 +307,13 @@ curl http://localhost:8000/api/widget?size=large  # Should be < 500ms
 
 ---
 
-## 📄 License
+## License
 
 MIT License - See [LICENSE](LICENSE)
 
 ---
 
-## 🚀 Get Started Now
+## Get Started Now
 
 ```bash
 git clone https://github.com/Clarittyai/agentic-app-seed.git
