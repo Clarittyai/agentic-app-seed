@@ -10,6 +10,7 @@ Main FastAPI application with:
 
 from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -168,6 +169,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# AN ALB LAMBDA TARGET HANGS UP AT 1 MB, AND A BIG READ REACHES IT.
+#
+# In production this app is a Lambda behind an ALB behind CloudFront, and an ALB
+# refuses any Lambda response over 1 MB. It does not fail the invocation — the
+# function returns cleanly, logs a normal END, and the ALB turns the answer into
+# a bare 502 that nothing in the app can see or explain.
+#
+# Measured, on an automation that reads the YC directory's 622 companies and
+# emails the list. `/internal/run-workflow` returns the collection four times
+# over — once as the read step's output, again as `readCache` (so approving the
+# run doesn't re-read), again in `writePreviews`, and again in `outputs` — which
+# at 622 rows is ~1.29 MB. The same automation at 40 rows returned 58 KB and
+# worked perfectly, so this only appears once someone's list gets long, which is
+# exactly when the automation is worth having. The platform reported "Request
+# failed with status code 502" and marked BOTH steps DIDN'T RUN, while the read
+# had in fact run for thirty seconds and succeeded.
+#
+# Compressing is the fix rather than trimming, because every one of those four
+# copies is load-bearing and the caller is a machine that already asks for gzip.
+# This JSON is one repeated key set, so it compresses about ten to one and the
+# ceiling stops being reachable in practice.
+#
+# Safe under Mangum by construction, not by luck: it hands a text/* or
+# application/json body to `body.decode()` first and only base64-encodes on
+# UnicodeDecodeError. A gzip stream opens with \x1f\x8b — a continuation byte
+# with no lead byte, never valid UTF-8 — so the decode always raises and the
+# body always takes the base64 path with isBase64Encoded set. Added AFTER CORS
+# so it wraps outermost and compresses the finished response.
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 
 
 # Dependency: Get current user ID — fail-closed in production.
