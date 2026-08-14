@@ -6,18 +6,20 @@
   "version": "1.0.0",
   "name": "Jira",
   "vendor": "Atlassian",
-  "description": "Create and transition issues in Jira via the Atlassian OAuth.",
+  "description": "Create, search and transition Jira issues, and attach files to them, via the Atlassian OAuth.",
   "intentHints": [
     "create a jira ticket",
+    "attach a file to a jira issue",
     "transition an issue",
-    "jql search"
+    "jql search",
+    "list jira projects"
   ],
   "authType": "oauth2",
   "_authNote": "OAuth endpoints, scopes, client secret ref and any identity step are PLATFORM-OWNED \u2014 they live in the private clarity-api (integrations-v2/config/oauth-configs.ts), never in this public repo. This manifest only declares that the integration uses oauth2 and which tools it provides.",
   "providedTools": [
     {
       "id": "jira.create_issue",
-      "description": "Create an issue.",
+      "description": "Create an issue, with an optional description body.",
       "input": {
         "project_key": {
           "type": "string",
@@ -30,12 +32,40 @@
         "issue_type": {
           "type": "string",
           "required": false
+        },
+        "description": {
+          "type": "string",
+          "required": false
+        },
+        "labels": {
+          "type": "array",
+          "required": false
+        },
+        "priority": {
+          "type": "string",
+          "required": false
+        },
+        "assignee_account_id": {
+          "type": "string",
+          "required": false
+        },
+        "parent_key": {
+          "type": "string",
+          "required": false
         }
       },
       "output": {
         "issue_key": {
           "type": "string",
           "required": true
+        },
+        "issue_id": {
+          "type": "string",
+          "required": false
+        },
+        "issue_url": {
+          "type": "string",
+          "required": false
         }
       }
     },
@@ -71,6 +101,46 @@
       "output": {
         "ok": {
           "type": "boolean",
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "jira.add_attachment",
+      "description": "Attach a file to an existing issue. Takes the file as a URL \u2014 `vision.download` returns one.",
+      "input": {
+        "issue_key": {
+          "type": "string",
+          "required": true
+        },
+        "file_url": {
+          "type": "string",
+          "required": true
+        },
+        "filename": {
+          "type": "string",
+          "required": false
+        }
+      },
+      "output": {
+        "attachments": {
+          "type": "array",
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "jira.list_projects",
+      "description": "List the projects this account can file into, so a project key need not be typed from memory.",
+      "input": {
+        "max_results": {
+          "type": "number",
+          "required": false
+        }
+      },
+      "output": {
+        "projects": {
+          "type": "array",
           "required": true
         }
       }
