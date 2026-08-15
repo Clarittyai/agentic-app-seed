@@ -1,0 +1,70 @@
+{
+  "id": "mastodon",
+  "kind": "integration",
+  "category": "social",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Mastodon",
+  "vendor": "Mastodon",
+  "description": "Post to a Mastodon account, read its home timeline, and search public posts on its server.",
+  "intentHints": [
+    "post this to mastodon",
+    "what's on my mastodon timeline",
+    "search mastodon for mentions of us"
+  ],
+  "authType": "apiKey",
+  "_authNote": "Mastodon is federated: every server is its own OAuth provider with its own authorize and token URLs, which the platform's OAuth config cannot express (its endpoints are static per integration). A token the user issues on their own server is one screen for them and avoids registering an application on every instance that exists.",
+  "credentialFields": [
+    {
+      "key": "instance_url",
+      "label": "Server",
+      "type": "text",
+      "required": true,
+      "placeholder": "https://mastodon.social",
+      "help": "The full URL of your Mastodon server, including https://."
+    },
+    {
+      "key": "access_token",
+      "label": "Access token",
+      "type": "password",
+      "required": true,
+      "help": "On your server: Preferences → Development → New application. Tick read and write, then copy the access token."
+    }
+  ],
+  "providedTools": [
+    {
+      "id": "mastodon.post_status",
+      "description": "Publish a post. `visibility` is public, unlisted, private or direct, and defaults to public. Set `spoiler_text` to put the post behind a content warning.",
+      "input": {
+        "text": { "type": "string", "required": true },
+        "visibility": { "type": "string", "required": false },
+        "spoiler_text": { "type": "string", "required": false }
+      },
+      "output": {
+        "post_id": { "type": "string", "required": true },
+        "permalink": { "type": "string", "required": false }
+      }
+    },
+    {
+      "id": "mastodon.fetch_timeline",
+      "description": "The connected account's home timeline: posts from the accounts it follows.",
+      "input": {
+        "limit": { "type": "integer", "required": false, "default": 20 }
+      },
+      "output": {
+        "posts": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "mastodon.search",
+      "description": "Search posts on the connected server. Federated search only reaches posts that server already knows about, so results are narrower than searching Mastodon as a whole.",
+      "input": {
+        "query": { "type": "string", "required": true },
+        "limit": { "type": "integer", "required": false, "default": 20 }
+      },
+      "output": {
+        "statuses": { "type": "array", "required": true }
+      }
+    }
+  ]
+}

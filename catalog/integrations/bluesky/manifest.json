@@ -1,0 +1,92 @@
+{
+  "id": "bluesky",
+  "kind": "integration",
+  "category": "social",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Bluesky",
+  "vendor": "Bluesky",
+  "description": "Post to Bluesky, read an account's posts with their engagement counts, search public posts, and read a profile.",
+  "intentHints": [
+    "post this to bluesky",
+    "how did my bluesky posts do",
+    "search bluesky for mentions of us",
+    "cross-post to bluesky"
+  ],
+  "authType": "apiKey",
+  "_authNote": "An APP PASSWORD, not the account password. Bluesky's own OAuth is DPoP-based and disproportionate for this surface; an app password is issued in one screen and revoked independently. The platform trades it for a short-lived session on every call.",
+  "credentialFields": [
+    {
+      "key": "handle",
+      "label": "Handle",
+      "type": "text",
+      "required": true,
+      "placeholder": "yourname.bsky.social",
+      "help": "Your full Bluesky handle, including the domain."
+    },
+    {
+      "key": "app_password",
+      "label": "App password",
+      "type": "password",
+      "required": true,
+      "placeholder": "xxxx-xxxx-xxxx-xxxx",
+      "help": "Bluesky → Settings → Privacy and security → App passwords. Never your account password."
+    },
+    {
+      "key": "service",
+      "label": "Server",
+      "type": "text",
+      "required": false,
+      "placeholder": "https://bsky.social",
+      "help": "Only if you host your own PDS. Leave blank for a normal Bluesky account."
+    }
+  ],
+  "providedTools": [
+    {
+      "id": "bluesky.create_post",
+      "description": "Publish a post. Bluesky's limit is 300 characters and the tool refuses anything longer rather than letting the API truncate it. Any URL in the text is linked automatically.",
+      "input": {
+        "text": { "type": "string", "required": true }
+      },
+      "output": {
+        "post_id": { "type": "string", "required": true },
+        "permalink": { "type": "string", "required": false }
+      }
+    },
+    {
+      "id": "bluesky.fetch_posts",
+      "description": "An account's own posts with like, repost and reply counts. Defaults to the connected account; pass `actor` (a handle or DID) to read someone else's public posts.",
+      "input": {
+        "actor": { "type": "string", "required": false },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "posts": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "bluesky.search_posts",
+      "description": "Search public Bluesky posts by keyword. Use it to find mentions of a brand or people discussing a topic.",
+      "input": {
+        "query": { "type": "string", "required": true },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "posts": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "bluesky.get_profile",
+      "description": "A profile with follower, following and post counts. Defaults to the connected account; pass `actor` for someone else.",
+      "input": {
+        "actor": { "type": "string", "required": false }
+      },
+      "output": {
+        "handle": { "type": "string", "required": true },
+        "followers": { "type": "integer", "required": true },
+        "following": { "type": "integer", "required": true },
+        "posts": { "type": "integer", "required": true }
+      }
+    }
+  ]
+}
