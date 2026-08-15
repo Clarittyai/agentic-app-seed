@@ -1,0 +1,77 @@
+{
+  "id": "youtube",
+  "kind": "integration",
+  "category": "social",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "YouTube",
+  "vendor": "YouTube",
+  "description": "Read a channel's own videos with their view, like and comment counts, look up stats for specific videos, search YouTube, and read or reply to comments.",
+  "intentHints": [
+    "how are my youtube videos doing",
+    "summarize the comments on my latest video",
+    "reply to youtube comments",
+    "search youtube for videos about X",
+    "weekly report on channel performance"
+  ],
+  "authType": "oauth2",
+  "_authNote": "OAuth endpoints, scopes and the client secret ref are PLATFORM-OWNED (clarity-api, integrations-v2/config/oauth-configs.ts). YouTube uses its own Google Cloud project rather than the shared Gmail client, so its scope changes cannot re-open the verification the email and calendar integrations depend on.",
+  "providedTools": [
+    {
+      "id": "youtube.list_videos",
+      "description": "The connected channel's own videos, newest first, each with views, likes and comment count. Counts are null rather than zero when the channel hides them.",
+      "input": {
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "videos": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "youtube.get_video_stats",
+      "description": "Stats for specific videos. Takes `video_id` for one or `video_ids` for many, and answers for up to fifty in a single request, so ask for all of them at once rather than one call each.",
+      "input": {
+        "video_id": { "type": "string", "required": false },
+        "video_ids": { "type": "array", "required": false }
+      },
+      "output": {
+        "videos": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "youtube.search",
+      "description": "Search public YouTube videos. `order` is relevance, date, viewCount, rating or title. This is the most quota-expensive call YouTube offers, so search once and work from the results rather than searching repeatedly.",
+      "input": {
+        "query": { "type": "string", "required": true },
+        "order": { "type": "string", "required": false },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "videos": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "youtube.list_comments",
+      "description": "Top-level comments on a video, with author, text, likes and how many replies each has. Returns each comment's id, which is what reply_comment takes as parent_id.",
+      "input": {
+        "video_id": { "type": "string", "required": true },
+        "order": { "type": "string", "required": false },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "comments": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "youtube.reply_comment",
+      "description": "Reply to a comment as the connected channel. `parent_id` is a comment id from list_comments. Needs write access, which is granted separately; until then this answers that the scope is missing rather than failing silently.",
+      "input": {
+        "parent_id": { "type": "string", "required": true },
+        "text": { "type": "string", "required": true }
+      },
+      "output": {
+        "comment_id": { "type": "string", "required": true }
+      }
+    }
+  ]
+}
