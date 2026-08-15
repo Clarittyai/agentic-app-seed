@@ -1,0 +1,131 @@
+{
+  "id": "reddit",
+  "kind": "integration",
+  "category": "social",
+  "transport": "native",
+  "version": "1.0.0",
+  "name": "Reddit",
+  "vendor": "Reddit",
+  "description": "Read and search subreddits, read a post's comments, submit posts and replies, and read the authenticated account's subscriptions, submissions and inbox.",
+  "intentHints": [
+    "monitor a subreddit for mentions",
+    "summarize what r/saas is talking about this week",
+    "post a link to reddit",
+    "reply to comments on my reddit post",
+    "search reddit for people asking about X"
+  ],
+  "authType": "oauth2",
+  "_authNote": "OAuth endpoints, scopes and the client secret ref are PLATFORM-OWNED — they live in the private clarity-api (integrations-v2/config/oauth-configs.ts), never in this public repo. This manifest only declares that Reddit uses oauth2 and which tools it provides.",
+  "providedTools": [
+    {
+      "id": "reddit.fetch_posts",
+      "description": "Fetch posts from a subreddit. `sort` is hot, new, top or rising; for top, `time` narrows the window (hour, day, week, month, year, all). Returns each post's title, author, score, comment count, permalink and selftext.",
+      "input": {
+        "subreddit": { "type": "string", "required": true },
+        "sort": { "type": "string", "required": false, "default": "hot" },
+        "time": { "type": "string", "required": false },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "posts": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "reddit.search",
+      "description": "Search Reddit for posts matching a query. Pass `subreddit` to search inside one subreddit only; leave it out to search all of Reddit. Use this to find people discussing a topic, not to read a subreddit front page — fetch_posts does that.",
+      "input": {
+        "query": { "type": "string", "required": true },
+        "subreddit": { "type": "string", "required": false },
+        "sort": { "type": "string", "required": false, "default": "relevance" },
+        "time": { "type": "string", "required": false },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "posts": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "reddit.get_comments",
+      "description": "Read the comments on a post. Pass the post_id that fetch_posts or search returned. Returns a flat list of comments with author, body, score and depth — the reply tree is flattened, with depth preserved so nesting is still readable.",
+      "input": {
+        "post_id": { "type": "string", "required": true },
+        "sort": { "type": "string", "required": false, "default": "top" },
+        "limit": { "type": "integer", "required": false, "default": 50 }
+      },
+      "output": {
+        "comments": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "reddit.submit_post",
+      "description": "Submit a post to a subreddit. Pass `text` for a self post or `url` for a link post, never both. Most subreddits have posting rules and many require flair — a rejected submission comes back as an error naming the reason, so read it rather than retrying blindly.",
+      "input": {
+        "subreddit": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "text": { "type": "string", "required": false },
+        "url": { "type": "string", "required": false },
+        "flair_id": { "type": "string", "required": false }
+      },
+      "output": {
+        "post_id": { "type": "string", "required": true },
+        "permalink": { "type": "string", "required": false }
+      }
+    },
+    {
+      "id": "reddit.reply",
+      "description": "Reply to a post or to another comment. `thing_id` is the fullname of what you are replying to — a post id from fetch_posts or a comment id from get_comments; both are returned in the form Reddit needs.",
+      "input": {
+        "thing_id": { "type": "string", "required": true },
+        "text": { "type": "string", "required": true }
+      },
+      "output": {
+        "comment_id": { "type": "string", "required": true },
+        "permalink": { "type": "string", "required": false }
+      }
+    },
+    {
+      "id": "reddit.list_subscriptions",
+      "description": "List the subreddits the authenticated account subscribes to, with subscriber counts. Use it to ground a plan in the communities this account is actually part of instead of guessing subreddit names.",
+      "input": {
+        "limit": { "type": "integer", "required": false, "default": 100 }
+      },
+      "output": {
+        "subreddits": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "reddit.my_posts",
+      "description": "The authenticated account's own submissions, with score and comment count, so a team can report how its posts performed.",
+      "input": {
+        "sort": { "type": "string", "required": false, "default": "new" },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "posts": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "reddit.inbox",
+      "description": "Read the authenticated account's inbox. `filter` is inbox (everything), unread, or messages (private messages only, no comment replies).",
+      "input": {
+        "filter": { "type": "string", "required": false, "default": "inbox" },
+        "limit": { "type": "integer", "required": false, "default": 25 }
+      },
+      "output": {
+        "messages": { "type": "array", "required": true }
+      }
+    },
+    {
+      "id": "reddit.send_message",
+      "description": "Send a private message to a Reddit user. `to` is the username without the u/ prefix. Reddit throttles new or low-karma accounts hard and treats bulk messaging as spam, so use this for individual replies, never for outreach to a list.",
+      "input": {
+        "to": { "type": "string", "required": true },
+        "subject": { "type": "string", "required": true },
+        "text": { "type": "string", "required": true }
+      },
+      "output": {
+        "ok": { "type": "boolean", "required": true }
+      }
+    }
+  ]
+}
