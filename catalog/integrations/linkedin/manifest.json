@@ -43,6 +43,19 @@
       }
     },
     {
+      "id": "linkedin.create_comment",
+      "description": "Comment on a LinkedIn post. Use it for the FIRST COMMENT under a post you just published: a link in the post body suppresses that post's reach, so the link belongs in a comment. Pass the post_id create_post returned. Comments as the member by default; pass org_id to comment as the Company Page that authored the post (falls back to the member if page commenting isn't authorized).",
+      "input": {
+        "post_id": { "type": "string", "required": true },
+        "text": { "type": "string", "required": true },
+        "org_id": { "type": "string", "required": false }
+      },
+      "output": {
+        "comment_id": { "type": "string", "required": true },
+        "commented_as": { "type": "string", "required": false }
+      }
+    },
+    {
       "id": "linkedin.list_organizations",
       "description": "List the LinkedIn Company Pages the authenticated member administers (for a page picker). Returns [] if Company Page access isn't authorized.",
       "input": {},
