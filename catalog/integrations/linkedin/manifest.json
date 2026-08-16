@@ -3,22 +3,22 @@
   "kind": "integration",
   "category": "social",
   "transport": "native",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "LinkedIn",
   "vendor": "LinkedIn",
-  "description": "Read the authenticated user's LinkedIn feed and publish posts to their personal feed or a Company Page they administer.",
+  "description": "Read the authenticated member's own posts and their comments, publish posts to their personal feed or a Company Page they administer, and comment on a post.",
   "intentHints": [
-    "summarize my linkedin feed",
     "post a daily linkedin digest",
-    "monitor linkedin notifications",
-    "read what's happening on linkedin"
+    "reply to the comments on my linkedin posts",
+    "put the link in the first comment",
+    "read how my linkedin posts are doing"
   ],
   "authType": "oauth2",
   "_authNote": "OAuth endpoints, scopes, client secret ref and the identity step are PLATFORM-OWNED — they live in the private clarity-api (integrations-v2/config/oauth-configs.ts), never in this public repo. This manifest only declares that LinkedIn uses oauth2 and which tools it provides.",
   "providedTools": [
     {
       "id": "linkedin.fetch_posts",
-      "description": "Fetch the most recent N posts from the authenticated user's home feed.",
+      "description": "Fetch the authenticated member's OWN most recent N posts (not a home feed — LinkedIn exposes no feed read to standard apps). Pair with list_comments to see who engaged with them.",
       "input": {
         "limit": { "type": "integer", "required": false, "default": 20 },
         "since": { "type": "string", "required": false }
@@ -53,6 +53,19 @@
       "output": {
         "comment_id": { "type": "string", "required": true },
         "commented_as": { "type": "string", "required": false }
+      }
+    },
+    {
+      "id": "linkedin.list_comments",
+      "description": "Read the comments ON a post, so you can reply to the people who engaged with it. Pass a post_id from fetch_posts or create_post. Each comment carries id, text, author urn, created_at and parent_comment. Returns an empty list with a `reason` when the account can't read comments on that post rather than failing.",
+      "input": {
+        "post_id": { "type": "string", "required": true },
+        "limit": { "type": "integer", "required": false, "default": 50 }
+      },
+      "output": {
+        "comments": { "type": "array", "required": true },
+        "post_id": { "type": "string", "required": false },
+        "reason": { "type": "string", "required": false }
       }
     },
     {

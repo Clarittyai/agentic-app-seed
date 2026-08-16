@@ -3,12 +3,13 @@
   "kind": "integration",
   "category": "dev",
   "transport": "native",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "GitHub",
   "vendor": "GitHub",
-  "description": "List + create issues, open PRs, and search code in GitHub repos.",
+  "description": "List + create issues, comment on issues and PRs, open PRs, and search code in GitHub repos.",
   "intentHints": [
     "open a github issue",
+    "reply to issues on my repo",
     "create a pull request",
     "search github code"
   ],
@@ -17,7 +18,7 @@
   "providedTools": [
     {
       "id": "github.list_issues",
-      "description": "List issues in a repo.",
+      "description": "List issues in a repo. Each issue carries number, title, state, body, url, author, comment count and is_pull_request — GitHub returns PRs from this endpoint too, so filter on is_pull_request when you only want real issues.",
       "input": {
         "repo": {
           "type": "string",
@@ -32,6 +33,63 @@
         "issues": {
           "type": "array",
           "required": true
+        }
+      }
+    },
+    {
+      "id": "github.list_issue_comments",
+      "description": "Recent issue comments across a repo, newest first. Each carries comment_id, issue_number, body, author, url and timestamps. Also returns viewer_login — the connected account's own login — so you can tell your own comments from other people's and find the ones that are replies TO you. Pass `since` (ISO8601) to read only what is new.",
+      "input": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "since": {
+          "type": "string",
+          "required": false
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 50
+        }
+      },
+      "output": {
+        "comments": {
+          "type": "array",
+          "required": true
+        },
+        "viewer_login": {
+          "type": "string",
+          "required": false
+        }
+      }
+    },
+    {
+      "id": "github.create_issue_comment",
+      "description": "Comment on an issue or pull request. The open issues on your own repo are people asking questions about your product, so this is the engagement verb for GitHub. Returns the real comment id and permalink.",
+      "input": {
+        "repo": {
+          "type": "string",
+          "required": true
+        },
+        "issue_number": {
+          "type": "integer",
+          "required": true
+        },
+        "body": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {
+        "comment_id": {
+          "type": "string",
+          "required": true
+        },
+        "url": {
+          "type": "string",
+          "required": false
         }
       }
     },
