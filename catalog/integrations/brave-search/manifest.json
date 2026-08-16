@@ -14,16 +14,34 @@
     "ground in web results"
   ],
   "authType": "apiKey",
+  "credentialFields": [
+    {
+      "key": "api_key",
+      "label": "Subscription token",
+      "type": "password",
+      "required": true,
+      "help": "brave.com/search/api \u2192 your subscription."
+    }
+  ],
   "providedTools": [
     {
       "id": "brave-search.search",
       "description": "Search the web and return current results.",
       "input": {
-        "query": { "type": "string", "required": true },
-        "count": { "type": "number", "required": false }
+        "query": {
+          "type": "string",
+          "required": true
+        },
+        "count": {
+          "type": "number",
+          "required": false
+        }
       },
       "output": {
-        "results": { "type": "array", "required": true }
+        "results": {
+          "type": "array",
+          "required": true
+        }
       }
     }
   ]

@@ -12,6 +12,15 @@
     "alert a discord channel"
   ],
   "authType": "apiKey",
+  "credentialFields": [
+    {
+      "key": "api_key",
+      "label": "Bot token",
+      "type": "password",
+      "required": true,
+      "help": "Developer Portal \u2192 your application \u2192 Bot."
+    }
+  ],
   "providedTools": [
     {
       "id": "discord.send_message",

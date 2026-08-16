@@ -12,6 +12,15 @@
     "open a merge request"
   ],
   "authType": "apiKey",
+  "credentialFields": [
+    {
+      "key": "api_key",
+      "label": "Personal access token",
+      "type": "password",
+      "required": true,
+      "help": "Preferences \u2192 Access tokens in GitLab, with the read_api scope."
+    }
+  ],
   "providedTools": [
     {
       "id": "gitlab.list_issues",

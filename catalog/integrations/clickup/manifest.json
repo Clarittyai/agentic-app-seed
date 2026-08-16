@@ -12,6 +12,15 @@
     "list clickup tasks"
   ],
   "authType": "apiKey",
+  "credentialFields": [
+    {
+      "key": "api_key",
+      "label": "API token",
+      "type": "password",
+      "required": true,
+      "help": "Settings \u2192 Apps in ClickUp."
+    }
+  ],
   "providedTools": [
     {
       "id": "clickup.create_task",

@@ -12,6 +12,15 @@
     "create an airtable row"
   ],
   "authType": "apiKey",
+  "credentialFields": [
+    {
+      "key": "api_key",
+      "label": "Personal access token",
+      "type": "password",
+      "required": true,
+      "help": "airtable.com/create/tokens, with access to the bases you want read."
+    }
+  ],
   "providedTools": [
     {
       "id": "airtable.list_records",

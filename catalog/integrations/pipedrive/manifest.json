@@ -12,6 +12,15 @@
     "create a pipedrive deal"
   ],
   "authType": "apiKey",
+  "credentialFields": [
+    {
+      "key": "api_key",
+      "label": "API token",
+      "type": "password",
+      "required": true,
+      "help": "Settings \u2192 Personal preferences \u2192 API in Pipedrive."
+    }
+  ],
   "providedTools": [
     {
       "id": "pipedrive.list_deals",
