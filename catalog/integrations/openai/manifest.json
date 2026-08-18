@@ -19,7 +19,10 @@
       "label": "API key",
       "type": "password",
       "required": true,
-      "help": "platform.openai.com/api-keys."
+      "help": "platform.openai.com/api-keys.",
+      "docsUrl": "https://platform.openai.com/api-keys",
+      "pattern": "^sk-[A-Za-z0-9_-]+$",
+      "patternHelp": "An OpenAI key starts with sk-."
     }
   ],
   "providedTools": [

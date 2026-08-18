@@ -18,7 +18,10 @@
       "label": "Personal access token",
       "type": "password",
       "required": true,
-      "help": "airtable.com/create/tokens, with access to the bases you want read."
+      "help": "airtable.com/create/tokens, with access to the bases you want read.",
+      "docsUrl": "https://airtable.com/create/tokens",
+      "pattern": "^pat[A-Za-z0-9._-]+$",
+      "patternHelp": "A personal access token starts with pat. Keys beginning key are the old kind and no longer work."
     }
   ],
   "providedTools": [

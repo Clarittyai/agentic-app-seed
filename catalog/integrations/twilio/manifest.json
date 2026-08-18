@@ -82,14 +82,20 @@
       "type": "text",
       "required": true,
       "placeholder": "ACxxxxxxxx",
-      "help": "Twilio Console \u2192 Account Info."
+      "help": "In the Twilio Console under Account Info. It is the public one of the pair, safe to paste.",
+      "docsUrl": "https://console.twilio.com/",
+      "pattern": "^AC[0-9a-fA-F]{32}$",
+      "patternHelp": "An Account SID starts with AC and is 34 characters. If yours starts with SK you have copied an API Key SID instead."
     },
     {
       "key": "auth_token",
       "label": "Auth Token",
       "type": "password",
       "required": true,
-      "help": "Twilio Console \u2192 Account Info (kept secret)."
+      "help": "Beside the Account SID in the Console, behind \"show\". This is the secret half.",
+      "docsUrl": "https://console.twilio.com/",
+      "pattern": "^[0-9a-fA-F]{32}$",
+      "patternHelp": "An Auth Token is 32 hex characters with no prefix."
     },
     {
       "key": "from_number",
@@ -97,7 +103,10 @@
       "type": "text",
       "required": true,
       "placeholder": "+14155551234",
-      "help": "A Twilio phone number you own."
+      "help": "A number on your account with SMS enabled. A number you have not bought will be refused when it sends, not now.",
+      "docsUrl": "https://console.twilio.com/us1/develop/phone-numbers/manage/incoming",
+      "pattern": "^\\+[1-9]\\d{6,14}$",
+      "patternHelp": "Include the country code and the plus, like +14155551234."
     }
   ]
 }

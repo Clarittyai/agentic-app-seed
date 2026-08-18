@@ -16,7 +16,7 @@
   "providedTools": [
     {
       "id": "telegram.send_message",
-      "description": "Send a message to a Telegram chat. To send a LIST of records, bind `report.rows` to the structured data and it is delivered as an aligned table — do not flatten a list into prose.",
+      "description": "Send a message to a Telegram chat. To send a LIST of records, bind `report.rows` to the structured data and it is delivered as an aligned table \u2014 do not flatten a list into prose.",
       "input": {
         "chat_id": {
           "type": "string",
@@ -45,8 +45,10 @@
       "label": "Bot Token",
       "type": "password",
       "required": true,
-      "placeholder": "123456:ABC-DEF...",
-      "help": "Create a bot with @BotFather on Telegram and paste its token."
+      "placeholder": "110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw",
+      "help": "BotFather gives you this when you create the bot, and again with /token.",
+      "pattern": "^\\d{6,}:[A-Za-z0-9_-]{30,}$",
+      "patternHelp": "A bot token is the numeric bot id, a colon, then a long secret."
     }
   ]
 }

@@ -18,7 +18,10 @@
       "label": "Personal access token",
       "type": "password",
       "required": true,
-      "help": "Preferences \u2192 Access tokens in GitLab, with the read_api scope."
+      "help": "Preferences \u2192 Access tokens in GitLab, with the read_api scope.",
+      "docsUrl": "https://gitlab.com/-/user_settings/personal_access_tokens",
+      "pattern": "^glpat-[A-Za-z0-9_-]+$",
+      "patternHelp": "A GitLab personal access token starts with glpat-."
     }
   ],
   "providedTools": [

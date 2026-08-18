@@ -18,7 +18,10 @@
       "label": "API key",
       "type": "password",
       "required": true,
-      "help": "console.anthropic.com \u2192 API keys."
+      "help": "console.anthropic.com \u2192 API keys.",
+      "docsUrl": "https://console.anthropic.com/settings/keys",
+      "pattern": "^sk-ant-[A-Za-z0-9_-]+$",
+      "patternHelp": "An Anthropic key starts with sk-ant-."
     }
   ],
   "providedTools": [

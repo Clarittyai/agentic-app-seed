@@ -20,7 +20,8 @@
       "label": "Subscription token",
       "type": "password",
       "required": true,
-      "help": "brave.com/search/api \u2192 your subscription."
+      "help": "brave.com/search/api \u2192 your subscription.",
+      "docsUrl": "https://api-dashboard.search.brave.com/app/keys"
     }
   ],
   "providedTools": [

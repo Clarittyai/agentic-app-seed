@@ -19,7 +19,9 @@
       "label": "Secret key",
       "type": "password",
       "required": true,
-      "help": "Developers \u2192 API keys in Stripe. Starts with sk_."
+      "help": "Developers \u2192 API keys in Stripe. Starts with sk_.",
+      "pattern": "^(sk|rk)_(live|test)_[A-Za-z0-9]+$",
+      "patternHelp": "A secret key starts sk_live_ or sk_test_ (a restricted key starts rk_). A pk_ key is the publishable one and cannot read anything."
     }
   ],
   "providedTools": [
