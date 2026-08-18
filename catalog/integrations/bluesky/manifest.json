@@ -22,7 +22,9 @@
       "type": "text",
       "required": true,
       "placeholder": "yourname.bsky.social",
-      "help": "Your full Bluesky handle, including the domain."
+      "help": "Your full Bluesky handle, including the domain.",
+      "pattern": "^[^@\\s/]+\\.[^@\\s/]+$",
+      "patternHelp": "Include the domain, like alice.bsky.social \u2014 not just the name."
     },
     {
       "key": "app_password",
@@ -30,7 +32,9 @@
       "type": "password",
       "required": true,
       "placeholder": "xxxx-xxxx-xxxx-xxxx",
-      "help": "Bluesky → Settings → Privacy and security → App passwords. Never your account password."
+      "help": "Bluesky \u2192 Settings \u2192 Privacy and security \u2192 App passwords. Never your account password.",
+      "pattern": "^([a-z0-9]{4}-){3}[a-z0-9]{4}$",
+      "patternHelp": "An app password is four groups of four separated by dashes. Your account password will not work here."
     },
     {
       "key": "service",
@@ -46,46 +50,90 @@
       "id": "bluesky.create_post",
       "description": "Publish a post. Bluesky's limit is 300 characters and the tool refuses anything longer rather than letting the API truncate it. Any URL in the text is linked automatically.",
       "input": {
-        "text": { "type": "string", "required": true }
+        "text": {
+          "type": "string",
+          "required": true
+        }
       },
       "output": {
-        "post_id": { "type": "string", "required": true },
-        "permalink": { "type": "string", "required": false }
+        "post_id": {
+          "type": "string",
+          "required": true
+        },
+        "permalink": {
+          "type": "string",
+          "required": false
+        }
       }
     },
     {
       "id": "bluesky.fetch_posts",
       "description": "An account's own posts with like, repost and reply counts. Defaults to the connected account; pass `actor` (a handle or DID) to read someone else's public posts.",
       "input": {
-        "actor": { "type": "string", "required": false },
-        "limit": { "type": "integer", "required": false, "default": 25 }
+        "actor": {
+          "type": "string",
+          "required": false
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 25
+        }
       },
       "output": {
-        "posts": { "type": "array", "required": true }
+        "posts": {
+          "type": "array",
+          "required": true
+        }
       }
     },
     {
       "id": "bluesky.search_posts",
       "description": "Search public Bluesky posts by keyword. Use it to find mentions of a brand or people discussing a topic.",
       "input": {
-        "query": { "type": "string", "required": true },
-        "limit": { "type": "integer", "required": false, "default": 25 }
+        "query": {
+          "type": "string",
+          "required": true
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 25
+        }
       },
       "output": {
-        "posts": { "type": "array", "required": true }
+        "posts": {
+          "type": "array",
+          "required": true
+        }
       }
     },
     {
       "id": "bluesky.get_profile",
       "description": "A profile with follower, following and post counts. Defaults to the connected account; pass `actor` for someone else.",
       "input": {
-        "actor": { "type": "string", "required": false }
+        "actor": {
+          "type": "string",
+          "required": false
+        }
       },
       "output": {
-        "handle": { "type": "string", "required": true },
-        "followers": { "type": "integer", "required": true },
-        "following": { "type": "integer", "required": true },
-        "posts": { "type": "integer", "required": true }
+        "handle": {
+          "type": "string",
+          "required": true
+        },
+        "followers": {
+          "type": "integer",
+          "required": true
+        },
+        "following": {
+          "type": "integer",
+          "required": true
+        },
+        "posts": {
+          "type": "integer",
+          "required": true
+        }
       }
     }
   ]

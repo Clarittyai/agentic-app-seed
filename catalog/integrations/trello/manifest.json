@@ -56,7 +56,8 @@
       "label": "API Key",
       "type": "text",
       "required": true,
-      "help": "trello.com/app-key (the public application key)."
+      "help": "trello.com/app-key (the public application key).",
+      "docsUrl": "https://trello.com/app-key"
     },
     {
       "key": "token",

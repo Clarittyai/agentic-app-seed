@@ -21,14 +21,16 @@
       "type": "text",
       "required": true,
       "placeholder": "https://mastodon.social",
-      "help": "The full URL of your Mastodon server, including https://."
+      "help": "The full URL of your Mastodon server, including https://.",
+      "pattern": "^https://\\S+$",
+      "patternHelp": "The full server URL including https://, like https://mastodon.social."
     },
     {
       "key": "access_token",
       "label": "Access token",
       "type": "password",
       "required": true,
-      "help": "On your server: Preferences → Development → New application. Tick read and write, then copy the access token."
+      "help": "On your server: Preferences \u2192 Development \u2192 New application. Tick read and write, then copy the access token."
     }
   ],
   "providedTools": [
@@ -36,34 +38,66 @@
       "id": "mastodon.post_status",
       "description": "Publish a post. `visibility` is public, unlisted, private or direct, and defaults to public. Set `spoiler_text` to put the post behind a content warning.",
       "input": {
-        "text": { "type": "string", "required": true },
-        "visibility": { "type": "string", "required": false },
-        "spoiler_text": { "type": "string", "required": false }
+        "text": {
+          "type": "string",
+          "required": true
+        },
+        "visibility": {
+          "type": "string",
+          "required": false
+        },
+        "spoiler_text": {
+          "type": "string",
+          "required": false
+        }
       },
       "output": {
-        "post_id": { "type": "string", "required": true },
-        "permalink": { "type": "string", "required": false }
+        "post_id": {
+          "type": "string",
+          "required": true
+        },
+        "permalink": {
+          "type": "string",
+          "required": false
+        }
       }
     },
     {
       "id": "mastodon.fetch_timeline",
       "description": "The connected account's home timeline: posts from the accounts it follows.",
       "input": {
-        "limit": { "type": "integer", "required": false, "default": 20 }
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 20
+        }
       },
       "output": {
-        "posts": { "type": "array", "required": true }
+        "posts": {
+          "type": "array",
+          "required": true
+        }
       }
     },
     {
       "id": "mastodon.search",
       "description": "Search posts on the connected server. Federated search only reaches posts that server already knows about, so results are narrower than searching Mastodon as a whole.",
       "input": {
-        "query": { "type": "string", "required": true },
-        "limit": { "type": "integer", "required": false, "default": 20 }
+        "query": {
+          "type": "string",
+          "required": true
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "default": 20
+        }
       },
       "output": {
-        "statuses": { "type": "array", "required": true }
+        "statuses": {
+          "type": "array",
+          "required": true
+        }
       }
     }
   ]

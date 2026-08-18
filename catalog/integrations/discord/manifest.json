@@ -18,7 +18,8 @@
       "label": "Bot token",
       "type": "password",
       "required": true,
-      "help": "Developer Portal \u2192 your application \u2192 Bot."
+      "help": "Developer Portal \u2192 your application \u2192 Bot.",
+      "docsUrl": "https://discord.com/developers/applications"
     }
   ],
   "providedTools": [

@@ -6,7 +6,7 @@
   "version": "1.0.0",
   "name": "Outbound webhook",
   "vendor": "Claritty",
-  "description": "POST results to any webhook URL you own — Zapier, Make, n8n, or your platform's own automations.",
+  "description": "POST results to any webhook URL you own \u2014 Zapier, Make, n8n, or your platform's own automations.",
   "intentHints": [
     "notify my system",
     "send results to my platform",
@@ -20,7 +20,7 @@
   "providedTools": [
     {
       "id": "outbound-webhook.send",
-      "description": "POST a JSON payload to your configured webhook URL — plug this team into Zapier, Make, n8n, or your platform's own automations.",
+      "description": "POST a JSON payload to your configured webhook URL \u2014 plug this team into Zapier, Make, n8n, or your platform's own automations.",
       "input": {
         "payload": {
           "type": "object",
@@ -46,7 +46,9 @@
       "type": "text",
       "required": true,
       "placeholder": "https://hooks.zapier.com/hooks/catch/...",
-      "help": "The public HTTPS endpoint to POST to (Zapier/Make/n8n catch hook or your own API)."
+      "help": "The public HTTPS endpoint to POST to (Zapier/Make/n8n catch hook or your own API).",
+      "pattern": "^https://\\S+$",
+      "patternHelp": "Must be an https:// URL your receiver answers on."
     },
     {
       "key": "secret",
