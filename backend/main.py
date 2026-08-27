@@ -880,6 +880,19 @@ async def run_workflow_dry_or_commit(
     inputs.setdefault("user_id", user_id)
     run_mode = payload.get("runMode") or "live"
     prior_outputs = payload.get("priorOutputs") or {}
+    # WHY the cache is seeded, and what has already gone out.
+    #
+    # `priorOutputs` alone cannot say either. The engine used to infer "this is
+    # an approved commit" from `live` + a seeded cache, which is also true of a
+    # run being CARRIED ON — and under that inference a resumed run silently
+    # stops reporting anomalies. And the cache short-circuits non-write steps
+    # only, deliberately, so a resume seeded with it re-fires every write the
+    # earlier attempt already performed.
+    #
+    # Both are absent on an older platform, and both default to the old
+    # behaviour when they are.
+    replaying_approved = payload.get("replayingApproved")
+    performed_writes = payload.get("performedWrites") or []
 
     # The platform's identity for THIS attempt. Every other route into this file
     # threads one; this route did not, and it is the only route automations use.
@@ -894,6 +907,8 @@ async def run_workflow_dry_or_commit(
         user_id=user_id,
         run_mode=run_mode,
         prior_outputs=prior_outputs,
+        replaying_approved=replaying_approved,
+        performed_writes=performed_writes,
         workflow_run_id=payload.get("workflowRunId"),
         idempotency_key=payload.get("idempotencyKey"),
     )
@@ -916,6 +931,22 @@ async def run_workflow_dry_or_commit(
         "status": status,
         "outputs": outputs,
         "error": getattr(result, "error", None),
+        # HOW IT ENDED, and what is left of it.
+        #
+        # The engine returns `partial` for two opposite events — it ran out of
+        # time with steps it never attempted, or a step broke and the ones
+        # reading from it were skipped. Continuing the first is correct;
+        # continuing the second repeats the failure. Dropping these three here
+        # left the platform unable to tell, so a deadline stop arrived looking
+        # like a plain failure, its remaining work unrecorded and its finished
+        # reads thrown away.
+        #
+        # `getattr` defaults keep an older SDK working: it simply reports None
+        # and empty lists, which is what the platform already treats as "this
+        # run did not stop early".
+        "stopReason": getattr(result, "stop_reason", None),
+        "completed": getattr(result, "completed", []) or [],
+        "remaining": getattr(result, "remaining", []) or [],
         "readCache": getattr(result, "read_cache", {}) or {},
         "writePreviews": getattr(result, "write_previews", []) or [],
         "anomalies": getattr(result, "anomalies", []) or [],
