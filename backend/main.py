@@ -130,6 +130,18 @@ import importlib as _importlib
 import pkgutil as _pkgutil
 from fastapi import APIRouter as _APIRouter
 
+# A router that will not import is RECORDED, not just logged. Swallowing it
+# here means the app boots looking perfectly healthy with none of its own
+# endpoints, the startup smoke passes, it deploys, and then every trigger fires
+# against a workflow that was never registered. Measured in production on
+# 2026-08-31: three apps in that exact state, each failing 100% of ~290
+# invocations a day, none of them reporting anything.
+#
+# Still not raised, because one bad optional route should not take down an app
+# that otherwise works. The startup smoke reads this list and refuses the
+# build, which is where a broken app should be stopped.
+app.state.router_import_failures = []
+
 try:
     from backend import routes as _routes_pkg
 
@@ -141,6 +153,9 @@ try:
                 app.include_router(_router)
                 logger.info(f"Included app router: backend.routes.{_m.name}")
         except Exception as _e:  # noqa: BLE001
+            app.state.router_import_failures.append(
+                f"backend.routes.{_m.name}: {_e}"
+            )
             logger.error(
                 f"Failed to include app router backend.routes.{_m.name}: {_e}"
             )
