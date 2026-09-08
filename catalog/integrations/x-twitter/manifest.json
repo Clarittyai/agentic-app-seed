@@ -3,14 +3,15 @@
   "kind": "integration",
   "category": "social",
   "transport": "native",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "X (Twitter)",
   "vendor": "X",
-  "description": "Post tweets, reply to tweets, and search recent tweets.",
-  "intentHints": ["post a tweet", "reply to a tweet", "search tweets"],
+  "description": "Post tweets with an image, reply to tweets, read your own posts with their engagement, and search recent tweets.",
+  "intentHints": ["post a tweet", "post an image to X", "reply to a tweet", "search tweets", "how did my posts do"],
   "authType": "oauth2",
   "providedTools": [
-    { "id": "x.post_tweet", "description": "Post a tweet. Pass reply_to_tweet_id (the numeric id of an existing tweet) to post it as a REPLY to that tweet instead of a standalone post — X has no separate reply endpoint, a reply is a tweet that names its parent. Same scope either way.", "input": { "text": { "type": "string", "required": true }, "reply_to_tweet_id": { "type": "string", "required": false } }, "output": { "tweet_id": { "type": "string", "required": true }, "url": { "type": "string", "required": false }, "in_reply_to": { "type": "string", "required": false } } },
-    { "id": "x.search_tweets", "description": "Search recent public tweets. Returns each tweet's id, which is what reply_to_tweet_id takes.", "input": { "query": { "type": "string", "required": true }, "limit": { "type": "integer", "required": false, "default": 20 } }, "output": { "tweets": { "type": "array", "required": true } } }
+    { "id": "x.post_tweet", "description": "Post a tweet, optionally with one image. Pass reply_to_tweet_id (the numeric id of an existing tweet) to post it as a REPLY to that tweet instead of a standalone post — X has no separate reply endpoint, a reply is a tweet that names its parent. To attach a picture, pass image_file_id: the id returned by make_image. Always pass image_alt with it. If the image cannot be uploaded the text is still published and image_skipped says why, so check image_attached before reporting that a picture went out.", "input": { "text": { "type": "string", "required": true }, "reply_to_tweet_id": { "type": "string", "required": false }, "image_file_id": { "type": "string", "required": false }, "image_base64": { "type": "string", "required": false }, "image_alt": { "type": "string", "required": false } }, "output": { "tweet_id": { "type": "string", "required": true }, "url": { "type": "string", "required": false }, "in_reply_to": { "type": "string", "required": false }, "image_attached": { "type": "boolean", "required": true }, "image_skipped": { "type": "string", "required": false } } },
+    { "id": "x.fetch_user_posts", "description": "Your own recent posts with their engagement counts (likes, replies, reposts, views). This is the only way to learn how a post performed. Every call is billed by X, so read on a schedule rather than on every run.", "input": { "limit": { "type": "integer", "required": false, "default": 20 } }, "output": { "posts": { "type": "array", "required": true } } },
+    { "id": "x.search_tweets", "description": "Search recent public tweets. Returns each tweet's id, which is what reply_to_tweet_id takes. Billed by X per call.", "input": { "query": { "type": "string", "required": true }, "limit": { "type": "integer", "required": false, "default": 20 } }, "output": { "tweets": { "type": "array", "required": true } } }
   ]
 }

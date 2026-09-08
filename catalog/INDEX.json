@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-05T15:40:24.850Z",
+  "generatedAt": "2026-09-08T17:45:24.101Z",
   "integrations": [
     {
       "id": "airtable",
@@ -38,6 +38,21 @@
       "intentHints": [
         "create an asana task",
         "list my asana tasks"
+      ]
+    },
+    {
+      "id": "bluesky",
+      "version": "1.0.0",
+      "name": "Bluesky",
+      "description": "Post to Bluesky, read an account's posts with their engagement counts, search public posts, and read a profile.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "post this to bluesky",
+        "how did my bluesky posts do",
+        "search bluesky for mentions of us",
+        "cross-post to bluesky"
       ]
     },
     {
@@ -109,15 +124,30 @@
       ]
     },
     {
-      "id": "github",
+      "id": "facebook",
       "version": "1.0.0",
+      "name": "Facebook",
+      "description": "Publish to and read the posts of a Facebook Page you administer.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "post to our facebook page",
+        "read our facebook page posts",
+        "facebook page content"
+      ]
+    },
+    {
+      "id": "github",
+      "version": "1.1.0",
       "name": "GitHub",
-      "description": "List + create issues, open PRs, and search code in GitHub repos.",
+      "description": "List + create issues, comment on issues and PRs, open PRs, and search code in GitHub repos.",
       "category": "dev",
       "kind": "integration",
       "authType": "oauth2",
       "intentHints": [
         "open a github issue",
+        "reply to issues on my repo",
         "create a pull request",
         "search github code"
       ]
@@ -191,17 +221,33 @@
       ]
     },
     {
+      "id": "instagram",
+      "version": "1.0.0",
+      "name": "Instagram",
+      "description": "Publish photos to and read the media of your Instagram Business account.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "post to instagram",
+        "read our instagram posts",
+        "instagram media"
+      ]
+    },
+    {
       "id": "jira",
       "version": "1.0.0",
       "name": "Jira",
-      "description": "Create and transition issues in Jira via the Atlassian OAuth.",
+      "description": "Create, search and transition Jira issues, and attach files to them, via the Atlassian OAuth.",
       "category": "productivity",
       "kind": "integration",
       "authType": "oauth2",
       "intentHints": [
         "create a jira ticket",
+        "attach a file to a jira issue",
         "transition an issue",
-        "jql search"
+        "jql search",
+        "list jira projects"
       ]
     },
     {
@@ -220,17 +266,17 @@
     },
     {
       "id": "linkedin",
-      "version": "1.0.0",
+      "version": "1.2.0",
       "name": "LinkedIn",
-      "description": "Read the authenticated user's LinkedIn feed and publish posts to their personal feed or a Company Page they administer.",
+      "description": "Read the authenticated member's own posts and their comments, publish posts to their personal feed or a Company Page they administer, and comment on a post.",
       "category": "social",
       "kind": "integration",
       "authType": "oauth2",
       "intentHints": [
-        "summarize my linkedin feed",
         "post a daily linkedin digest",
-        "monitor linkedin notifications",
-        "read what's happening on linkedin"
+        "reply to the comments on my linkedin posts",
+        "put the link in the first comment",
+        "read how my linkedin posts are doing"
       ]
     },
     {
@@ -244,6 +290,20 @@
       "intentHints": [
         "add a subscriber",
         "send a campaign"
+      ]
+    },
+    {
+      "id": "mastodon",
+      "version": "1.0.0",
+      "name": "Mastodon",
+      "description": "Post to a Mastodon account, read its home timeline, and search public posts on its server.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "apiKey",
+      "intentHints": [
+        "post this to mastodon",
+        "what's on my mastodon timeline",
+        "search mastodon for mentions of us"
       ]
     },
     {
@@ -359,6 +419,37 @@
       ]
     },
     {
+      "id": "quickbooks",
+      "version": "1.0.0",
+      "name": "QuickBooks",
+      "description": "Read vendor bills, vendors, and invoices from the authenticated user's QuickBooks Online company (accounts payable).",
+      "category": "accounting",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "pull my vendor bills",
+        "list accounts payable",
+        "read invoices from QuickBooks",
+        "sync bills for overbilling checks"
+      ]
+    },
+    {
+      "id": "reddit",
+      "version": "1.0.0",
+      "name": "Reddit",
+      "description": "Read and search subreddits, read a post's comments, submit posts and replies, and read the authenticated account's subscriptions, submissions and inbox.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "monitor a subreddit for mentions",
+        "summarize what r/saas is talking about this week",
+        "post a link to reddit",
+        "reply to comments on my reddit post",
+        "search reddit for people asking about X"
+      ]
+    },
+    {
       "id": "salesforce",
       "version": "1.0.0",
       "name": "Salesforce",
@@ -415,6 +506,20 @@
       ]
     },
     {
+      "id": "tiktok",
+      "version": "1.0.0",
+      "name": "TikTok",
+      "description": "Publish videos to and list the videos of your connected TikTok creator account.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "post to tiktok",
+        "read our tiktok videos",
+        "tiktok content"
+      ]
+    },
+    {
       "id": "trello",
       "version": "0.1.0",
       "name": "Trello",
@@ -443,15 +548,49 @@
     },
     {
       "id": "x-twitter",
-      "version": "1.0.0",
+      "version": "1.2.0",
       "name": "X (Twitter)",
-      "description": "Post tweets and search recent tweets.",
+      "description": "Post tweets with an image, reply to tweets, read your own posts with their engagement, and search recent tweets.",
       "category": "social",
       "kind": "integration",
       "authType": "oauth2",
       "intentHints": [
         "post a tweet",
-        "search tweets"
+        "post an image to X",
+        "reply to a tweet",
+        "search tweets",
+        "how did my posts do"
+      ]
+    },
+    {
+      "id": "xero",
+      "version": "1.0.0",
+      "name": "Xero",
+      "description": "Read supplier bills (accounts payable) and contacts from the authenticated user's Xero organisation.",
+      "category": "accounting",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "pull my supplier bills",
+        "list accounts payable",
+        "read invoices from Xero",
+        "sync bills for overbilling checks"
+      ]
+    },
+    {
+      "id": "youtube",
+      "version": "1.0.0",
+      "name": "YouTube",
+      "description": "Read a channel's own videos with their view, like and comment counts, look up stats for specific videos, search YouTube, and read or reply to comments.",
+      "category": "social",
+      "kind": "integration",
+      "authType": "oauth2",
+      "intentHints": [
+        "how are my youtube videos doing",
+        "summarize the comments on my latest video",
+        "reply to youtube comments",
+        "search youtube for videos about X",
+        "weekly report on channel performance"
       ]
     }
   ],
