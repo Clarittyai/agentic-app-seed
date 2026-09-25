@@ -6,39 +6,82 @@
   "version": "1.0.0",
   "name": "QuickBooks",
   "vendor": "Intuit",
-  "description": "Read vendor bills, vendors, and invoices from the authenticated user's QuickBooks Online company (accounts payable).",
+  "description": "Read the connected QuickBooks Online company's ledger: vendor bills and vendors (accounts payable), and customer invoices and customers (accounts receivable).",
   "intentHints": [
     "pull my vendor bills",
     "list accounts payable",
-    "read invoices from QuickBooks",
+    "which customer invoices are still unpaid",
+    "who owes me money",
+    "chase overdue invoices",
     "sync bills for overbilling checks"
   ],
   "authType": "oauth2",
-  "_authNote": "OAuth endpoints, scopes, client secret ref and the realmId capture-from-callback are PLATFORM-OWNED — they live in the private clarity-api (integrations-v2/config/oauth-configs.ts + integration-http-specs.ts), never in this public repo. This manifest only declares that the integration uses oauth2 and which tools it provides.",
+  "_authNote": "OAuth endpoints, scopes, client secret ref and the realmId capture-from-callback are PLATFORM-OWNED \u2014 they live in the private clarity-api (integrations-v2/config/oauth-configs.ts + integration-http-specs.ts), never in this public repo. This manifest only declares that the integration uses oauth2 and which tools it provides.",
   "providedTools": [
     {
       "id": "quickbooks.list_bills",
       "description": "List vendor bills (accounts payable) for the connected company.",
       "input": {},
-      "output": { "bills": { "type": "array" } }
+      "output": {
+        "bills": {
+          "type": "array"
+        }
+      }
     },
     {
       "id": "quickbooks.list_vendors",
       "description": "List vendors for the connected company.",
       "input": {},
-      "output": { "vendors": { "type": "array" } }
+      "output": {
+        "vendors": {
+          "type": "array"
+        }
+      }
     },
     {
       "id": "quickbooks.get_bill",
       "description": "Fetch a single vendor bill by id.",
-      "input": { "bill_id": { "type": "string", "required": true } },
-      "output": { "bill": { "type": "object" } }
+      "input": {
+        "bill_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {
+        "bill": {
+          "type": "object"
+        }
+      }
     },
     {
       "id": "quickbooks.list_vendor_credits",
-      "description": "List vendor credits (AP credit memos) — the confirmation a vendor actually credited back an overbilling.",
+      "description": "List vendor credits (AP credit memos) \u2014 the confirmation a vendor actually credited back an overbilling.",
       "input": {},
-      "output": { "credits": { "type": "array" } }
+      "output": {
+        "credits": {
+          "type": "array"
+        }
+      }
+    },
+    {
+      "id": "quickbooks.list_invoices",
+      "description": "List OPEN customer invoices (accounts receivable) \u2014 money owed TO the connected company. Returns only invoices still carrying a balance, so the result is what is outstanding rather than the whole billing history. Not to be confused with list_bills, which is money the company OWES.",
+      "input": {},
+      "output": {
+        "invoices": {
+          "type": "array"
+        }
+      }
+    },
+    {
+      "id": "quickbooks.list_customers",
+      "description": "List customers for the connected company, with their contact details. An invoice carries a customer REFERENCE, not an email address, so this is what turns \"who owes what\" into someone a message can be sent to.",
+      "input": {},
+      "output": {
+        "customers": {
+          "type": "array"
+        }
+      }
     }
   ]
 }
