@@ -6,11 +6,13 @@
   "version": "1.0.0",
   "name": "Stripe",
   "vendor": "Stripe",
-  "description": "Create customers, list charges, and generate payment links.",
+  "description": "Read the connected Stripe account's billing: open and unpaid invoices with the customer's email and the next retry date, recent charges, plus create customers and payment links.",
   "intentHints": [
-    "create a stripe customer",
-    "issue a payment link",
-    "list charges"
+    "which payments failed",
+    "chase a failed card payment",
+    "who has an unpaid invoice in stripe",
+    "send a new payment link",
+    "list recent charges"
   ],
   "authType": "apiKey",
   "credentialFields": [
@@ -47,11 +49,16 @@
     },
     {
       "id": "stripe.list_charges",
-      "description": "List recent charges.",
+      "description": "List recent charges, newest first. Each carries `status` (succeeded, pending, failed), `failure_code`/`failure_message`, `amount`, and sometimes `billing_details.email`. Stripe cannot filter charges by status, so read the field; DO bound the window with `since` or a daily job re-reads the same history every morning.",
       "input": {
         "limit": {
           "type": "integer",
           "required": false
+        },
+        "since": {
+          "type": "integer",
+          "required": false,
+          "description": "Unix timestamp in SECONDS. Only charges created at or after it."
         }
       },
       "output": {
@@ -74,6 +81,31 @@
         "url": {
           "type": "string",
           "required": true
+        }
+      }
+    },
+    {
+      "id": "stripe.list_invoices",
+      "description": "List invoices by status \u2014 use status='open' for money billed and not yet paid. This is the tool for chasing a failed payment, because the invoice is what carries the answers a charge does not: `customer_email` (who to write to), `next_payment_attempt` (whether Stripe will retry it for you, so you do not chase someone whose card clears tomorrow), `attempt_count`, `amount_remaining`, `due_date`, and `hosted_invoice_url` \u2014 a Stripe-hosted page the customer can pay on, so no payment link has to be created.",
+      "input": {
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "One of draft, open, paid, uncollectible, void."
+        },
+        "limit": {
+          "type": "integer",
+          "required": false
+        },
+        "since": {
+          "type": "integer",
+          "required": false,
+          "description": "Unix timestamp in SECONDS. Only invoices created at or after it."
+        }
+      },
+      "output": {
+        "invoices": {
+          "type": "array"
         }
       }
     }
