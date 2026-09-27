@@ -13,53 +13,115 @@
     "put a report in a sheet"
   ],
   "authType": "oauth2",
-  "_authNote": "OAuth endpoints, scopes, client secret ref and any identity step are PLATFORM-OWNED — they live in the private clarity-api (integrations-v2/config/oauth-configs.ts), never in this public repo. This manifest only declares that the integration uses oauth2 and which tools it provides.",
+  "_authNote": "OAuth endpoints, scopes, client secret ref and any identity step are PLATFORM-OWNED \u2014 they live in the private clarity-api (integrations-v2/config/oauth-configs.ts), never in this public repo. This manifest only declares that the integration uses oauth2 and which tools it provides.",
   "_scopeNote": "Connected on drive.file, which Google marks Recommended/Non-sensitive for the Sheets API. It is PER-FILE: nothing is readable until the person picks a spreadsheet through the Google Picker, and that is the trade for needing no verification.",
   "providedTools": [
+    {
+      "id": "google-sheets.create_spreadsheet",
+      "description": "Make a new spreadsheet. Needs no picking: drive.file covers files this app created.",
+      "input": {
+        "title": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output": {
+        "spreadsheet_id": {
+          "type": "string",
+          "required": true
+        },
+        "url": {
+          "type": "string",
+          "required": false
+        }
+      }
+    },
     {
       "id": "google-sheets.get_sheets",
       "description": "The tabs in a spreadsheet, with their ids and titles. Needed to turn a tab into an A1 range.",
       "input": {
-        "spreadsheet_id": { "type": "string", "required": true }
+        "spreadsheet_id": {
+          "type": "string",
+          "required": true
+        }
       },
       "output": {
-        "sheets": { "type": "array", "required": true }
+        "sheets": {
+          "type": "array",
+          "required": true
+        }
       }
     },
     {
       "id": "google-sheets.read_range",
       "description": "The cell values in an A1 range, for example 'Sheet1!A1:D200'.",
       "input": {
-        "spreadsheet_id": { "type": "string", "required": true },
-        "range": { "type": "string", "required": true }
+        "spreadsheet_id": {
+          "type": "string",
+          "required": true
+        },
+        "range": {
+          "type": "string",
+          "required": true
+        }
       },
       "output": {
-        "values": { "type": "array", "required": true },
-        "range": { "type": "string", "required": false }
+        "values": {
+          "type": "array",
+          "required": true
+        },
+        "range": {
+          "type": "string",
+          "required": false
+        }
       }
     },
     {
       "id": "google-sheets.append_rows",
       "description": "Add rows after the last row with data. Cannot overwrite existing cells.",
       "input": {
-        "spreadsheet_id": { "type": "string", "required": true },
-        "range": { "type": "string", "required": true },
-        "values": { "type": "array", "required": true }
+        "spreadsheet_id": {
+          "type": "string",
+          "required": true
+        },
+        "range": {
+          "type": "string",
+          "required": true
+        },
+        "values": {
+          "type": "array",
+          "required": true
+        }
       },
       "output": {
-        "updated": { "type": "string", "required": false }
+        "updated": {
+          "type": "string",
+          "required": false
+        }
       }
     },
     {
       "id": "google-sheets.update_range",
       "description": "Replace the cells in an A1 range. This overwrites what is there.",
       "input": {
-        "spreadsheet_id": { "type": "string", "required": true },
-        "range": { "type": "string", "required": true },
-        "values": { "type": "array", "required": true }
+        "spreadsheet_id": {
+          "type": "string",
+          "required": true
+        },
+        "range": {
+          "type": "string",
+          "required": true
+        },
+        "values": {
+          "type": "array",
+          "required": true
+        }
       },
       "output": {
-        "updated": { "type": "string", "required": false }
+        "updated": {
+          "type": "string",
+          "required": false
+        }
       }
     }
   ]
