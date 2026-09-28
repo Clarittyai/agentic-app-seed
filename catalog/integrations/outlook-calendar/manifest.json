@@ -36,11 +36,15 @@
     },
     {
       "id": "outcal.create_event",
-      "description": "Create an event.",
+      "description": "Create an event. `description` is the body of the invite: what the meeting is for.",
       "input": {
         "subject": {
           "type": "string",
           "required": true
+        },
+        "description": {
+          "type": "string",
+          "required": false
         },
         "start": {
           "type": "string",
